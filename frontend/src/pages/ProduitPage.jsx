@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ProductCard from '../components/ProductCard';
 import SkeletonCard from '../components/SkeletonCard';
+import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 import useCartStore from '../store/cartStore';
 
@@ -116,6 +117,13 @@ const ProduitPage = () => {
 
   return (
     <section className="section">
+      <SEOHead
+        title={product.name}
+        description={product.description ? product.description.slice(0, 155) : undefined}
+        image={product.primary_image}
+        url={`/produit/${product.slug}`}
+        type="product"
+      />
       <div className="container">
         {/* Breadcrumb */}
         <nav style={{ fontSize: '1.3rem', color: 'var(--default-color)', marginBottom: '3rem' }}>

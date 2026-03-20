@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 
 const ContactPage = () => {
@@ -21,6 +22,7 @@ const ContactPage = () => {
 
   return (
     <section className="section">
+      <SEOHead title="Contact" description="Contactez Golden Pousso — atelier à Pikine, Dakar. Téléphone, email, ou formulaire en ligne. Réponse sous 24h." url="/contact" />
       {/* En-tête */}
       <div style={{ background: 'linear-gradient(135deg, #0D0D0D 60%, #1a1200)', padding: '6rem 3rem', textAlign: 'center', marginBottom: '5rem' }}>
         <span style={{ color: '#C9A84C', fontSize: '1.4rem', letterSpacing: '0.2em' }}>GOLDEN POUSSO</span>

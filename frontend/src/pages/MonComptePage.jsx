@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
+import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 
 const formatFCFA = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' FCFA';
@@ -20,7 +21,6 @@ const AuthForm = () => {
   const [tab, setTab] = useState('login');
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuthStore();
-  const navigate = useNavigate();
 
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({ first_name: '', last_name: '', email: '', phone: '', password: '' });
@@ -269,7 +269,12 @@ const Dashboard = () => {
 /* ── Page principale ── */
 const MonComptePage = () => {
   const { isAuthenticated } = useAuthStore();
-  return isAuthenticated ? <Dashboard /> : <AuthForm />;
+  return (
+    <>
+      <SEOHead title="Mon Compte" url="/mon-compte" noindex />
+      {isAuthenticated ? <Dashboard /> : <AuthForm />}
+    </>
+  );
 };
 
 export default MonComptePage;

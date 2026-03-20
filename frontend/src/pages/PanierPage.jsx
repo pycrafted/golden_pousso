@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../store/cartStore';
+import SEOHead from '../components/SEOHead';
 
 const formatFCFA = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' FCFA';
 const FRAIS_LIVRAISON = 1500;
@@ -27,6 +28,7 @@ const PanierPage = () => {
 
   return (
     <section className="section">
+      <SEOHead title="Mon Panier" url="/panier" noindex />
       <div className="container">
         <div className="title">
           <span>GOLDEN POUSSO</span>

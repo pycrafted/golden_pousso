@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useCartStore from '../store/cartStore';
+import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 
 const formatFCFA = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' FCFA';
@@ -261,6 +262,7 @@ const CommandePage = () => {
 
   return (
     <section className="section">
+      <SEOHead title="Commande" url="/commande" noindex />
       <div className="container" style={{ maxWidth: '80rem', margin: '0 auto' }}>
         <div className="title"><span>GOLDEN POUSSO</span><h2>Finaliser ma commande</h2></div>
         <StepIndicator current={step} />

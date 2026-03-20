@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import SkeletonCard from '../components/SkeletonCard';
+import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 
 const SORT_OPTIONS = [
@@ -170,6 +171,7 @@ const BoutiquePage = () => {
 
   return (
     <section className="section">
+      <SEOHead title="Boutique" description="Découvrez toutes nos créations : boubous brodés, robes wax, tenues de cérémonie et accessoires artisanaux." url="/boutique" />
       <div className="container">
         <div className="title">
           <span>GOLDEN POUSSO</span>

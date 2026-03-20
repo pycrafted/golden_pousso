@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 
 const CollectionsPage = () => {
@@ -91,6 +92,7 @@ const CollectionsPage = () => {
 
   return (
     <section className="section">
+      <SEOHead title="Collections" description="Explorez les collections exclusives Golden Pousso — chaque saison, une nouvelle vision de l'élégance africaine." url="/collections" />
       {/* En-tête */}
       <div style={{
         background: 'linear-gradient(135deg, #0D0D0D 60%, #1a1200)',

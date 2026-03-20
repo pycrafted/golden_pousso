@@ -6,6 +6,7 @@ import Statistics from '../components/Statistics';
 import Blog from '../components/Blog';
 import ProductCard from '../components/ProductCard';
 import SkeletonCard from '../components/SkeletonCard';
+import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 
 /* ── helpers ── */
@@ -66,6 +67,7 @@ const HomePage = () => {
 
   return (
     <>
+      <SEOHead url="/" />
       {/* Hero */}
       <header className="header">
         <Hero />

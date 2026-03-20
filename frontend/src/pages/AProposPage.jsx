@@ -1,3 +1,5 @@
+import SEOHead from '../components/SEOHead';
+
 const AProposPage = () => {
   const values = [
     { icon: 'bx-diamond', title: 'Authenticité Africaine', desc: 'Chaque création puise ses racines dans la richesse des traditions textiles du Sénégal — wax, basin riche, soie locale — réinterprétées avec une sensibilité contemporaine.' },
@@ -23,6 +25,7 @@ const AProposPage = () => {
 
   return (
     <section className="section">
+      <SEOHead title="À Propos" description="Découvrez l'histoire de Golden Pousso, atelier de couture africaine fondé à Pikine, Dakar en 2015. Authenticité, qualité artisanale et élégance moderne." url="/a-propos" />
       {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg, #0D0D0D 60%, #1a1200)', padding: '8rem 3rem', textAlign: 'center', marginBottom: '6rem', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'radial-gradient(circle at 70% 50%, #C9A84C18 0%, transparent 60%)', pointerEvents: 'none' }} />
