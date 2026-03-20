@@ -21,6 +21,7 @@ function App() {
           <Route path="/collections" element={<CollectionsPage />} />
           <Route path="/panier" element={<PanierPage />} />
           <Route path="/commande" element={<CommandePage />} />
+          <Route path="/commande/suivi/:orderNumber" element={<CommandePage />} />
           <Route path="/mon-compte" element={<MonComptePage />} />
           <Route path="/a-propos" element={<AProposPage />} />
           <Route path="/contact" element={<ContactPage />} />
