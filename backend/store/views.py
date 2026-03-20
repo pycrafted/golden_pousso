@@ -1,3 +1,82 @@
-from django.shortcuts import render
+from rest_framework import generics, filters
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from .models import Category, Collection, Product
+from .serializers import (
+    CategorySerializer, CollectionListSerializer, CollectionDetailSerializer,
+    ProductListSerializer, ProductDetailSerializer
+)
+from .filters import ProductFilter
 
-# Create your views here.
+
+class CategoryListView(generics.ListAPIView):
+    queryset = Category.objects.filter(is_active=True)
+    serializer_class = CategorySerializer
+
+
+class CollectionListView(generics.ListAPIView):
+    queryset = Collection.objects.filter(is_active=True)
+    serializer_class = CollectionListSerializer
+
+
+class CollectionDetailView(generics.RetrieveAPIView):
+    queryset = Collection.objects.filter(is_active=True)
+    serializer_class = CollectionDetailSerializer
+    lookup_field = 'slug'
+
+
+class ProductListView(generics.ListAPIView):
+    serializer_class = ProductListSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = ProductFilter
+    search_fields = ['name', 'description']
+    ordering_fields = ['price', 'created_at', 'name']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        return (
+            Product.objects
+            .filter(is_active=True)
+            .prefetch_related('images', 'variants')
+            .select_related('category', 'collection')
+            .distinct()
+        )
+
+
+class ProductDetailView(generics.RetrieveAPIView):
+    serializer_class = ProductDetailSerializer
+    lookup_field = 'slug'
+
+    def get_queryset(self):
+        return (
+            Product.objects
+            .filter(is_active=True)
+            .prefetch_related('images', 'variants')
+            .select_related('category', 'collection')
+        )
+
+
+@api_view(['GET'])
+def product_featured(request):
+    products = (
+        Product.objects
+        .filter(is_active=True, is_featured=True)
+        .prefetch_related('images')
+        .select_related('category')[:8]
+    )
+    serializer = ProductListSerializer(products, many=True, context={'request': request})
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def product_new(request):
+    products = (
+        Product.objects
+        .filter(is_active=True, is_new=True)
+        .prefetch_related('images')
+        .select_related('category')
+        .order_by('-created_at')[:8]
+    )
+    serializer = ProductListSerializer(products, many=True, context={'request': request})
+    return Response(serializer.data)
