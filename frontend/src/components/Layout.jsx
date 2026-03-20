@@ -10,7 +10,10 @@ function Layout() {
 
   return (
     <>
-      <Navbar onUserIconClick={() => setUserFormOpen(true)} />
+      {/* marginBottom:0 car HomePage ajoute son propre .header pour le Hero */}
+      <header className="header" style={{ marginBottom: 0 }}>
+        <Navbar onUserIconClick={() => setUserFormOpen(true)} />
+      </header>
       <main>
         <Outlet />
       </main>
