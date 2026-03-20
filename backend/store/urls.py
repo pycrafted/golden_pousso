@@ -17,5 +17,9 @@ urlpatterns = [
 
     # Commandes
     path('orders/', views.order_create, name='order-create'),
+    path('orders/mes-commandes/', views.my_orders, name='my-orders'),
     path('orders/<str:order_number>/', views.order_detail, name='order-detail'),
+
+    # Contact
+    path('contact/', views.contact_create, name='contact-create'),
 ]

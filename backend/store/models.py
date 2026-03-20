@@ -211,3 +211,20 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.product_name} (Commande {self.order.order_number})"
+
+
+class ContactMessage(models.Model):
+    name = models.CharField(max_length=100, verbose_name='Nom')
+    contact = models.CharField(max_length=200, verbose_name='Email / Téléphone')
+    subject = models.CharField(max_length=200, verbose_name='Sujet')
+    message = models.TextField(verbose_name='Message')
+    is_read = models.BooleanField(default=False, verbose_name='Lu')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Message de contact'
+        verbose_name_plural = 'Messages de contact'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} — {self.subject}"

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem
+from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage
 
 
 @admin.register(Category)
@@ -95,3 +95,12 @@ class OrderAdmin(admin.ModelAdmin):
     def marquer_livre(self, request, queryset):
         queryset.update(status='delivered')
     marquer_livre.short_description = 'Marquer comme Livrées'
+
+
+@admin.register(ContactMessage)
+class ContactMessageAdmin(admin.ModelAdmin):
+    list_display = ['name', 'contact', 'subject', 'is_read', 'created_at']
+    list_filter = ['is_read', 'created_at']
+    search_fields = ['name', 'contact', 'subject', 'message']
+    list_editable = ['is_read']
+    readonly_fields = ['name', 'contact', 'subject', 'message', 'created_at']

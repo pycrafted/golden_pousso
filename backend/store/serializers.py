@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem
+from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -174,3 +174,9 @@ class OrderOutputSerializer(serializers.ModelSerializer):
             'payment_method', 'payment_status', 'notes',
             'items', 'created_at',
         ]
+
+
+class ContactMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactMessage
+        fields = ['name', 'contact', 'subject', 'message']
