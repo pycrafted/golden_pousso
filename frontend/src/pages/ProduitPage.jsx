@@ -4,12 +4,14 @@ import toast from 'react-hot-toast';
 import ProductCard from '../components/ProductCard';
 import SkeletonCard from '../components/SkeletonCard';
 import apiClient from '../api/client';
+import useCartStore from '../store/cartStore';
 
 const formatFCFA = (price) => new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
 
 const ProduitPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const addItem = useCartStore((s) => s.addItem);
 
   const [product, setProduct] = useState(null);
   const [similar, setSimilar] = useState([]);
@@ -97,6 +99,10 @@ const ProduitPage = () => {
       toast.error('Veuillez choisir une taille');
       return;
     }
+    const variant = product.variants?.find(
+      (v) => (!selectedSize || v.size === selectedSize) && (!selectedColor || v.color === selectedColor)
+    ) ?? null;
+    addItem(product, variant, quantity);
     toast.success(`${product.name} ajouté au panier !`);
   };
 
