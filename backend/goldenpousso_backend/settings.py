@@ -12,7 +12,73 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
+JAZZMIN_SETTINGS = {
+    'site_title': 'Golden Pousso Admin',
+    'site_header': 'Golden Pousso',
+    'site_brand': 'Golden Pousso',
+    'welcome_sign': 'Bienvenue dans l\'administration Golden Pousso',
+    'copyright': 'Golden Pousso © 2025',
+    'search_model': ['store.Product', 'store.Order', 'accounts.Customer'],
+    'topmenu_links': [
+        {'name': 'Boutique', 'url': 'http://localhost:5173', 'new_window': True},
+        {'name': 'API', 'url': '/api/v1/', 'new_window': True},
+    ],
+    'show_sidebar': True,
+    'navigation_expanded': True,
+    'hide_apps': [],
+    'icons': {
+        'store.category': 'fas fa-tags',
+        'store.collection': 'fas fa-layer-group',
+        'store.product': 'fas fa-tshirt',
+        'store.order': 'fas fa-shopping-bag',
+        'store.contactmessage': 'fas fa-envelope',
+        'accounts.customer': 'fas fa-users',
+    },
+    'default_icon_parents': 'fas fa-chevron-circle-right',
+    'default_icon_children': 'fas fa-circle',
+    'related_modal_active': True,
+    'custom_css': None,
+    'custom_js': None,
+    'use_google_fonts_cdn': True,
+    'show_ui_builder': False,
+    'changeform_format': 'horizontal_tabs',
+    'language_chooser': False,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    'navbar_small_text': False,
+    'footer_small_text': False,
+    'body_small_text': False,
+    'brand_small_text': False,
+    'brand_colour': 'navbar-warning',
+    'accent': 'accent-warning',
+    'navbar': 'navbar-dark',
+    'no_navbar_border': False,
+    'navbar_fixed': True,
+    'layout_boxed': False,
+    'footer_fixed': False,
+    'sidebar_fixed': True,
+    'sidebar': 'sidebar-dark-warning',
+    'sidebar_nav_small_text': False,
+    'sidebar_disable_expand': False,
+    'sidebar_nav_child_indent': False,
+    'sidebar_nav_compact_style': False,
+    'sidebar_nav_legacy_style': False,
+    'sidebar_nav_flat_style': False,
+    'theme': 'default',
+    'dark_mode_theme': None,
+    'button_classes': {
+        'primary': 'btn-primary',
+        'secondary': 'btn-secondary',
+        'info': 'btn-info',
+        'warning': 'btn-warning',
+        'danger': 'btn-danger',
+        'success': 'btn-success',
+    },
+}
+
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

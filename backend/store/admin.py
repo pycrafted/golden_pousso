@@ -1,4 +1,6 @@
+import csv
 from django.contrib import admin
+from django.http import HttpResponse
 from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage
 
 
@@ -82,7 +84,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_editable = ['status']
     ordering = ['-created_at']
     inlines = [OrderItemInline]
-    actions = ['marquer_confirme', 'marquer_expedie', 'marquer_livre']
+    actions = ['marquer_confirme', 'marquer_expedie', 'marquer_livre', 'exporter_csv']
 
     def marquer_confirme(self, request, queryset):
         queryset.update(status='confirmed')
@@ -95,6 +97,28 @@ class OrderAdmin(admin.ModelAdmin):
     def marquer_livre(self, request, queryset):
         queryset.update(status='delivered')
     marquer_livre.short_description = 'Marquer comme Livrées'
+
+    def exporter_csv(self, request, queryset):
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="commandes.csv"'
+        response.write('\ufeff')  # BOM for Excel UTF-8
+        writer = csv.writer(response)
+        writer.writerow(['N° Commande', 'Date', 'Client', 'Téléphone', 'Email', 'Zone', 'Adresse', 'Paiement', 'Statut', 'Total (FCFA)'])
+        for order in queryset.order_by('-created_at'):
+            writer.writerow([
+                order.order_number,
+                order.created_at.strftime('%d/%m/%Y %H:%M'),
+                order.customer_name,
+                order.customer_phone,
+                order.customer_email,
+                order.get_delivery_zone_display(),
+                order.delivery_address,
+                order.get_payment_method_display(),
+                order.get_status_display(),
+                order.total,
+            ])
+        return response
+    exporter_csv.short_description = 'Exporter en CSV'
 
 
 @admin.register(ContactMessage)
