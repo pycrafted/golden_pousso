@@ -1,0 +1,203 @@
+[
+  {
+    "model": "store.category",
+    "pk": 1,
+    "fields": {
+      "name": "Boubous Africains",
+      "slug": "boubous",
+      "description": "Grand boubous et tenues traditionnelles africaines en bazin riche et autres tissus nobles.",
+      "image": null,
+      "is_active": true,
+      "order": 1
+    }
+  },
+  {
+    "model": "store.category",
+    "pk": 2,
+    "fields": {
+      "name": "Chaussures",
+      "slug": "chaussures",
+      "description": "Chaussures artisanales en cuir et matières naturelles, fabriquées à Dakar.",
+      "image": null,
+      "is_active": true,
+      "order": 2
+    }
+  },
+  {
+    "model": "store.category",
+    "pk": 3,
+    "fields": {
+      "name": "Sacs",
+      "slug": "sacs",
+      "description": "Sacs à main et pochettes en cuir et wax, faits main par nos artisans.",
+      "image": null,
+      "is_active": true,
+      "order": 3
+    }
+  },
+  {
+    "model": "store.category",
+    "pk": 4,
+    "fields": {
+      "name": "Bijoux",
+      "slug": "bijoux",
+      "description": "Bijoux traditionnels africains en or, argent et perles.",
+      "image": null,
+      "is_active": true,
+      "order": 4
+    }
+  },
+  {
+    "model": "store.collection",
+    "pk": 1,
+    "fields": {
+      "name": "Défilé Été 2025",
+      "slug": "defile-ete-2025",
+      "description": "Notre collection estivale célébrant les couleurs vibrantes et les tissus légers de l'Afrique de l'Ouest.",
+      "cover_image": null,
+      "date": "2025-06-01",
+      "is_featured": true,
+      "is_active": true
+    }
+  },
+  {
+    "model": "store.product",
+    "pk": 1,
+    "fields": {
+      "name": "Grand Boubou Bazin Riche Brodé",
+      "slug": "grand-boubou-bazin-riche-brode",
+      "category": 1,
+      "collection": 1,
+      "description": "Magnifique grand boubou en bazin riche avec broderies dorées faites à la main. Tissu importé de qualité supérieure, idéal pour les cérémonies et fêtes religieuses.",
+      "price": 45000,
+      "old_price": 55000,
+      "stock": 12,
+      "is_active": true,
+      "is_featured": true,
+      "is_new": false,
+      "created_at": "2025-01-10T10:00:00Z",
+      "updated_at": "2025-01-10T10:00:00Z"
+    }
+  },
+  {
+    "model": "store.product",
+    "pk": 2,
+    "fields": {
+      "name": "Boubou Wax Fleuri Moderne",
+      "slug": "boubou-wax-fleuri-moderne",
+      "category": 1,
+      "collection": null,
+      "description": "Boubou tendance en tissu wax aux motifs floraux. Coupe moderne alliant tradition et élégance contemporaine.",
+      "price": 28000,
+      "old_price": null,
+      "stock": 8,
+      "is_active": true,
+      "is_featured": false,
+      "is_new": true,
+      "created_at": "2025-02-15T10:00:00Z",
+      "updated_at": "2025-02-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "store.product",
+    "pk": 3,
+    "fields": {
+      "name": "Sandales Cuir Tressé Artisanal",
+      "slug": "sandales-cuir-tresse-artisanal",
+      "category": 2,
+      "collection": 1,
+      "description": "Sandales en cuir véritable tressé à la main par nos artisans cordonners de Dakar. Confortables et durables.",
+      "price": 18500,
+      "old_price": null,
+      "stock": 20,
+      "is_active": true,
+      "is_featured": true,
+      "is_new": true,
+      "created_at": "2025-03-01T10:00:00Z",
+      "updated_at": "2025-03-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "store.product",
+    "pk": 4,
+    "fields": {
+      "name": "Sac Cabas Wax Multicolore",
+      "slug": "sac-cabas-wax-multicolore",
+      "category": 3,
+      "collection": null,
+      "description": "Grand sac cabas en tissu wax authentique avec doublure en coton. Spacieux et pratique pour le quotidien.",
+      "price": 12000,
+      "old_price": 15000,
+      "stock": 15,
+      "is_active": true,
+      "is_featured": false,
+      "is_new": false,
+      "created_at": "2025-01-20T10:00:00Z",
+      "updated_at": "2025-01-20T10:00:00Z"
+    }
+  },
+  {
+    "model": "store.product",
+    "pk": 5,
+    "fields": {
+      "name": "Collier Perles Traditionnelles Or",
+      "slug": "collier-perles-traditionnelles-or",
+      "category": 4,
+      "collection": 1,
+      "description": "Collier en perles de verre africaines et finitions dorées. Pièce unique fabriquée à la main, symbole de l'artisanat sénégalais.",
+      "price": 8500,
+      "old_price": null,
+      "stock": 5,
+      "is_active": true,
+      "is_featured": true,
+      "is_new": true,
+      "created_at": "2025-03-10T10:00:00Z",
+      "updated_at": "2025-03-10T10:00:00Z"
+    }
+  },
+  {
+    "model": "store.productvariant",
+    "pk": 1,
+    "fields": { "product": 1, "size": "S", "color": "Bleu marine", "stock": 3, "price_adjustment": 0 }
+  },
+  {
+    "model": "store.productvariant",
+    "pk": 2,
+    "fields": { "product": 1, "size": "M", "color": "Bleu marine", "stock": 5, "price_adjustment": 0 }
+  },
+  {
+    "model": "store.productvariant",
+    "pk": 3,
+    "fields": { "product": 1, "size": "L", "color": "Bleu marine", "stock": 4, "price_adjustment": 0 }
+  },
+  {
+    "model": "store.productvariant",
+    "pk": 4,
+    "fields": { "product": 2, "size": "M", "color": "Rouge et or", "stock": 4, "price_adjustment": 0 }
+  },
+  {
+    "model": "store.productvariant",
+    "pk": 5,
+    "fields": { "product": 2, "size": "L", "color": "Rouge et or", "stock": 4, "price_adjustment": 0 }
+  },
+  {
+    "model": "store.productvariant",
+    "pk": 6,
+    "fields": { "product": 3, "size": "38", "color": "Naturel", "stock": 5, "price_adjustment": 0 }
+  },
+  {
+    "model": "store.productvariant",
+    "pk": 7,
+    "fields": { "product": 3, "size": "39", "color": "Naturel", "stock": 5, "price_adjustment": 0 }
+  },
+  {
+    "model": "store.productvariant",
+    "pk": 8,
+    "fields": { "product": 3, "size": "40", "color": "Naturel", "stock": 5, "price_adjustment": 0 }
+  },
+  {
+    "model": "store.productvariant",
+    "pk": 9,
+    "fields": { "product": 3, "size": "41", "color": "Naturel", "stock": 5, "price_adjustment": 0 }
+  }
+]
