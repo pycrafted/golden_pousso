@@ -1,11 +1,12 @@
-from rest_framework import generics, filters
+from rest_framework import generics, filters, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Category, Collection, Product
+from .models import Category, Collection, Product, Order
 from .serializers import (
     CategorySerializer, CollectionListSerializer, CollectionDetailSerializer,
-    ProductListSerializer, ProductDetailSerializer
+    ProductListSerializer, ProductDetailSerializer,
+    OrderCreateSerializer, OrderOutputSerializer,
 )
 from .filters import ProductFilter
 
@@ -80,3 +81,21 @@ def product_new(request):
     )
     serializer = ProductListSerializer(products, many=True, context={'request': request})
     return Response(serializer.data)
+
+
+@api_view(['POST'])
+def order_create(request):
+    serializer = OrderCreateSerializer(data=request.data)
+    if serializer.is_valid():
+        order = serializer.save()
+        return Response(OrderOutputSerializer(order).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def order_detail(request, order_number):
+    try:
+        order = Order.objects.prefetch_related('items').get(order_number=order_number)
+    except Order.DoesNotExist:
+        return Response({'detail': 'Commande introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    return Response(OrderOutputSerializer(order).data)

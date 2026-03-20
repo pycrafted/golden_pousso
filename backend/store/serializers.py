@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Category, Collection, Product, ProductImage, ProductVariant
+from django.db import transaction
+from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -84,3 +85,92 @@ class CollectionDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Collection
         fields = ['id', 'name', 'slug', 'description', 'cover_image', 'date', 'is_featured', 'products']
+
+
+# ── Commandes ──
+
+class OrderItemInputSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+    variant_id = serializers.IntegerField(required=False, allow_null=True)
+    quantity = serializers.IntegerField(min_value=1)
+
+
+class OrderCreateSerializer(serializers.Serializer):
+    customer_name = serializers.CharField(max_length=200)
+    customer_phone = serializers.CharField(max_length=20)
+    customer_email = serializers.EmailField(required=False, allow_blank=True)
+    delivery_address = serializers.CharField(required=False, allow_blank=True)
+    delivery_zone = serializers.ChoiceField(choices=Order.DELIVERY_ZONE_CHOICES)
+    payment_method = serializers.ChoiceField(choices=Order.PAYMENT_CHOICES)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    items = OrderItemInputSerializer(many=True)
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items')
+        zone = validated_data['delivery_zone']
+        delivery_fee = Order.DELIVERY_FEES.get(zone, 1500)
+
+        with transaction.atomic():
+            subtotal = 0
+            order_items = []
+            for item_data in items_data:
+                product = Product.objects.get(pk=item_data['product_id'])
+                variant = None
+                unit_price = product.price
+                if item_data.get('variant_id'):
+                    variant = ProductVariant.objects.get(pk=item_data['variant_id'])
+                    unit_price += variant.price_adjustment
+                    if variant.stock < item_data['quantity']:
+                        raise serializers.ValidationError(
+                            f"Stock insuffisant pour {product.name} (variante {variant})."
+                        )
+                    variant.stock -= item_data['quantity']
+                    variant.save()
+                else:
+                    if product.stock < item_data['quantity']:
+                        raise serializers.ValidationError(f"Stock insuffisant pour {product.name}.")
+                    product.stock -= item_data['quantity']
+                    product.save()
+
+                line_total = unit_price * item_data['quantity']
+                subtotal += line_total
+                order_items.append(OrderItem(
+                    product=product,
+                    variant=variant,
+                    product_name=product.name,
+                    product_price=unit_price,
+                    quantity=item_data['quantity'],
+                    line_total=line_total,
+                ))
+
+            order = Order.objects.create(
+                **validated_data,
+                delivery_fee=delivery_fee,
+                subtotal=subtotal,
+                total=subtotal + delivery_fee,
+            )
+            for oi in order_items:
+                oi.order = order
+            OrderItem.objects.bulk_create(order_items)
+
+        return order
+
+
+class OrderItemOutputSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['product_name', 'product_price', 'quantity', 'line_total']
+
+
+class OrderOutputSerializer(serializers.ModelSerializer):
+    items = OrderItemOutputSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            'order_number', 'status', 'customer_name', 'customer_phone',
+            'customer_email', 'delivery_address', 'delivery_zone',
+            'delivery_fee', 'subtotal', 'total',
+            'payment_method', 'payment_status', 'notes',
+            'items', 'created_at',
+        ]
