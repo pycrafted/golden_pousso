@@ -28,11 +28,19 @@ export default defineConfig({
         globIgnores: ['**/images/**'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\/api\/v1\/(products|collections|categories)/,
+            urlPattern: /^https:\/\/.*\/api\/v1\/(products|collections|categories|hero-banner|atelier-image)/,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'api-cache',
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/res\.cloudinary\.com\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'cloudinary-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
           {
