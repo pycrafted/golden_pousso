@@ -3,6 +3,13 @@ from django.db import transaction
 from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, AtelierImage
 
 
+def cld(url, transform='f_auto,q_auto'):
+    """Inject Cloudinary transformation params (WebP + compression) into a Cloudinary URL."""
+    if not url or 'res.cloudinary.com' not in url:
+        return url
+    return url.replace('/upload/', f'/upload/{transform}/', 1)
+
+
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -23,7 +30,7 @@ class CollectionListSerializer(serializers.ModelSerializer):
             img = product.images.filter(is_primary=True).first() or product.images.first()
             if img:
                 url = request.build_absolute_uri(img.image.url) if request else img.image.url
-                images.append(url)
+                images.append(cld(url, 'w_800,f_auto,q_auto,c_limit'))
         return images
 
 
@@ -56,7 +63,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         img = obj.images.filter(is_primary=True).first() or obj.images.first()
         if img and request:
-            return request.build_absolute_uri(img.image.url)
+            return cld(request.build_absolute_uri(img.image.url), 'w_600,f_auto,q_auto,c_limit')
         return None
 
     def get_secondary_image(self, obj):
@@ -67,7 +74,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         else:
             img = None
         if img and request:
-            return request.build_absolute_uri(img.image.url)
+            return cld(request.build_absolute_uri(img.image.url), 'w_600,f_auto,q_auto,c_limit')
         return None
 
     def get_discount_percent(self, obj):
@@ -96,7 +103,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         img = obj.images.filter(is_primary=True).first() or obj.images.first()
         if img and request:
-            return request.build_absolute_uri(img.image.url)
+            return cld(request.build_absolute_uri(img.image.url), 'w_1200,f_auto,q_auto,c_limit')
         return None
 
     def get_discount_percent(self, obj):
@@ -180,7 +187,6 @@ class OrderCreateSerializer(serializers.Serializer):
         return order
 
 
-
 class OrderItemOutputSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
@@ -217,7 +223,7 @@ class HeroBannerSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         request = self.context.get('request')
         if obj.image and request:
-            return request.build_absolute_uri(obj.image.url)
+            return cld(request.build_absolute_uri(obj.image.url), 'w_1920,f_auto,q_auto,c_limit')
         return None
 
 
@@ -231,5 +237,5 @@ class AtelierImageSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         request = self.context.get('request')
         if obj.image and request:
-            return request.build_absolute_uri(obj.image.url)
+            return cld(request.build_absolute_uri(obj.image.url), 'w_1200,f_auto,q_auto,c_limit')
         return None
