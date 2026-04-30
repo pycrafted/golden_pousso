@@ -21,21 +21,18 @@ const Hero = () => {
 
   useEffect(() => {
     const cached = getCachedImageUrl('hero_banner');
-    if (cached) {
-      setHeroImage(cached);
-      setImgReady(true);
-      return;
-    }
+    if (cached) { setHeroImage(cached); setImgReady(true); }
+
     fetch(`${API_BASE}/hero-banner/`)
       .then(r => r.json())
       .then(data => {
-        if (data.image_url) {
-          setCachedImageUrl('hero_banner', data.image_url);
-          const img = new Image();
-          img.onload = () => { setHeroImage(data.image_url); setImgReady(true); };
-          img.onerror = () => {};
-          img.src = data.image_url;
-        }
+        if (!data.image_url) return;
+        if (data.image_url === cached) return;
+        setCachedImageUrl('hero_banner', data.image_url);
+        const img = new Image();
+        img.onload = () => { setHeroImage(data.image_url); setImgReady(true); };
+        img.onerror = () => {};
+        img.src = data.image_url;
       })
       .catch(() => {});
   }, []);

@@ -119,12 +119,13 @@ const SurMesureSection = () => {
 
   useEffect(() => {
     const cached = getCachedImageUrl('atelier_image');
-    if (cached) { setAtelierImageUrl(cached); return; }
+    if (cached) setAtelierImageUrl(cached);
+
     apiClient.get('/atelier-image/').then((r) => {
-      if (r.data.image_url) {
-        setCachedImageUrl('atelier_image', r.data.image_url);
-        setAtelierImageUrl(r.data.image_url);
-      }
+      if (!r.data.image_url) return;
+      if (r.data.image_url === cached) return;
+      setCachedImageUrl('atelier_image', r.data.image_url);
+      setAtelierImageUrl(r.data.image_url);
     }).catch(() => {});
   }, []);
 
