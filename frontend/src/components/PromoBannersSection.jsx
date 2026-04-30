@@ -4,22 +4,15 @@ import { useNavigate } from 'react-router-dom';
 const SLIDES = [
   {
     image: '/images/hero.jpg',
-    eyebrow: 'Nouvelle Collection',
+    eyebrow: 'Collection Prestige',
     title: 'ÉLÉGANCE\nAFRICAINE',
     cta: 'Découvrir la boutique',
     link: '/boutique',
   },
   {
-    image: '/images/atailleur.webp',
-    eyebrow: 'Sur Mesure',
-    title: 'CRÉÉ\nPOUR VOUS',
-    cta: 'Prendre rendez-vous',
-    link: '/contact',
-  },
-  {
     image: '/images/woman-in-cart.png',
     eyebrow: 'Prêt-à-Porter',
-    title: 'STYLE &\nFIERTÉ',
+    title: 'TENUES\nAU FÉMININ',
     cta: 'Voir la boutique',
     link: '/boutique',
   },
@@ -27,18 +20,18 @@ const SLIDES = [
 
 const BANNERS = [
   {
-    image: '/images/product-7.png',
-    eyebrow: 'Collection Prestige',
-    title: 'Tenues de\nCérémonie',
+    image: '/images/hero.jpg',
+    eyebrow: 'Cérémonie & Gala',
+    title: 'Robes de\nPrestige',
     cta: 'Je commande',
     link: '/boutique',
   },
   {
-    image: '/images/atailleur.webp',
-    eyebrow: 'Créations Uniques',
-    title: 'Atelier\nSur Mesure',
+    image: '/images/woman-in-cart.png',
+    eyebrow: 'Nouveautés',
+    title: 'Collection\nFemme',
     cta: 'Découvrir',
-    link: '/contact',
+    link: '/boutique',
   },
 ];
 
