@@ -70,9 +70,9 @@ const PromoBannersSection = () => {
   return (
     <div style={{
       display: 'flex',
-      gap: '0.35rem',
-      background: '#0A0A0A',
-      padding: '0.35rem',
+      gap: '1.2rem',
+      background: '#FAF6EE',
+      padding: '1.2rem',
       height: '72vh',
       minHeight: '48rem',
       maxHeight: '75rem',
@@ -207,7 +207,7 @@ const PromoBannersSection = () => {
       </div>
 
       {/* ── BANNIÈRES DROITE ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
         {BANNERS.map((banner, i) => (
           <div key={i}
             onClick={() => navigate(banner.link)}
