@@ -117,7 +117,15 @@ const ProduitPage = () => {
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [zoomOpen, setZoomOpen] = useState(false);
+  const [imgZoomed, setImgZoomed] = useState(false);
+  const [zoomOrigin, setZoomOrigin] = useState('50% 50%');
+
+  const handleImgMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomOrigin(`${x}% ${y}%`);
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -218,17 +226,25 @@ const ProduitPage = () => {
           <div>
             {/* Image principale */}
             <div
-              onClick={() => images.length && setZoomOpen(true)}
+              onMouseEnter={() => currentImage && setImgZoomed(true)}
+              onMouseLeave={() => { setImgZoomed(false); setZoomOrigin('50% 50%'); }}
+              onMouseMove={handleImgMouseMove}
               style={{
                 aspectRatio: '3/4', overflow: 'hidden',
                 background: '#E8DCC8', borderRadius: '2px',
-                cursor: images.length ? 'zoom-in' : 'default',
+                cursor: imgZoomed ? 'crosshair' : 'default',
                 position: 'relative',
               }}
             >
               {currentImage ? (
                 <img src={currentImage.image} alt={currentImage.alt_text || product.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  style={{
+                    width: '100%', height: '100%', objectFit: 'cover',
+                    transform: imgZoomed ? 'scale(1.8)' : 'scale(1)',
+                    transformOrigin: zoomOrigin,
+                    transition: imgZoomed ? 'transform 0.1s ease' : 'transform 0.35s ease',
+                    willChange: 'transform',
+                  }} />
               ) : (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ fontSize: '1.2rem', color: '#7A6A50', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Photo bientôt</span>
@@ -257,12 +273,6 @@ const ProduitPage = () => {
                 </>
               )}
 
-              {/* Indice zoom */}
-              {images.length > 0 && (
-                <div style={{ position: 'absolute', bottom: '1.2rem', right: '1.2rem', background: 'rgba(250,246,238,0.9)', border: '1px solid #2A2A2A', borderRadius: '2px', padding: '0.4rem 0.8rem', fontSize: '1rem', fontFamily: 'Inter, sans-serif', color: '#7A6A50', letterSpacing: '0.1em' }}>
-                  + zoom
-                </div>
-              )}
             </div>
 
             {/* Miniatures */}
@@ -500,41 +510,6 @@ const ProduitPage = () => {
         )}
       </div>
 
-      {/* ── Zoom modal ── */}
-      {zoomOpen && currentImage && (
-        <div
-          onClick={() => setZoomOpen(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, cursor: 'zoom-out' }}
-        >
-          <img src={currentImage.image} alt={currentImage.alt_text}
-            style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain' }} />
-          <button
-            onClick={() => setZoomOpen(false)}
-            style={{ position: 'fixed', top: '2rem', right: '2rem', width: '4.4rem', height: '4.4rem', background: 'transparent', border: '1px solid #2A2A2A', color: '#1A1208', cursor: 'pointer', fontSize: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color 0.2s' }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#B8960A'}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = '#CEC0A0'}
-          >
-            <i className="bx bx-x"></i>
-          </button>
-          {/* Navigation dans le zoom */}
-          {images.length > 1 && (
-            <>
-              <button
-                onClick={(e) => { e.stopPropagation(); setSelectedImage((i) => (i - 1 + images.length) % images.length); }}
-                style={{ position: 'fixed', left: '2rem', top: '50%', transform: 'translateY(-50%)', width: '4.4rem', height: '4.4rem', background: 'transparent', border: '1px solid #2A2A2A', color: '#1A1208', cursor: 'pointer', fontSize: '2.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <i className="bx bx-chevron-left"></i>
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); setSelectedImage((i) => (i + 1) % images.length); }}
-                style={{ position: 'fixed', right: '2rem', top: '50%', transform: 'translateY(-50%)', width: '4.4rem', height: '4.4rem', background: 'transparent', border: '1px solid #2A2A2A', color: '#1A1208', cursor: 'pointer', fontSize: '2.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <i className="bx bx-chevron-right"></i>
-              </button>
-            </>
-          )}
-        </div>
-      )}
 
       <style>{`
         @keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:.7} }

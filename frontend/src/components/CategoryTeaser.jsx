@@ -44,6 +44,17 @@ const CategoryCard = ({ item, index }) => {
         transition: 'transform 0.45s cubic-bezier(0.77,0,0.175,1)',
       }} />
 
+      {/* Trait bas — centré, largeur partielle */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '40%',
+        height: '1px',
+        background: '#E0D0B8',
+      }} />
+
       {/* Bas — sous-titre + titre + CTA */}
       <div>
         <h3 style={{
@@ -118,6 +129,7 @@ const CategoryTeaser = () => {
         background: '#FAF6EE',
         borderTop: '1px solid #E0D0B8',
         borderBottom: '1px solid #FAF6EE',
+        padding: 0,
       }}
     >
       {categories.map((item, i) => (

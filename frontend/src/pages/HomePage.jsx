@@ -6,9 +6,8 @@ import SkeletonCard from '../components/SkeletonCard';
 import SEOHead from '../components/SEOHead';
 import CategoryGrid from '../components/CategoryGrid';
 import NewsletterSection from '../components/NewsletterSection';
-import PromoBannersSection from '../components/PromoBannersSection';
+import FullWidthBanner from '../components/FullWidthBanner';
 import apiClient from '../api/client';
-import { getCachedImageUrl, setCachedImageUrl } from '../utils/imageCache';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
 /* ── Card produit — copie exacte du style "regarde" ── */
@@ -113,115 +112,6 @@ const useInView = () => {
   return [ref, visible];
 };
 
-/* ── Sur Mesure ── */
-const SurMesureSection = () => {
-  const [ref, visible] = useInView();
-  const [atelierImageUrl, setAtelierImageUrl] = useState(null);
-
-  useEffect(() => {
-    const cached = getCachedImageUrl('atelier_image');
-    if (cached) setAtelierImageUrl(cached);
-
-    apiClient.get('/atelier-image/').then((r) => {
-      if (!r.data.image_url) return;
-      if (r.data.image_url === cached) return;
-      setCachedImageUrl('atelier_image', r.data.image_url);
-      setAtelierImageUrl(r.data.image_url);
-    }).catch(() => {});
-  }, []);
-
-  const STEPS = [
-    { num: '01', title: 'Consultation', desc: 'Vous décrivez, on écoute.' },
-    { num: '02', title: 'Mesures', desc: 'En boutique ou vous nous envoyez vos mesures.' },
-    { num: '03', title: 'Création', desc: 'Confection dans notre atelier.' },
-    { num: '04', title: 'Livraison', desc: 'En boutique ou livré à Dakar et Thiès.' },
-  ];
-
-  return (
-    <section style={{ background: '#FAF6EE', borderTop: '1px solid #FAF6EE', overflow: 'hidden' }}>
-      <div style={{ maxWidth: '110rem', margin: '0 auto', padding: '0 4rem' }}>
-      <div ref={ref} style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', gap: '6rem',
-        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(30px)',
-        transition: 'opacity 0.9s ease, transform 0.9s ease',
-      }} className="sur-mesure-grid">
-
-        {/* Gauche — texte + étapes */}
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '3.2rem' }}>
-
-          {/* Eyebrow */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.6rem' }}>
-            <div style={{ width: '3.2rem', height: '1px', background: '#B8960A', flexShrink: 0 }} />
-            <p style={{ fontSize: '1.3rem', fontFamily: 'Aclonica, sans-serif', textTransform: 'uppercase', letterSpacing: '0.35em', color: '#B8960A' }}>
-              Atelier Golden Pousso
-            </p>
-          </div>
-
-          {/* Accroche */}
-          <p style={{ fontSize: '1.7rem', fontFamily: 'Aclonica, sans-serif', color: '#7A6A50', lineHeight: 1.85, borderLeft: '2px solid #E0D0B8', paddingLeft: '2rem' }}>
-            Des stylistes qualifiés donnent vie à vos imaginations — tissus soigneusement sélectionnés, finitions impeccables, chaque pièce taillée à votre mesure.
-          </p>
-
-          {/* Séparateur */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
-            <div style={{ flex: 1, height: '1px', background: '#E0D0B8' }} />
-            <span style={{ fontSize: '1.3rem', fontFamily: 'Aclonica, sans-serif', textTransform: 'uppercase', letterSpacing: '0.25em', color: '#B8960A' }}>Comment ça marche</span>
-            <div style={{ flex: 1, height: '1px', background: '#E0D0B8' }} />
-          </div>
-
-          {/* Étapes */}
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1.4rem' }}>
-            {STEPS.map((step, i) => (
-              <li key={step.num} style={{
-                display: 'flex', gap: '1.2rem', alignItems: 'baseline',
-                opacity: visible ? 1 : 0,
-                transform: visible ? 'translateX(0)' : 'translateX(16px)',
-                transition: `opacity 0.5s ease ${0.1 * i + 0.3}s, transform 0.5s ease ${0.1 * i + 0.3}s`,
-              }}>
-                <span style={{ color: '#B8960A', fontSize: '1.3rem', flexShrink: 0 }}>—</span>
-                <p style={{ fontSize: '1.6rem', fontFamily: 'Aclonica, sans-serif', color: '#3A3028', lineHeight: 1.6 }}>
-                  <strong style={{ color: '#1A1208' }}>{step.title} :</strong> {step.desc}
-                </p>
-              </li>
-            ))}
-          </ul>
-
-        </div>
-
-        {/* Droite — image */}
-        {atelierImageUrl && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ position: 'relative', width: '100%', maxWidth: '42rem' }}>
-              <img
-                src={atelierImageUrl}
-                alt="Tenue sur mesure Golden Pousso"
-                style={{
-                  width: '100%',
-                  aspectRatio: '4 / 5',
-                  objectFit: 'cover',
-                  objectPosition: 'center top',
-                  display: 'block',
-                  border: '1px solid #E0D0B8',
-                }}
-              />
-              {/* Cadre décoratif décalé */}
-              <div style={{
-                position: 'absolute',
-                inset: '-1rem',
-                border: '1px solid rgba(184,150,10,0.25)',
-                pointerEvents: 'none',
-                zIndex: -1,
-              }} />
-            </div>
-          </div>
-        )}
-      </div>
-      </div>
-      <style>{`@media (max-width: 900px) { .sur-mesure-grid { grid-template-columns: 1fr !important; } }`}</style>
-    </section>
-  );
-};
-
 /* ── Page ── */
 const HomePage = () => {
   const [newProducts, setNewProducts] = useState([]);
@@ -239,17 +129,14 @@ const HomePage = () => {
       {/* ── 1. HERO ── */}
       <Hero />
 
-      {/* ── 1b. BANNIÈRES PROMO ── */}
-      <PromoBannersSection />
-
       {/* ── 2. CATÉGORIES — 4 cartes éditoriales ── */}
       <CategoryTeaser />
 
       {/* ── 3. NOS PRODUITS ── */}
       <CategoryGrid />
 
-      {/* ── 4. ATELIER ── */}
-      <SurMesureSection />
+      {/* ── 4. BANNIÈRE PLEINE LARGEUR ── */}
+      <FullWidthBanner />
 
       {/* ── 5. NOUVEAUTÉS ── */}
       <section id="collection" style={{ padding: '0', background: '#FAF6EE' }}>

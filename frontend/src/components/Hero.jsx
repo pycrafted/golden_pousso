@@ -1,16 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCachedImageUrl, setCachedImageUrl } from '../utils/imageCache';
+// import { getCachedImageUrl, setCachedImageUrl } from '../utils/imageCache';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+// Image statique temporaire — à remplacer par l'API backend (hero-banner) quand on passe à AWS S3 / Cloudflare
+const STATIC_HERO_IMAGE = '/images/test.jpg';
+
+// const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 const Hero = () => {
   const navigate = useNavigate();
   const [mobile, setMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [primaryHovered, setPrimaryHovered] = useState(false);
-  const [heroImage, setHeroImage] = useState(null);
-  const [imgReady, setImgReady] = useState(false);
+
+  // --- Logique backend (désactivée temporairement) ---
+  // const [heroImage, setHeroImage] = useState(null);
+  // const [imgReady, setImgReady] = useState(false);
+  // useEffect(() => {
+  //   const cached = getCachedImageUrl('hero_banner');
+  //   if (cached) { setHeroImage(cached); setImgReady(true); }
+  //   fetch(`${API_BASE}/hero-banner/`)
+  //     .then(r => r.json())
+  //     .then(data => {
+  //       if (!data.image_url) return;
+  //       if (data.image_url === cached) return;
+  //       setCachedImageUrl('hero_banner', data.image_url);
+  //       const img = new Image();
+  //       img.onload = () => { setHeroImage(data.image_url); setImgReady(true); };
+  //       img.onerror = () => {};
+  //       img.src = data.image_url;
+  //     })
+  //     .catch(() => {});
+  // }, []);
+  // ---------------------------------------------------
 
   useEffect(() => {
     const check = () => setMobile(window.innerWidth <= 768);
@@ -20,61 +42,33 @@ const Hero = () => {
   }, []);
 
   useEffect(() => {
-    const cached = getCachedImageUrl('hero_banner');
-    if (cached) { setHeroImage(cached); setImgReady(true); }
-
-    fetch(`${API_BASE}/hero-banner/`)
-      .then(r => r.json())
-      .then(data => {
-        if (!data.image_url) return;
-        if (data.image_url === cached) return;
-        setCachedImageUrl('hero_banner', data.image_url);
-        const img = new Image();
-        img.onload = () => { setHeroImage(data.image_url); setImgReady(true); };
-        img.onerror = () => {};
-        img.src = data.image_url;
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
   }, []);
 
-  const hasImage = heroImage && imgReady;
-
   if (mobile) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
-        background: '#0A0A0A',
-      }}>
-        {hasImage && (
-          <div style={{ position: 'relative', height: '40vh', overflow: 'hidden', flexShrink: 0 }}>
-            <img
-              src={heroImage}
-              alt=""
-              style={{
-                position: 'absolute', inset: 0,
-                width: '100%', height: '100%',
-                objectFit: 'cover', objectPosition: 'center center',
-              }}
-            />
-            <div style={{
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#0A0A0A' }}>
+        <div style={{ position: 'relative', height: '40vh', overflow: 'hidden', flexShrink: 0 }}>
+          <img
+            src={STATIC_HERO_IMAGE}
+            alt=""
+            style={{
               position: 'absolute', inset: 0,
-              background: 'linear-gradient(to bottom, transparent 50%, #0A0A0A 100%)',
-            }} />
-          </div>
-        )}
+              width: '100%', height: '100%',
+              objectFit: 'cover', objectPosition: 'center top',
+            }}
+          />
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to bottom, transparent 50%, #0A0A0A 100%)',
+          }} />
+        </div>
 
         <div style={{
           flex: 1, padding: '3.5rem 3rem 5rem',
           display: 'flex', flexDirection: 'column', justifyContent: 'center',
-          alignItems: hasImage ? 'flex-start' : 'center',
-          textAlign: hasImage ? 'left' : 'center',
+          alignItems: 'flex-start', textAlign: 'left',
         }}>
           <p style={{
             fontSize: '1rem', letterSpacing: '0.35em', color: '#D4AF37',
@@ -113,7 +107,7 @@ const Hero = () => {
 
           <div style={{
             marginTop: '3.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem',
-            alignItems: hasImage ? 'flex-start' : 'center',
+            alignItems: 'flex-start',
             opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(14px)',
             transition: 'opacity 0.7s ease 0.55s, transform 0.7s ease 0.55s',
           }}>
@@ -135,16 +129,12 @@ const Hero = () => {
 
       {/* Left panel */}
       <div style={{
-        width: hasImage ? '55%' : '100%',
+        width: '55%',
         background: '#0A0A0A',
         padding: '6rem',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: hasImage ? 'flex-start' : 'center',
-        textAlign: hasImage ? 'left' : 'center',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', alignItems: 'flex-start',
         position: 'relative',
-        transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)',
       }}>
         <p style={{
           fontSize: '1.1rem', letterSpacing: '0.35em', color: '#D4AF37',
@@ -183,7 +173,6 @@ const Hero = () => {
 
         <div style={{
           marginTop: '4rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap',
-          justifyContent: hasImage ? 'flex-start' : 'center',
           opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(14px)',
           transition: 'opacity 0.7s ease 0.6s, transform 0.7s ease 0.6s',
         }}>
@@ -196,37 +185,22 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Right panel — apparaît uniquement quand l'image est prête */}
-      <div style={{
-        width: hasImage ? '45%' : '0%',
-        position: 'relative',
-        overflow: 'hidden',
-        transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)',
-        flexShrink: 0,
-      }}>
-        {hasImage && (
-          <>
-            <img
-              src={heroImage}
-              alt="Tenue de cérémonie Golden Pousso — mode africaine haut de gamme, Dakar"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center center',
-                opacity: imgReady ? 1 : 0,
-                transition: 'opacity 0.8s ease',
-              }}
-            />
-            <div style={{
-              position: 'absolute', inset: 0,
-              background: 'linear-gradient(to right, #0A0A0A 0%, transparent 25%)',
-              pointerEvents: 'none',
-            }} />
-          </>
-        )}
+      {/* Right panel — image statique */}
+      <div style={{ width: '45%', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+        <img
+          src={STATIC_HERO_IMAGE}
+          alt="Tenue de cérémonie Golden Pousso — mode africaine haut de gamme, Dakar"
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover', objectPosition: 'center top',
+          }}
+        />
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to right, #0A0A0A 0%, transparent 25%)',
+          pointerEvents: 'none',
+        }} />
       </div>
 
     </div>

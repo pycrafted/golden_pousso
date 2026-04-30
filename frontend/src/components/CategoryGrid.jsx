@@ -3,8 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
-const SPEED       = 1.0;
-const CARD_VW     = 0.22;
+const SPEED = 1.0;
+const GAP_REM = 2.4;
+const COLS = 4;
+const CONTAINER_MAX_REM = 120;
+const CONTAINER_PAD_REM = 3;
+
+const getCardWidth = () => {
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const gap = GAP_REM * rem;
+  const containerW = Math.min(window.innerWidth, CONTAINER_MAX_REM * rem) - 2 * CONTAINER_PAD_REM * rem;
+  return (containerW - (COLS - 1) * gap) / COLS;
+};
 
 const useInView = () => {
   const ref = useRef(null);
@@ -30,6 +40,13 @@ const ProductsCarousel = () => {
 
   const [products, setProducts] = useState([]);
   const [carouselHovered, setCarouselHovered] = useState(false);
+  const [cardWidth, setCardWidth] = useState(getCardWidth);
+
+  useEffect(() => {
+    const onResize = () => setCardWidth(getCardWidth());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const trackRef    = useRef(null);
   const posRef      = useRef(0);
@@ -41,10 +58,10 @@ const ProductsCarousel = () => {
   useEffect(() => { productsRef.current = products; }, [products]);
 
   const calcCardW = useCallback(() => {
-    const vw  = window.innerWidth;
+    const cardW = getCardWidth();
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-    const gap = 2.4 * rem;
-    return { cardW: vw * CARD_VW, gap, setW: productsRef.current.length * (vw * CARD_VW + gap) };
+    const gap = GAP_REM * rem;
+    return { cardW, gap, setW: productsRef.current.length * (cardW + gap) };
   }, []);
 
   /* ── API produits ───────────────────────────────────────── */
@@ -92,7 +109,7 @@ const ProductsCarousel = () => {
       <div
         key={key}
         onClick={() => navigate(`/produit/${p.slug}`)}
-        style={{ flexShrink: 0, width: `${CARD_VW * 100}vw`, cursor: 'pointer' }}
+        style={{ flexShrink: 0, width: `${cardWidth}px`, cursor: 'pointer' }}
       >
       <div style={{ aspectRatio: '3 / 4', position: 'relative', overflow: 'hidden' }}>
         {/* Image */}
