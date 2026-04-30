@@ -6,6 +6,7 @@ import SkeletonCard from '../components/SkeletonCard';
 import SEOHead from '../components/SEOHead';
 import CategoryGrid from '../components/CategoryGrid';
 import NewsletterSection from '../components/NewsletterSection';
+import PromoBannersSection from '../components/PromoBannersSection';
 import apiClient from '../api/client';
 import { getCachedImageUrl, setCachedImageUrl } from '../utils/imageCache';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
@@ -237,6 +238,9 @@ const HomePage = () => {
 
       {/* ── 1. HERO ── */}
       <Hero />
+
+      {/* ── 1b. BANNIÈRES PROMO ── */}
+      <PromoBannersSection />
 
       {/* ── 2. CATÉGORIES — 4 cartes éditoriales ── */}
       <CategoryTeaser />
