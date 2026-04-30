@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getCachedImageUrl, setCachedImageUrl } from '../utils/imageCache';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
@@ -19,15 +20,19 @@ const Hero = () => {
   }, []);
 
   useEffect(() => {
+    const cached = getCachedImageUrl('hero_banner');
+    if (cached) {
+      setHeroImage(cached);
+      setImgReady(true);
+      return;
+    }
     fetch(`${API_BASE}/hero-banner/`)
       .then(r => r.json())
       .then(data => {
         if (data.image_url) {
+          setCachedImageUrl('hero_banner', data.image_url);
           const img = new Image();
-          img.onload = () => {
-            setHeroImage(data.image_url);
-            setImgReady(true);
-          };
+          img.onload = () => { setHeroImage(data.image_url); setImgReady(true); };
           img.onerror = () => {};
           img.src = data.image_url;
         }

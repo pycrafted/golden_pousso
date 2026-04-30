@@ -7,6 +7,7 @@ import SEOHead from '../components/SEOHead';
 import CategoryGrid from '../components/CategoryGrid';
 import NewsletterSection from '../components/NewsletterSection';
 import apiClient from '../api/client';
+import { getCachedImageUrl, setCachedImageUrl } from '../utils/imageCache';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
 /* ── Card produit — copie exacte du style "regarde" ── */
@@ -117,8 +118,13 @@ const SurMesureSection = () => {
   const [atelierImageUrl, setAtelierImageUrl] = useState(null);
 
   useEffect(() => {
+    const cached = getCachedImageUrl('atelier_image');
+    if (cached) { setAtelierImageUrl(cached); return; }
     apiClient.get('/atelier-image/').then((r) => {
-      if (r.data.image_url) setAtelierImageUrl(r.data.image_url);
+      if (r.data.image_url) {
+        setCachedImageUrl('atelier_image', r.data.image_url);
+        setAtelierImageUrl(r.data.image_url);
+      }
     }).catch(() => {});
   }, []);
 
