@@ -191,6 +191,7 @@ if DEBUG:
 else:
     _cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
     CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
+    CORS_ALLOWED_ORIGIN_REGEXES = [r'^https://golden-pousso[\w-]*\.vercel\.app$']
 
 # Sécurité production (activée si DEBUG=False)
 if not DEBUG:
