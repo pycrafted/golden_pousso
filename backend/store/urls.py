@@ -22,4 +22,14 @@ urlpatterns = [
 
     # Contact
     path('contact/', views.contact_create, name='contact-create'),
+
+    # PayDunya
+    path('paiement/initier/', views.paydunya_initiate, name='paydunya-initiate'),
+    path('paiement/callback/', views.paydunya_callback, name='paydunya-callback'),
+
+    # Hero banner
+    path('hero-banner/', views.hero_banner, name='hero-banner'),
+
+    # Atelier image
+    path('atelier-image/', views.atelier_image, name='atelier-image'),
 ]

@@ -143,6 +143,7 @@ class Order(models.Model):
         ('wave', 'Wave'),
         ('free_money', 'Free Money'),
         ('cash_on_delivery', 'Paiement à la livraison'),
+        ('card', 'Carte bancaire'),
     ]
     PAYMENT_STATUS_CHOICES = [
         ('pending', 'En attente'),
@@ -168,6 +169,7 @@ class Order(models.Model):
     total = models.DecimalField(max_digits=10, decimal_places=0)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='cash_on_delivery')
     payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    paydunya_token = models.CharField(max_length=100, blank=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -211,6 +213,43 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.product_name} (Commande {self.order.order_number})"
+
+
+
+class HeroBanner(models.Model):
+    image = models.ImageField(upload_to='hero/')
+    is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Bannière Hero'
+        verbose_name_plural = 'Bannières Hero'
+
+    def __str__(self):
+        return f"Hero {'(actif)' if self.is_active else '(inactif)'} — {self.updated_at.strftime('%d/%m/%Y') if self.updated_at else ''}"
+
+    def save(self, *args, **kwargs):
+        if self.is_active:
+            HeroBanner.objects.exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
+
+
+class AtelierImage(models.Model):
+    image = models.ImageField(upload_to='atelier/')
+    is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Image Atelier'
+        verbose_name_plural = 'Image Atelier'
+
+    def __str__(self):
+        return f"Atelier {'(actif)' if self.is_active else '(inactif)'}"
+
+    def save(self, *args, **kwargs):
+        if self.is_active:
+            AtelierImage.objects.exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
 
 
 class ContactMessage(models.Model):

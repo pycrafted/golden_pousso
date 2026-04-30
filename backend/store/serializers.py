@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage
+from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, AtelierImage
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -30,18 +30,30 @@ class ProductVariantSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     primary_image = serializers.SerializerMethodField()
+    secondary_image = serializers.SerializerMethodField()
     discount_percent = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'slug', 'category', 'price', 'old_price',
-            'primary_image', 'discount_percent', 'is_new', 'is_featured', 'stock'
+            'primary_image', 'secondary_image', 'discount_percent', 'is_new', 'is_featured', 'stock'
         ]
 
     def get_primary_image(self, obj):
         request = self.context.get('request')
         img = obj.images.filter(is_primary=True).first() or obj.images.first()
+        if img and request:
+            return request.build_absolute_uri(img.image.url)
+        return None
+
+    def get_secondary_image(self, obj):
+        request = self.context.get('request')
+        primary = obj.images.filter(is_primary=True).first() or obj.images.first()
+        if primary:
+            img = obj.images.exclude(pk=primary.pk).order_by('order').first()
+        else:
+            img = None
         if img and request:
             return request.build_absolute_uri(img.image.url)
         return None
@@ -156,6 +168,7 @@ class OrderCreateSerializer(serializers.Serializer):
         return order
 
 
+
 class OrderItemOutputSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
@@ -180,3 +193,31 @@ class ContactMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
         fields = ['name', 'contact', 'subject', 'message']
+
+
+class HeroBannerSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HeroBanner
+        fields = ['id', 'image_url']
+
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
+
+class AtelierImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AtelierImage
+        fields = ['id', 'image_url']
+
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None

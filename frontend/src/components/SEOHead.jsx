@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 
 const SITE_NAME = 'Golden Pousso';
-const DEFAULT_DESCRIPTION = 'Golden Pousso — Atelier de couture africaine haut de gamme à Dakar, Sénégal. Boubous brodés, robes wax, tenues de cérémonie et collections sur mesure.';
+const DEFAULT_DESCRIPTION = 'Golden Pousso — Boutique africaine haut de gamme à Dakar, Sénégal. Boubous africains, bijoux, sacs et chaussures confectionnés dans notre atelier de Pikine.';
 const DEFAULT_IMAGE = '/og-image.jpg';
 const BASE_URL = 'https://goldenpousso.sn';
 

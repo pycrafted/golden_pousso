@@ -5,6 +5,7 @@ from django.db import models
 class Customer(AbstractUser):
     phone = models.CharField(max_length=20, blank=True)
     default_address = models.TextField(blank=True)
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
 
     class Meta:
         verbose_name = 'Client'

@@ -8,35 +8,64 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customer
-        fields = ['first_name', 'last_name', 'email', 'phone', 'password']
+        fields = ['first_name', 'last_name', 'phone', 'password']
+
+    def validate_phone(self, value):
+        if Customer.objects.filter(phone=value).exists():
+            raise serializers.ValidationError('Ce numéro est déjà associé à un compte.')
+        return value
 
     def create(self, validated_data):
         password = validated_data.pop('password')
-        email = validated_data.get('email', '')
-        user = Customer(username=email or validated_data.get('phone', ''), **validated_data)
+        phone = validated_data['phone']
+        user = Customer(
+            username=phone,
+            email=f"{phone}@goldenpousso.local",
+            **validated_data,
+        )
         user.set_password(password)
         user.save()
         return user
 
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    phone = serializers.CharField()
     password = serializers.CharField()
 
     def validate(self, data):
         try:
-            user = Customer.objects.get(email=data['email'])
+            user = Customer.objects.get(phone=data['phone'])
         except Customer.DoesNotExist:
-            raise serializers.ValidationError('Email ou mot de passe incorrect.')
+            raise serializers.ValidationError('Numéro de téléphone ou mot de passe incorrect.')
         user = authenticate(username=user.username, password=data['password'])
         if not user:
-            raise serializers.ValidationError('Email ou mot de passe incorrect.')
+            raise serializers.ValidationError('Numéro de téléphone ou mot de passe incorrect.')
         data['user'] = user
         return data
 
 
 class CustomerProfileSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Customer
-        fields = ['id', 'first_name', 'last_name', 'email', 'phone', 'default_address']
-        read_only_fields = ['id', 'email']
+        fields = ['id', 'first_name', 'last_name', 'email', 'phone', 'default_address', 'avatar', 'avatar_url']
+        read_only_fields = ['id', 'email', 'avatar_url']
+        extra_kwargs = {'avatar': {'required': False, 'write_only': True}}
+
+    def get_avatar_url(self, obj):
+        request = self.context.get('request')
+        if obj.avatar and request:
+            return request.build_absolute_uri(obj.avatar.url)
+        return None
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=6)
+
+    def validate_current_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError('Mot de passe actuel incorrect.')
+        return value

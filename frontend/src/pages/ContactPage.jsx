@@ -1,107 +1,313 @@
-import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { useRef, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
-import apiClient from '../api/client';
 
+/* ── Palette ── */
+const C = {
+  bg:        '#FAF6EE',
+  panel:     '#F0E8D8',
+  border:    '#E0D0B8',
+  borderMid: '#CEC0A0',
+  gold:      '#B8960A',
+  terra:     '#C2662D',
+  cream:     '#1A1208',
+  muted:     '#7A6A50',
+};
+
+/* ── useInView ── */
+const useInView = () => {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold: 0.08, rootMargin: '-50px' }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, visible];
+};
+
+/* ── Données de contact ── */
+const INFO = [
+  {
+    label: 'Adresse',
+    value: 'Pikine Tally Boumack\nTableau Gazelle N.2372, Dakar, Sénégal',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+      </svg>
+    ),
+  },
+  {
+    label: 'Téléphone',
+    value: '33 834 10 17  ·  78 126 35 35',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.9 11.1a19.79 19.79 0 01-3.07-8.67A2 2 0 012.81 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l.97-.97a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+      </svg>
+    ),
+  },
+  {
+    label: 'Email',
+    value: 'contact@goldenpousso.sn',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+      </svg>
+    ),
+  },
+  {
+    label: 'Horaires',
+    value: 'Lundi – Samedi : 9h00 – 19h00',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+    ),
+  },
+];
+
+/* ── Réseaux sociaux ── */
+const SOCIALS = [
+  {
+    label: 'Facebook',
+    href: '#',
+    icon: <i className="bx bxl-facebook" style={{ fontSize: '2rem', lineHeight: 1 }} />,
+  },
+  {
+    label: 'Instagram',
+    href: '#',
+    icon: <i className="bx bxl-instagram" style={{ fontSize: '2rem', lineHeight: 1 }} />,
+  },
+  {
+    label: 'WhatsApp',
+    href: '#',
+    icon: <i className="bx bxl-whatsapp" style={{ fontSize: '2rem', lineHeight: 1 }} />,
+  },
+  {
+    label: 'TikTok',
+    href: '#',
+    icon: <i className="bx bxl-tiktok" style={{ fontSize: '2rem', lineHeight: 1 }} />,
+  },
+];
+
+/* ── Page ── */
 const ContactPage = () => {
-  const [form, setForm] = useState({ name: '', contact: '', subject: '', message: '' });
-  const [loading, setLoading] = useState(false);
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-  const inputStyle = { width: '100%', padding: '1rem 1.4rem', borderRadius: '0.8rem', border: '1px solid #e0e0e0', fontSize: '1.4rem', background: '#fafafa' };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await apiClient.post('/contact/', form);
-      toast.success('Message envoyé ! Nous vous répondrons sous 24h.');
-      setForm({ name: '', contact: '', subject: '', message: '' });
-    } catch { toast.error('Erreur lors de l\'envoi. Réessayez ou appelez-nous directement.'); }
-    finally { setLoading(false); }
-  };
+  const [heroRef, heroVisible] = useInView();
+  const [bodyRef, bodyVisible] = useInView();
 
   return (
-    <section className="section">
-      <SEOHead title="Contact" description="Contactez Golden Pousso — atelier à Pikine, Dakar. Téléphone, email, ou formulaire en ligne. Réponse sous 24h." url="/contact" />
-      {/* En-tête */}
-      <div style={{ background: 'linear-gradient(135deg, #0D0D0D 60%, #1a1200)', padding: '6rem 3rem', textAlign: 'center', marginBottom: '5rem' }}>
-        <span style={{ color: '#C9A84C', fontSize: '1.4rem', letterSpacing: '0.2em' }}>GOLDEN POUSSO</span>
-        <h1 style={{ color: '#fff', fontSize: '3.5rem', fontFamily: 'Aclonica, sans-serif', margin: '1.5rem 0' }}>Contactez-nous</h1>
-        <p style={{ color: '#aaa', maxWidth: '50rem', margin: '0 auto' }}>Nous sommes à votre écoute pour toute question sur nos créations et collections.</p>
-      </div>
+    <>
+      <SEOHead
+        title="Contact"
+        description="Contactez Golden Pousso — atelier à Pikine Tally Boumack, Dakar. Téléphone, email, horaires et localisation."
+        url="/contact"
+      />
 
-      <div className="container">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5rem', alignItems: 'flex-start' }}>
+      <div style={{ background: C.bg, minHeight: '100vh', color: C.cream }}>
 
-          {/* Formulaire */}
-          <div>
-            <h2 style={{ fontSize: '2.4rem', marginBottom: '2.5rem' }}>Envoyez-nous un message</h2>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.8rem' }}>
-              <div>
-                <label style={{ fontSize: '1.4rem', fontWeight: 500, display: 'block', marginBottom: '0.6rem' }}>Nom complet *</label>
-                <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Votre nom" style={inputStyle} required />
-              </div>
-              <div>
-                <label style={{ fontSize: '1.4rem', fontWeight: 500, display: 'block', marginBottom: '0.6rem' }}>Email ou Téléphone *</label>
-                <input value={form.contact} onChange={(e) => set('contact', e.target.value)} placeholder="vous@exemple.com ou +221 77 000 00 00" style={inputStyle} required />
-              </div>
-              <div>
-                <label style={{ fontSize: '1.4rem', fontWeight: 500, display: 'block', marginBottom: '0.6rem' }}>Sujet *</label>
-                <input value={form.subject} onChange={(e) => set('subject', e.target.value)} placeholder="Objet de votre message" style={inputStyle} required />
-              </div>
-              <div>
-                <label style={{ fontSize: '1.4rem', fontWeight: 500, display: 'block', marginBottom: '0.6rem' }}>Message *</label>
-                <textarea value={form.message} onChange={(e) => set('message', e.target.value)} rows={5} placeholder="Votre message…" style={{ ...inputStyle, resize: 'vertical', height: 'auto' }} required />
-              </div>
-              <button type="submit" className="btn" disabled={loading} style={{ background: '#C9A84C', color: '#fff', padding: '1.3rem', fontSize: '1.5rem', opacity: loading ? 0.7 : 1 }}>
-                {loading ? 'Envoi en cours…' : 'Envoyer le message'}
-              </button>
-            </form>
+        {/* ══════════════════════════════════
+            HERO
+        ══════════════════════════════════ */}
+        <section style={{ padding: '10rem 4rem 0', maxWidth: '110rem', margin: '0 auto' }}>
+
+          {/* Titre */}
+          <div
+            ref={heroRef}
+            style={{
+              opacity: heroVisible ? 1 : 0,
+              transform: heroVisible ? 'translateY(0)' : 'translateY(24px)',
+              transition: 'opacity 0.8s ease, transform 0.8s ease',
+              textAlign: 'center',
+              marginBottom: '5rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.6rem', marginBottom: '3rem' }}>
+              <div style={{ width: '4.8rem', height: '1px', background: C.gold }} />
+              <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>
+                Nous trouver
+              </p>
+              <div style={{ width: '4.8rem', height: '1px', background: C.gold }} />
+            </div>
+            <h1 style={{
+              fontFamily: 'Aclonica, serif',
+              fontSize: 'clamp(4rem, 7vw, 7.2rem)',
+              color: C.cream,
+              letterSpacing: '0.04em',
+              lineHeight: 1.05,
+              textTransform: 'uppercase',
+              marginBottom: '2.4rem',
+            }}>
+              Notre atelier
+            </h1>
+            <p style={{
+              fontSize: '1.45rem', fontFamily: 'Inter, sans-serif',
+              color: C.muted, lineHeight: 1.8,
+              maxWidth: '52rem', margin: '0 auto',
+            }}>
+              Pikine Tally Boumack, Dakar — ouvert du lundi au samedi de 9h à 19h.
+            </p>
           </div>
 
-          {/* Coordonnées + Carte */}
-          <div>
-            <h2 style={{ fontSize: '2.4rem', marginBottom: '2.5rem' }}>Nos coordonnées</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginBottom: '3rem' }}>
-              {[
-                { icon: 'bx-map', label: 'Adresse', value: 'Pikine Tally Boumack, Tableau Gazelle N.2372, Dakar, Sénégal' },
-                { icon: 'bx-phone', label: 'Téléphone', value: '33 834 10 17 / 78 126 35 35' },
-                { icon: 'bx-envelope', label: 'Email', value: 'contact@goldenpousso.sn' },
-                { icon: 'bx-time', label: 'Horaires', value: 'Lun – Sam : 9h00 – 19h00' },
-              ].map(({ icon, label, value }) => (
-                <div key={label} style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
-                  <div style={{ width: '4.5rem', height: '4.5rem', borderRadius: '50%', background: '#C9A84C22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <i className={`bx ${icon}`} style={{ fontSize: '2rem', color: '#C9A84C' }}></i>
+          {/* Ligne décorative */}
+          <div className="ct-line" style={{ height: '1px', background: C.border }} />
+        </section>
+
+        {/* ══════════════════════════════════
+            CORPS — infos + carte
+        ══════════════════════════════════ */}
+        <div style={{ padding: '8rem 4rem 14rem', maxWidth: '110rem', margin: '0 auto' }}>
+          <div
+            ref={bodyRef}
+            className="ct-grid"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '10rem',
+              alignItems: 'center',
+              opacity: bodyVisible ? 1 : 0,
+              transform: bodyVisible ? 'translateY(0)' : 'translateY(24px)',
+              transition: 'opacity 0.8s ease, transform 0.8s ease',
+            }}
+          >
+
+            {/* ══ Informations ══ */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.6rem', marginBottom: '4.5rem' }}>
+                <div style={{ width: '4rem', height: '1px', background: C.gold }} />
+                <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>
+                  Coordonnées
+                </p>
+              </div>
+
+              <h2 style={{
+                fontFamily: 'Aclonica, serif',
+                fontSize: 'clamp(2.8rem, 3.5vw, 4.2rem)',
+                color: C.cream, lineHeight: 1.1, marginBottom: '4.5rem',
+              }}>
+                Pikine, Dakar<br />
+                <span style={{ color: C.gold }}>Sénégal</span>
+              </h2>
+
+              {/* Info items — grille 2 colonnes */}
+              <div className="ct-info-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
+                {INFO.map(({ label, value, icon }, i) => (
+                  <div
+                    key={label}
+                    style={{
+                      display: 'flex', gap: '1.6rem', alignItems: 'flex-start',
+                      padding: '2.4rem 2rem 2.4rem 0',
+                      borderBottom: `1px solid ${C.border}`,
+                      borderRight: i % 2 === 0 ? `1px solid ${C.border}` : 'none',
+                      paddingRight: i % 2 === 0 ? '2.4rem' : '0',
+                      paddingLeft: i % 2 === 1 ? '2.4rem' : '0',
+                    }}
+                  >
+                    <span style={{ color: C.gold, flexShrink: 0, marginTop: '0.2rem' }}>{icon}</span>
+                    <div>
+                      <p style={{ fontSize: '0.95rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: C.muted, marginBottom: '0.6rem' }}>
+                        {label}
+                      </p>
+                      <p style={{ fontSize: '1.4rem', fontFamily: 'Inter, sans-serif', color: C.cream, lineHeight: 1.65, whiteSpace: 'pre-line' }}>
+                        {value}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p style={{ fontSize: '1.3rem', color: 'var(--default-color)', lineHeight: '2rem' }}>{label}</p>
-                    <p style={{ fontSize: '1.5rem', fontWeight: 500, lineHeight: '2.4rem' }}>{value}</p>
-                  </div>
+                ))}
+              </div>
+
+              {/* Réseaux sociaux */}
+              <div style={{ marginTop: '5rem' }}>
+                <p style={{ fontSize: '0.95rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: C.muted, marginBottom: '2rem' }}>
+                  Suivez-nous
+                </p>
+                <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap' }}>
+                  {SOCIALS.map(({ label, href, icon }) => (
+                    <a
+                      key={label}
+                      href={href}
+                      title={label}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: '5rem', height: '5rem',
+                        border: `1px solid ${C.borderMid}`,
+                        color: C.muted, textDecoration: 'none',
+                        transition: 'border-color 0.2s, color 0.2s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.borderMid; e.currentTarget.style.color = C.muted; }}
+                    >
+                      {icon}
+                    </a>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
 
-            {/* Réseaux sociaux */}
-            <div style={{ display: 'flex', gap: '1.2rem', marginBottom: '3rem' }}>
-              {[['bxl-facebook', '#1877f2'], ['bxl-instagram', '#e4405f'], ['bxl-whatsapp', '#25d366']].map(([icon, color]) => (
-                <a key={icon} href="#" style={{ width: '4.5rem', height: '4.5rem', borderRadius: '50%', background: color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <i className={`bx ${icon}`} style={{ fontSize: '2.2rem', color }}></i>
-                </a>
-              ))}
+            {/* ══ Carte + lien à propos ══ */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2.4rem' }}>
+
+              {/* Google Maps */}
+              <div style={{ border: `1px solid ${C.border}`, overflow: 'hidden' }}>
+                <div style={{ height: '3px', background: `linear-gradient(to right, ${C.gold}, transparent)` }} />
+                <iframe
+                  title="Localisation Golden Pousso — Pikine Dakar"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15430.756!2d-17.3917!3d14.7645!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xec10d5a8a5fffff%3A0x0!2sPikine%2C%20Dakar%2C%20S%C3%A9n%C3%A9gal!5e0!3m2!1sfr!2ssn!4v1700000000000"
+                  width="100%"
+                  height="420"
+                  style={{ border: 0, display: 'block' }}
+                  allowFullScreen
+                  loading="lazy"
+                />
+                <div style={{ padding: '1.6rem 2rem', background: '#EAE0CC', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.15em', color: C.muted }}>
+                    Pikine · Dakar · Sénégal
+                  </span>
+                  <span style={{ color: C.gold }}>✦</span>
+                </div>
+              </div>
+
+              {/* CTA en savoir plus */}
+              <Link
+                to="/a-propos"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '1rem',
+                  padding: '1.6rem 3.5rem',
+                  background: 'transparent', color: C.muted,
+                  border: `1px solid ${C.borderMid}`,
+                  fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
+                  textTransform: 'uppercase', letterSpacing: '0.2em',
+                  textDecoration: 'none', alignSelf: 'flex-start',
+                  transition: 'border-color 0.2s, color 0.2s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.borderMid; e.currentTarget.style.color = C.muted; }}
+              >
+                En savoir plus sur Golden Pousso →
+              </Link>
             </div>
 
-            {/* Carte Google Maps */}
-            <div style={{ borderRadius: '1.2rem', overflow: 'hidden', boxShadow: 'var(--box-shadow-1)' }}>
-              <iframe
-                title="Localisation Golden Pousso - Pikine Dakar"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15430.756!2d-17.3917!3d14.7645!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xec10d5a8a5fffff%3A0x0!2sPikine%2C%20Dakar%2C%20S%C3%A9n%C3%A9gal!5e0!3m2!1sfr!2ssn!4v1700000000000"
-                width="100%" height="250" style={{ border: 0, display: 'block' }} allowFullScreen loading="lazy"
-              />
-            </div>
           </div>
         </div>
+
       </div>
-    </section>
+
+      <style>{`
+        @keyframes ct-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+        .ct-line { animation: ct-line 0.9s ease 0.3s both; transform-origin: center; }
+        @media (max-width: 960px) {
+          .ct-grid { grid-template-columns: 1fr !important; gap: 6rem !important; }
+          .ct-grid > div:last-child { position: static !important; }
+        }
+        @media (max-width: 540px) {
+          .ct-info-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+    </>
   );
 };
 

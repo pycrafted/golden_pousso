@@ -1,7 +1,7 @@
 import csv
 from django.contrib import admin
 from django.http import HttpResponse
-from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage
+from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, AtelierImage
 
 
 @admin.register(Category)
@@ -24,8 +24,16 @@ class CollectionAdmin(admin.ModelAdmin):
 
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
-    extra = 1
-    fields = ['image', 'alt_text', 'is_primary', 'order']
+    extra = 2
+    fields = ['image', 'preview', 'alt_text', 'is_primary', 'order']
+    readonly_fields = ['preview']
+
+    def preview(self, obj):
+        from django.utils.html import format_html
+        if obj.image:
+            return format_html('<img src="{}" style="height:80px;object-fit:cover;border-radius:4px;" />', obj.image.url)
+        return '—'
+    preview.short_description = 'Aperçu'
 
 
 class ProductVariantInline(admin.TabularInline):
@@ -128,3 +136,33 @@ class ContactMessageAdmin(admin.ModelAdmin):
     search_fields = ['name', 'contact', 'subject', 'message']
     list_editable = ['is_read']
     readonly_fields = ['name', 'contact', 'subject', 'message', 'created_at']
+
+
+@admin.register(HeroBanner)
+class HeroBannerAdmin(admin.ModelAdmin):
+    list_display = ['__str__', 'is_active', 'updated_at', 'preview']
+    list_editable = ['is_active']
+    readonly_fields = ['updated_at', 'preview']
+
+    def preview(self, obj):
+        from django.utils.html import format_html
+        if obj.image:
+            return format_html('<img src="{}" style="height:120px;object-fit:cover;border-radius:4px;" />', obj.image.url)
+        return '—'
+    preview.short_description = 'Aperçu'
+
+
+@admin.register(AtelierImage)
+class AtelierImageAdmin(admin.ModelAdmin):
+    list_display = ['__str__', 'is_active', 'updated_at', 'preview']
+    list_editable = ['is_active']
+    readonly_fields = ['updated_at', 'preview']
+
+    def preview(self, obj):
+        from django.utils.html import format_html
+        if obj.image:
+            return format_html('<img src="{}" style="height:120px;object-fit:cover;border-radius:4px;" />', obj.image.url)
+        return '—'
+    preview.short_description = 'Aperçu'
+
+
