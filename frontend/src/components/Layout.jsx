@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './Navbar';
-import HomeFooter from './HomeFooter';
+import HomeFooter from './Footer';
 import useAuthStore from '../store/authStore';
 
 const WHATSAPP_NUMBER = '221781263535';

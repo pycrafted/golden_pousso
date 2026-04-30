@@ -18,6 +18,7 @@ const CommandePage = lazy(() => import('./pages/CommandePage'));
 const SuiviCommandePage = lazy(() => import('./pages/SuiviCommandePage'));
 const MonComptePage = lazy(() => import('./pages/MonComptePage'));
 const CollectionsPage = lazy(() => import('./pages/CollectionsPage'));
+const CollectionDetailPage = lazy(() => import('./pages/CollectionDetailPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const AProposPage = lazy(() => import('./pages/AProposPage'));
 const GuideTaillesPage = lazy(() => import('./pages/GuideTaillesPage'));
@@ -49,6 +50,7 @@ function App() {
             <Route path="/commande/suivi/:orderNumber" element={<SuiviCommandePage />} />
             <Route path="/mon-compte" element={<MonComptePage />} />
             <Route path="/collections" element={<CollectionsPage />} />
+            <Route path="/collections/:slug" element={<CollectionDetailPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/a-propos" element={<AProposPage />} />
             <Route path="/guide-tailles" element={<GuideTaillesPage />} />

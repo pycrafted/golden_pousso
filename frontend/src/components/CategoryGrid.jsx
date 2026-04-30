@@ -167,7 +167,7 @@ const ProductsCarousel = () => {
   return (
     <section
       id="nos-produits"
-      style={{ background: '#FAF6EE', paddingTop: '0', overflow: 'hidden' }}
+      style={{ background: '#FAF6EE', paddingTop: '4rem', overflow: 'hidden' }}
     >
 
       {/* Carousel + flèches */}

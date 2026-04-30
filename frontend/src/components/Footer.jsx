@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const C = {
   bg:     '#111111',
@@ -69,59 +69,35 @@ const SocialBtn = ({ icon, label }) => {
   );
 };
 
-const NewsletterForm = () => {
-  const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!email) return;
-    setSent(true);
-  };
-
-  return sent ? (
-    <p style={{ fontSize: '1.3rem', color: C.gold, fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
-      Merci ! Vous recevrez nos actualités bientôt.
-    </p>
-  ) : (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-      <input
-        type="email"
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-        placeholder="Votre adresse email"
-        required
-        style={{
-          padding: '1.1rem 1.6rem',
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.15)',
-          borderRadius: '0.4rem',
-          color: C.cream, fontSize: '1.3rem',
-          fontFamily: 'Inter, sans-serif',
-          outline: 'none',
-          width: '100%',
-          boxSizing: 'border-box',
-        }}
-        onFocus={e => e.target.style.borderColor = C.gold}
-        onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.15)'}
-      />
+const NewsletterCTA = () => {
+  const navigate = useNavigate();
+  const [hov, setHov] = useState(false);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.6rem' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+        <i className="bx bxl-whatsapp" style={{ fontSize: '2.2rem', color: '#25D366', marginTop: '0.2rem', flexShrink: 0 }} />
+        <p style={{ fontSize: '1.3rem', color: C.muted, fontFamily: 'Inter, sans-serif', lineHeight: 1.7 }}>
+          Créez un compte avec votre numéro de téléphone et recevez automatiquement nos nouvelles collections directement sur <strong style={{ color: C.cream }}>WhatsApp</strong>.
+        </p>
+      </div>
       <button
-        type="submit"
+        onClick={() => navigate('/mon-compte')}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
         style={{
           padding: '1.1rem',
-          background: C.gold, color: '#0A0A0A',
+          background: hov ? '#C2662D' : C.gold,
+          color: '#0A0A0A',
           border: 'none', borderRadius: '0.4rem',
           fontSize: '1.2rem', fontWeight: 700,
           letterSpacing: '0.18em', textTransform: 'uppercase',
           fontFamily: 'Inter, sans-serif',
           cursor: 'pointer', transition: 'background 0.2s',
         }}
-        onMouseEnter={e => e.currentTarget.style.background = '#C2662D'}
-        onMouseLeave={e => e.currentTarget.style.background = C.gold}
       >
-        S'abonner
+        Créer un compte
       </button>
-    </form>
+    </div>
   );
 };
 
@@ -172,14 +148,8 @@ const Footer = () => (
 
       {/* Col 3 — Newsletter */}
       <div>
-        <ColHeading>S'abonner à notre Newsletter</ColHeading>
-        <p style={{
-          fontSize: '1.3rem', color: C.muted, lineHeight: '2rem',
-          fontFamily: 'Inter, sans-serif', marginBottom: '2rem',
-        }}>
-          Entrez votre adresse email pour profiter de nos offres exclusives et nouveautés.
-        </p>
-        <NewsletterForm />
+        <ColHeading>Nouveautés sur WhatsApp</ColHeading>
+        <NewsletterCTA />
       </div>
     </div>
 

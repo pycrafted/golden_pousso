@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 
@@ -18,15 +19,16 @@ const useInView = () => {
   return [ref, visible];
 };
 
-const GalleryItem = ({ collection, index, colIndex }) => {
+/* ── Carte générique — image + overlay nom + animation ── */
+const GalleryCard = ({ image, name, year, description, index, colIndex, onClick }) => {
   const [ref, visible] = useInView();
   const [hovered, setHovered] = useState(false);
   const delay = colIndex * 0.1 + (index % 3) * 0.05;
-  const year = collection.date ? new Date(collection.date).getFullYear() : '';
 
   return (
     <div
       ref={ref}
+      onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -39,10 +41,11 @@ const GalleryItem = ({ collection, index, colIndex }) => {
       }}
     >
       <div style={{ position: 'relative', width: '100%', aspectRatio: '2/3' }}>
-        {collection.cover_image ? (
+        {image ? (
           <img
-            src={collection.cover_image}
-            alt={collection.name}
+            src={image}
+            alt={name}
+            loading="lazy"
             style={{
               width: '100%', height: '100%',
               objectFit: 'cover', display: 'block',
@@ -78,12 +81,13 @@ const GalleryItem = ({ collection, index, colIndex }) => {
               fontFamily: 'Aclonica, sans-serif',
               fontSize: 'clamp(1.6rem, 2vw, 2.2rem)',
               color: '#F5F0EB', textTransform: 'uppercase',
-              letterSpacing: '0.04em', marginBottom: collection.description ? '1.2rem' : '0',
+              letterSpacing: '0.04em',
+              marginBottom: description ? '1.2rem' : '0',
               lineHeight: 1.2,
             }}>
-              {collection.name}
+              {name}
             </h3>
-            {collection.description && (
+            {description && (
               <p style={{
                 fontSize: '1rem', fontFamily: 'Inter, sans-serif',
                 color: '#E0D0B8', lineHeight: 1.6,
@@ -92,7 +96,7 @@ const GalleryItem = ({ collection, index, colIndex }) => {
                 transition: 'opacity 0.3s ease 0.05s, transform 0.3s ease 0.05s',
                 maxHeight: '5rem', overflow: 'hidden',
               }}>
-                {collection.description}
+                {description}
               </p>
             )}
           </div>
@@ -102,12 +106,47 @@ const GalleryItem = ({ collection, index, colIndex }) => {
   );
 };
 
+/* ── Grille masonry 3 colonnes ── */
+const MasonryGrid = ({ items }) => (
+  <div className="stagger-grid">
+    {[0, 1, 2].map((colIndex) => {
+      const colItems = items.filter((_, i) => i % 3 === colIndex);
+      return (
+        <div
+          key={colIndex}
+          style={{
+            display: 'flex', flexDirection: 'column', gap: '1.6rem',
+            marginTop: colIndex === 1 ? '8rem' : '0',
+          }}
+        >
+          {colItems.map((item, i) => (
+            <GalleryCard
+              key={item.key}
+              image={item.image}
+              name={item.name}
+              year={item.year}
+              description={item.description}
+              index={i}
+              colIndex={colIndex}
+              onClick={item.onClick}
+            />
+          ))}
+        </div>
+      );
+    })}
+  </div>
+);
+
 const CollectionsPage = () => {
+  const navigate = useNavigate();
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const tabRefs = useRef({});
   const [underline, setUnderline] = useState({ left: 0, width: 0 });
+
+  const [detailProducts, setDetailProducts] = useState([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   useEffect(() => {
     apiClient.get('/collections/')
@@ -115,6 +154,18 @@ const CollectionsPage = () => {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'all') {
+      setDetailProducts([]);
+      return;
+    }
+    setLoadingDetail(true);
+    apiClient.get(`/collections/${activeTab}/`)
+      .then((res) => setDetailProducts(res.data.products ?? []))
+      .catch(() => setDetailProducts([]))
+      .finally(() => setLoadingDetail(false));
+  }, [activeTab]);
 
   const tabs = [
     { key: 'all', label: 'Toutes' },
@@ -126,14 +177,42 @@ const CollectionsPage = () => {
     if (el) setUnderline({ left: el.offsetLeft, width: el.offsetWidth });
   }, [activeTab, collections]);
 
-  const filtered = activeTab === 'all'
-    ? collections
-    : collections.filter(c => c.slug === activeTab);
+  const isAll = activeTab === 'all';
+  const activeCollection = collections.find(c => c.slug === activeTab);
+
+  /* Aplatir toutes les product_images de toutes les collections */
+  const allImages = collections.flatMap((c) => {
+    const year = c.date ? new Date(c.date).getFullYear() : '';
+    const images = c.product_images?.length ? c.product_images : (c.cover_image ? [c.cover_image] : []);
+    return images.map((img, imgIdx) => ({
+      key: `${c.slug}-${imgIdx}`,
+      image: img,
+      name: c.name,
+      year,
+      description: null,
+      onClick: () => navigate(`/collections/${c.slug}`),
+    }));
+  });
+
+  /* Items pour la vue collection spécifique */
+  const detailItems = detailProducts.map((p) => ({
+    key: `p-${p.id}`,
+    image: p.primary_image,
+    name: p.name,
+    year: '',
+    description: null,
+    onClick: () => navigate(`/produit/${p.slug}`),
+  }));
+
+  const skeletonItems = Array.from({ length: 9 }).map((_, i) => ({
+    key: `sk-${i}`,
+    image: null, name: '', year: '', description: null, onClick: () => {},
+  }));
 
   return (
     <>
       <SEOHead
-        title="Collections"
+        title={isAll ? 'Collections' : activeCollection?.name ?? 'Collections'}
         description="Découvrez les défilés et collections saisonnières de Golden Pousso — Haute couture africaine à Dakar, Sénégal."
         url="/collections"
       />
@@ -197,32 +276,25 @@ const CollectionsPage = () => {
         {/* Grille */}
         <div style={{ padding: '0 6rem 10rem', maxWidth: '110rem', margin: '0 auto' }}>
           {loading ? (
-            <p style={{ textAlign: 'center', color: '#7A6A50', fontFamily: 'Inter, sans-serif', padding: '6rem 0' }}>
-              Chargement…
-            </p>
-          ) : filtered.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#7A6A50', fontFamily: 'Inter, sans-serif', padding: '6rem 0' }}>
-              Aucune collection disponible pour le moment.
-            </p>
+            <MasonryGrid items={skeletonItems} />
+          ) : isAll ? (
+            allImages.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#7A6A50', fontFamily: 'Inter, sans-serif', padding: '6rem 0' }}>
+                Aucune collection disponible pour le moment.
+              </p>
+            ) : (
+              <MasonryGrid key="all" items={allImages} />
+            )
           ) : (
-            <div key={activeTab} className="stagger-grid">
-              {[0, 1, 2].map((colIndex) => {
-                const colItems = filtered.filter((_, i) => i % 3 === colIndex);
-                return (
-                  <div
-                    key={colIndex}
-                    style={{
-                      display: 'flex', flexDirection: 'column', gap: '1.6rem',
-                      marginTop: colIndex === 1 ? '8rem' : '0',
-                    }}
-                  >
-                    {colItems.map((col, i) => (
-                      <GalleryItem key={col.id} collection={col} index={i} colIndex={colIndex} />
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
+            loadingDetail ? (
+              <MasonryGrid key={`${activeTab}-loading`} items={skeletonItems} />
+            ) : detailItems.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#7A6A50', fontFamily: 'Inter, sans-serif', padding: '6rem 0', fontSize: '1.4rem' }}>
+                Aucun produit dans cette collection pour le moment.
+              </p>
+            ) : (
+              <MasonryGrid key={activeTab} items={detailItems} />
+            )
           )}
         </div>
 

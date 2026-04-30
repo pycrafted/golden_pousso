@@ -10,9 +10,21 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class CollectionListSerializer(serializers.ModelSerializer):
+    product_images = serializers.SerializerMethodField()
+
     class Meta:
         model = Collection
-        fields = ['id', 'name', 'slug', 'description', 'cover_image', 'date', 'is_featured']
+        fields = ['id', 'name', 'slug', 'description', 'cover_image', 'date', 'is_featured', 'product_images']
+
+    def get_product_images(self, obj):
+        request = self.context.get('request')
+        images = []
+        for product in obj.products.filter(is_active=True).prefetch_related('images'):
+            img = product.images.filter(is_primary=True).first() or product.images.first()
+            if img:
+                url = request.build_absolute_uri(img.image.url) if request else img.image.url
+                images.append(url)
+        return images
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
