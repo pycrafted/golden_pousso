@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
+import CldImg from './CldImg';
 
 const SPEED = 1.0;
 const GAP_REM = 2.4;
@@ -114,10 +115,11 @@ const ProductsCarousel = () => {
       <div style={{ aspectRatio: '3 / 4', position: 'relative', overflow: 'hidden' }}>
         {/* Image */}
         {p.primary_image ? (
-          <img
+          <CldImg
             src={p.primary_image}
             alt={p.name}
-            loading="lazy"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            widths={[300, 600, 900]}
             style={{
               position: 'absolute', inset: 0,
               width: '100%', height: '100%',

@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
+import CldImg from '../components/CldImg';
 
 const useInView = () => {
   const ref = useRef(null);
@@ -42,10 +43,11 @@ const GalleryCard = ({ image, name, year, description, index, colIndex, onClick 
     >
       <div style={{ position: 'relative', width: '100%', aspectRatio: '2/3' }}>
         {image ? (
-          <img
+          <CldImg
             src={image}
             alt={name}
-            loading="lazy"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            widths={[400, 800, 1200]}
             style={{
               width: '100%', height: '100%',
               objectFit: 'cover', display: 'block',

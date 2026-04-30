@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../store/cartStore';
 import SEOHead from '../components/SEOHead';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
+import CldImg from '../components/CldImg';
 
 /* ── Palette ── */
 const C = {
@@ -169,9 +170,11 @@ const PanierPage = () => {
                       background: '#1A1A1A', overflow: 'hidden',
                     }}>
                       {item.product.primary_image ? (
-                        <img
+                        <CldImg
                           src={item.product.primary_image}
                           alt={item.product.name}
+                          sizes="128px"
+                          widths={[128, 256]}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       ) : (

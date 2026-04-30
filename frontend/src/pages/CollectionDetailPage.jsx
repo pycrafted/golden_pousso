@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
+import CldImg from '../components/CldImg';
 
 const useInView = () => {
   const ref = useRef(null);
@@ -53,10 +54,11 @@ const ProductCard = ({ product, index }) => {
       }}>
         {product.primary_image ? (
           <>
-            <img
+            <CldImg
               src={product.primary_image}
               alt={product.name}
-              loading="lazy"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
+              widths={[300, 600, 900]}
               style={{
                 position: 'absolute', inset: 0,
                 width: '100%', height: '100%', objectFit: 'cover',
@@ -66,10 +68,11 @@ const ProductCard = ({ product, index }) => {
               }}
             />
             {product.secondary_image && (
-              <img
+              <CldImg
                 src={product.secondary_image}
                 alt={product.name}
-                loading="lazy"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
+                widths={[300, 600, 900]}
                 style={{
                   position: 'absolute', inset: 0,
                   width: '100%', height: '100%', objectFit: 'cover',

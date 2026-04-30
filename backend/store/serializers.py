@@ -35,9 +35,18 @@ class CollectionListSerializer(serializers.ModelSerializer):
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductImage
         fields = ['id', 'image', 'alt_text', 'is_primary', 'order']
+
+    def get_image(self, obj):
+        request = self.context.get('request')
+        if not obj.image:
+            return None
+        url = request.build_absolute_uri(obj.image.url) if request else obj.image.url
+        return cld(url, 'w_1200,f_auto,q_auto,c_limit')
 
 
 class ProductVariantSerializer(serializers.ModelSerializer):

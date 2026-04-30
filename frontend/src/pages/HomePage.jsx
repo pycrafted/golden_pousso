@@ -8,6 +8,7 @@ import CategoryGrid from '../components/CategoryGrid';
 import FullWidthBanner from '../components/FullWidthBanner';
 import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
+import CldImg from '../components/CldImg';
 
 /* ── Card produit — copie exacte du style "regarde" ── */
 const HomeProductCard = ({ product }) => {
@@ -40,7 +41,9 @@ const HomeProductCard = ({ product }) => {
       }}>
         {/* Image A — zoom si pas de secondaire, swap sinon */}
         {product.primary_image ? (
-          <img src={product.primary_image} alt={product.name} loading="lazy"
+          <CldImg src={product.primary_image} alt={product.name}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            widths={[300, 600, 900]}
             style={{
               position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
               opacity: hovered && product.secondary_image ? 0 : 1,
@@ -52,9 +55,10 @@ const HomeProductCard = ({ product }) => {
             <span style={{ fontSize: '1.1rem', color: '#7A6A50', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Photo bientôt</span>
           </div>
         )}
-        {/* Image B */}
         {product.secondary_image && (
-          <img src={product.secondary_image} alt={product.name} loading="lazy"
+          <CldImg src={product.secondary_image} alt={product.name}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            widths={[300, 600, 900]}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: hovered ? 1 : 0, transition: 'opacity 0.7s ease' }} />
         )}
 

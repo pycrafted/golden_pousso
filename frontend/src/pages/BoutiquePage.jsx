@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
+import CldImg from '../components/CldImg';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
 /* ─── Constants ─────────────────────────────────────────── */
@@ -75,10 +76,12 @@ const PLPCard = ({ product, index }) => {
 
         {/* Image principale */}
         {product.primary_image ? (
-          <img
+          <CldImg
             src={product.primary_image}
             alt={product.name}
-            loading={index < 3 ? 'eager' : 'lazy'}
+            eager={index < 3}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            widths={[300, 600, 900]}
             style={{
               position: 'absolute', inset: 0,
               width: '100%', height: '100%', objectFit: 'cover',
@@ -105,10 +108,11 @@ const PLPCard = ({ product, index }) => {
 
         {/* Image secondaire au hover */}
         {hasSecondary && (
-          <img
+          <CldImg
             src={product.secondary_image}
             alt={product.name}
-            loading="lazy"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            widths={[300, 600, 900]}
             style={{
               position: 'absolute', inset: 0,
               width: '100%', height: '100%', objectFit: 'cover',

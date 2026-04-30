@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import CldImg from '../components/CldImg';
 import toast from 'react-hot-toast';
 import SkeletonCard from '../components/SkeletonCard';
 import SEOHead from '../components/SEOHead';
@@ -78,7 +79,8 @@ const SimilarCard = ({ product }) => {
     >
       <div style={{ position: 'relative', aspectRatio: '3/4', overflow: 'hidden', marginBottom: '1.6rem', background: '#E8DCC8', borderRadius: '2px' }}>
         {product.primary_image ? (
-          <img src={product.primary_image} alt={product.name} loading="lazy"
+          <CldImg src={product.primary_image} alt={product.name}
+            sizes="(max-width: 640px) 100vw, 25vw" widths={[300, 600]}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
               opacity: hovered && product.secondary_image ? 0 : 1,
               transform: hovered && !product.secondary_image ? 'scale(1.08)' : 'scale(1)',
@@ -89,7 +91,8 @@ const SimilarCard = ({ product }) => {
           </div>
         )}
         {product.secondary_image && (
-          <img src={product.secondary_image} alt={product.name} loading="lazy"
+          <CldImg src={product.secondary_image} alt={product.name}
+            sizes="(max-width: 640px) 100vw, 25vw" widths={[300, 600]}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: hovered ? 1 : 0, transition: 'opacity 0.7s ease' }} />
         )}
       </div>
@@ -237,7 +240,10 @@ const ProduitPage = () => {
               }}
             >
               {currentImage ? (
-                <img src={currentImage.image} alt={currentImage.alt_text || product.name}
+                <CldImg src={currentImage.image} alt={currentImage.alt_text || product.name}
+                  eager
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  widths={[600, 900, 1200]}
                   style={{
                     width: '100%', height: '100%', objectFit: 'cover',
                     transform: imgZoomed ? 'scale(1.8)' : 'scale(1)',
@@ -287,7 +293,7 @@ const ProduitPage = () => {
                       background: '#E8DCC8', borderRadius: '2px',
                       transition: 'border-color 0.2s',
                     }}>
-                    <img src={img.image} alt={img.alt_text} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <CldImg src={img.image} alt={img.alt_text} widths={[150, 300]} sizes="112px" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                 ))}
               </div>

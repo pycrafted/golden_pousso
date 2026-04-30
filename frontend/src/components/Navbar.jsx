@@ -4,6 +4,7 @@ import useCartStore from '../store/cartStore';
 import useSettingsStore, { formatPrice, CURRENCIES, LANGUAGES } from '../store/settingsStore';
 import useAuthStore from '../store/authStore';
 import SearchOverlay from './SearchOverlay';
+import CldImg from './CldImg';
 
 const C = {
   dark: '#0A0A0A',
@@ -699,9 +700,11 @@ const CartItem = ({ item, onUpdate, onRemove, C }) => {
         borderRadius: '2px',
       }}>
         {item.product.primary_image ? (
-          <img
+          <CldImg
             src={item.product.primary_image}
             alt={item.product.name}
+            sizes="80px"
+            widths={[80, 160]}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
