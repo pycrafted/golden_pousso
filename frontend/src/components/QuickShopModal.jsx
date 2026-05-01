@@ -6,25 +6,103 @@ import useCartStore from '../store/cartStore';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 import CldImg from './CldImg';
 
+const SimilarCard = ({ product, currency, onClick }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ cursor: 'pointer' }}
+    >
+      <div style={{
+        aspectRatio: '3/4', overflow: 'hidden',
+        background: '#E8DCC8', marginBottom: '0.8rem',
+        transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
+        transition: 'transform 0.3s ease',
+      }}>
+        {product.primary_image ? (
+          <CldImg
+            src={product.primary_image}
+            alt={product.name}
+            sizes="(max-width: 700px) 50vw, 20vw"
+            widths={[200, 400]}
+            style={{
+              width: '100%', height: '100%', objectFit: 'cover',
+              transform: hovered ? 'scale(1.08)' : 'scale(1)',
+              transition: 'transform 0.7s ease',
+            }}
+          />
+        ) : (
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: '1rem', color: '#7A6A50' }}>Photo bientôt</span>
+          </div>
+        )}
+      </div>
+      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', fontWeight: 500, color: '#1A1208', marginBottom: '0.3rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {product.name}
+      </p>
+      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', color: '#B8960A' }}>
+        {formatPrice(product.price, currency)}
+      </p>
+    </div>
+  );
+};
+
 const QuickShopModal = ({ slug, onClose }) => {
   const navigate = useNavigate();
   const addItem = useCartStore((s) => s.addItem);
   const currency = useSettingsStore((s) => s.currency);
 
+  const [activeSlug, setActiveSlug] = useState(slug);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [similar, setSimilar] = useState([]);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [imgZoomed, setImgZoomed] = useState(false);
+  const [zoomOrigin, setZoomOrigin] = useState('50% 50%');
+
+  const handleImgMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomOrigin(`${x}% ${y}%`);
+  };
+
+  const switchProduct = (newSlug) => {
+    setActiveSlug(newSlug);
+    setSelectedImage(0);
+    setSelectedSize(null);
+    setSelectedColor(null);
+    setQty(1);
+    setAdded(false);
+    setImgZoomed(false);
+    setZoomOrigin('50% 50%');
+  };
 
   useEffect(() => {
-    apiClient.get(`/products/${slug}/`)
-      .then((res) => { setProduct(res.data); setSelectedImage(0); })
+    setLoading(true);
+    apiClient.get(`/products/${activeSlug}/`)
+      .then((res) => {
+        setProduct(res.data);
+        setSelectedImage(0);
+        const catSlug = res.data.category?.slug;
+        if (catSlug) {
+          apiClient.get('/products/', { params: { category: catSlug } })
+            .then((r) => {
+              const all = r.data.results ?? r.data;
+              setSimilar(all.filter((p) => p.slug !== activeSlug).slice(0, 4));
+            })
+            .catch(() => {});
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [activeSlug]);
 
   /* Escape + lock scroll */
   useEffect(() => {
@@ -59,29 +137,30 @@ const QuickShopModal = ({ slug, onClose }) => {
 
   const modal = (
     <div
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(10,8,5,0.78)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '2rem',
-        backdropFilter: 'blur(3px)',
       }}
     >
-      <div className="qs-grid" style={{
-        background: '#FAF6EE',
-        width: '100%', maxWidth: '88rem',
-        maxHeight: '90vh', overflowY: 'auto',
-        position: 'relative',
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-      }}>
+      {/* Backdrop cliquable */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'absolute', inset: 0,
+          background: 'rgba(10,8,5,0.78)',
+          backdropFilter: 'blur(3px)',
+        }}
+      />
 
-        {/* ── Bouton fermer ── */}
+      {/* Contenu du modal — au-dessus du backdrop */}
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '88rem' }}>
+
+        {/* ── Bouton fermer ── hors du grid pour ne jamais être masqué */}
         <button
           onClick={onClose}
           style={{
-            position: 'absolute', top: '1.6rem', right: '1.6rem', zIndex: 10,
+            position: 'absolute', top: '1.6rem', right: '1.6rem', zIndex: 20,
             background: 'none', border: '1px solid #E0D0B8', cursor: 'pointer',
             width: '3.6rem', height: '3.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#1A1208', fontSize: '2rem', lineHeight: 1,
@@ -92,6 +171,14 @@ const QuickShopModal = ({ slug, onClose }) => {
         >
           ×
         </button>
+
+        <div className="qs-grid" style={{
+          background: '#FAF6EE',
+          width: '100%',
+          maxHeight: '90vh', overflowY: 'auto',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+        }}>
 
         {/* ── Colonne gauche : galerie ── */}
         <div style={{ display: 'flex', gap: '1rem', padding: '3.2rem' }}>
@@ -117,7 +204,15 @@ const QuickShopModal = ({ slug, onClose }) => {
           )}
 
           {/* Image principale */}
-          <div style={{ flex: 1, aspectRatio: '3/4', overflow: 'hidden', background: '#E8DCC8' }}>
+          <div
+            onMouseEnter={() => setImgZoomed(true)}
+            onMouseLeave={() => { setImgZoomed(false); setZoomOrigin('50% 50%'); }}
+            onMouseMove={handleImgMouseMove}
+            style={{
+              flex: 1, aspectRatio: '3/4', overflow: 'hidden', background: '#E8DCC8',
+              cursor: imgZoomed ? 'crosshair' : 'default',
+            }}
+          >
             {loading ? (
               <div style={{ width: '100%', height: '100%', background: '#E8DCC8', animation: 'qs-shimmer 1.4s ease-in-out infinite' }} />
             ) : images[selectedImage] ? (
@@ -127,7 +222,13 @@ const QuickShopModal = ({ slug, onClose }) => {
                 eager
                 sizes="(max-width: 768px) 100vw, 44vw"
                 widths={[500, 800]}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                style={{
+                  width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                  transform: imgZoomed ? 'scale(1.8)' : 'scale(1)',
+                  transformOrigin: zoomOrigin,
+                  transition: imgZoomed ? 'transform 0.1s ease' : 'transform 0.35s ease',
+                  willChange: 'transform',
+                }}
               />
             ) : (
               <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -138,6 +239,7 @@ const QuickShopModal = ({ slug, onClose }) => {
         </div>
 
         {/* ── Colonne droite : infos ── */}
+
         <div style={{ padding: '3.2rem 3.2rem 3.2rem 0', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
           {loading ? (
@@ -305,14 +407,42 @@ const QuickShopModal = ({ slug, onClose }) => {
             <p style={{ fontFamily: 'Inter, sans-serif', color: '#7A6A50' }}>Produit introuvable.</p>
           )}
         </div>
-      </div>
+
+        {/* ── Pièces similaires ── */}
+        {similar.length > 0 && (
+          <div style={{
+            gridColumn: '1 / -1',
+            borderTop: '1px solid #E0D0B8',
+            padding: '2.4rem 3.2rem 3.2rem',
+          }}>
+            <p style={{
+              fontFamily: 'Inter, sans-serif', fontSize: '1rem',
+              textTransform: 'uppercase', letterSpacing: '0.3em',
+              color: '#7A6A50', marginBottom: '2rem',
+            }}>
+              Vous aimerez aussi
+            </p>
+            <div className="qs-similar-grid" style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '1.6rem',
+            }}>
+              {similar.map((p) => (
+                <SimilarCard key={p.slug} product={p} currency={currency} onClick={() => switchProduct(p.slug)} />
+              ))}
+            </div>
+          </div>
+        )}
+        </div>{/* fin qs-grid */}
+      </div>{/* fin wrapper */}
 
       <style>{`
         @keyframes qs-shimmer { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
         @media (max-width: 700px) {
           .qs-grid { grid-template-columns: 1fr !important; }
           .qs-grid > div:first-child { padding: 2.4rem 2.4rem 0 !important; }
-          .qs-grid > div:last-child { padding: 2.4rem !important; }
+          .qs-grid > div:nth-child(2) { padding: 2.4rem !important; }
+          .qs-similar-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
       `}</style>
     </div>
