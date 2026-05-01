@@ -9,18 +9,20 @@ import FullWidthBanner from '../components/FullWidthBanner';
 import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 import CldImg from '../components/CldImg';
+import QuickShopModal from '../components/QuickShopModal';
 
 /* ── Card produit — copie exacte du style "regarde" ── */
 const HomeProductCard = ({ product }) => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
+  const [quickShop, setQuickShop] = useState(false);
   const outOfStock = product.stock === 0;
   const currency = useSettingsStore((s) => s.currency);
 
   return (
     /* Tout le card se soulève au hover, comme dans regarde */
     <div
-      onClick={() => !outOfStock && navigate(`/produit/${product.slug}`)}
+      onClick={() => !outOfStock && setQuickShop(true)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -62,9 +64,44 @@ const HomeProductCard = ({ product }) => {
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: hovered ? 1 : 0, transition: 'opacity 0.7s ease' }} />
         )}
 
-        {/* Bouton "Ajouter" slide-up — identique regarde */}
+        {/* Bouton œil Quick Shop */}
+        {!outOfStock && (
+          <div
+            onClick={e => { e.stopPropagation(); setQuickShop(true); }}
+            style={{
+              position: 'absolute', top: '50%', left: '50%',
+              transform: hovered ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(0.7)',
+              opacity: hovered ? 1 : 0,
+              transition: 'opacity 0.25s ease, transform 0.25s ease',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem',
+              cursor: 'pointer', zIndex: 3,
+            }}
+          >
+            <div style={{
+              width: '5.6rem', height: '5.6rem', borderRadius: '50%',
+              background: 'rgba(250,246,238,0.95)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1A1208" strokeWidth="1.8">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <span style={{
+              fontFamily: 'Inter, sans-serif', fontSize: '1rem', fontWeight: 600,
+              letterSpacing: '0.15em', textTransform: 'uppercase',
+              color: '#FAF6EE', background: 'rgba(10,8,5,0.6)',
+              padding: '0.3rem 1rem', borderRadius: '2px',
+            }}>
+              Quick Shop
+            </span>
+          </div>
+        )}
+
+        {/* Bouton ADD TO CART slide-up */}
         <button
-          onClick={e => { e.stopPropagation(); if (!outOfStock) navigate(`/produit/${product.slug}`); }}
+          onClick={e => { e.stopPropagation(); if (!outOfStock) setQuickShop(true); }}
           style={{
             position: 'absolute', bottom: '1.6rem', left: '1.6rem', right: '1.6rem',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
@@ -94,6 +131,10 @@ const HomeProductCard = ({ product }) => {
       <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.4rem', color: '#B8960A' }}>
         {formatPrice(product.price, currency)}
       </p>
+
+      {quickShop && (
+        <QuickShopModal slug={product.slug} onClose={() => setQuickShop(false)} />
+      )}
     </div>
   );
 };
@@ -152,7 +193,7 @@ const HomePage = () => {
       </div>
 
       {/* ── 5. NOUVEAUTÉS ── */}
-      <section id="collection" style={{ padding: '0 0 8rem', background: '#FAF6EE' }}>
+      <section id="collection" style={{ padding: '8rem 0 8rem', background: '#FAF6EE' }}>
         <div className="container">
 
           {/* En-tête */}

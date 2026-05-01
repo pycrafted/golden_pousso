@@ -172,6 +172,26 @@ const ProductsCarousel = () => {
       style={{ background: '#FAF6EE', paddingTop: '4rem', overflow: 'hidden' }}
     >
 
+      {/* Titre */}
+      <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+        <p style={{
+          display: 'inline-block',
+          fontSize: '1rem', fontFamily: 'Inter, sans-serif',
+          textTransform: 'uppercase', letterSpacing: '0.4em',
+          color: '#FAF6EE', background: '#B8960A',
+          padding: '0.6rem 2rem', marginBottom: '1.6rem',
+        }}>
+          Boutique
+        </p>
+        <h2 style={{
+          fontFamily: 'Aclonica, sans-serif',
+          fontSize: 'clamp(2.8rem, 4vw, 4.2rem)',
+          color: '#1A1208', letterSpacing: '-0.01em', lineHeight: 1.1,
+        }}>
+          Nos Produits
+        </h2>
+      </div>
+
       {/* Carousel + flèches */}
       <div
         style={{ position: 'relative' }}

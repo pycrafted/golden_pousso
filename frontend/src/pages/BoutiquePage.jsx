@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 import CldImg from '../components/CldImg';
+import QuickShopModal from '../components/QuickShopModal';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
 /* ─── Constants ─────────────────────────────────────────── */
@@ -18,6 +19,7 @@ const SORT_OPTIONS = [
 const PLPCard = ({ product, index }) => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
+  const [quickShop, setQuickShop] = useState(false);
   const currency = useSettingsStore((s) => s.currency);
 
   const discountPercent =
@@ -32,7 +34,7 @@ const PLPCard = ({ product, index }) => {
       className="plp-card"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => !outOfStock && navigate(`/produit/${product.slug}`)}
+      onClick={() => !outOfStock && setQuickShop(true)}
       style={{
         cursor: outOfStock ? 'default' : 'pointer',
         opacity: outOfStock ? 0.55 : 1,
@@ -130,30 +132,60 @@ const PLPCard = ({ product, index }) => {
           transition: 'opacity 0.5s ease',
         }} />
 
-        {/* CTA Aperçu Rapide */}
+        {/* Bouton œil Quick Shop */}
+        {!outOfStock && (
+          <div
+            onClick={(e) => { e.stopPropagation(); setQuickShop(true); }}
+            style={{
+              position: 'absolute', top: '50%', left: '50%',
+              transform: hovered ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(0.7)',
+              opacity: hovered ? 1 : 0,
+              transition: 'opacity 0.25s ease, transform 0.25s ease',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem',
+              cursor: 'pointer', zIndex: 3,
+            }}
+          >
+            <div style={{
+              width: '5.6rem', height: '5.6rem', borderRadius: '50%',
+              background: 'rgba(250,246,238,0.95)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1A1208" strokeWidth="1.8">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <span style={{
+              fontFamily: 'Inter, sans-serif', fontSize: '1rem', fontWeight: 600,
+              letterSpacing: '0.15em', textTransform: 'uppercase',
+              color: '#FAF6EE', background: 'rgba(10,8,5,0.6)',
+              padding: '0.3rem 1rem', borderRadius: '2px',
+            }}>
+              Quick Shop
+            </span>
+          </div>
+        )}
+
+        {/* Bouton ADD TO CART en bas */}
         {!outOfStock && (
           <button
+            onClick={(e) => { e.stopPropagation(); setQuickShop(true); }}
             style={{
               position: 'absolute', bottom: '1.6rem', left: '1.6rem', right: '1.6rem',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem',
-              background: '#B8960A', color: '#FAF6EE',
+              background: '#1A1208', color: '#FAF6EE', border: 'none',
               padding: '1.2rem',
               fontSize: '1rem', fontFamily: 'Inter, sans-serif',
               textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 600,
-              border: 'none', cursor: 'pointer',
+              cursor: 'pointer',
               opacity: hovered ? 1 : 0,
               transform: hovered ? 'translateY(0)' : 'translateY(10px)',
-              transition: 'opacity 0.25s ease, transform 0.3s ease, background 0.2s, color 0.2s',
+              transition: 'opacity 0.25s ease, transform 0.3s ease, background 0.2s',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#C2662D'; e.currentTarget.style.color = '#1A1208'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = '#B8960A'; e.currentTarget.style.color = '#FAF6EE'; }}
-            onClick={(e) => { e.stopPropagation(); navigate(`/produit/${product.slug}`); }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#B8960A'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#1A1208'; }}
           >
-            {/* Eye icon */}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-            </svg>
-            Aperçu Rapide
+            ADD TO CART
           </button>
         )}
 
@@ -194,6 +226,10 @@ const PLPCard = ({ product, index }) => {
           )}
         </p>
       </div>
+
+      {quickShop && (
+        <QuickShopModal slug={product.slug} onClose={() => setQuickShop(false)} />
+      )}
     </article>
   );
 };
