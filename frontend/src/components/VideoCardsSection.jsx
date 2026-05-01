@@ -36,11 +36,12 @@ const VideoCard = ({ videoId, index, colIndex }) => {
         transition: `opacity 0.65s ease ${delay}s, transform 0.65s ease ${delay}s`,
       }}
     >
-      {/* Wrapper qui scale au hover */}
+      {/* Wrapper qui scale au hover + overflow:hidden pour rogner l'UI YouTube */}
       <div style={{
         position: 'relative',
         width: '100%',
         aspectRatio: '9/16',
+        overflow: 'hidden',
         transform: hovered ? 'scale(1.04)' : 'scale(1)',
         transition: 'transform 0.7s ease',
       }}>
@@ -49,8 +50,11 @@ const VideoCard = ({ videoId, index, colIndex }) => {
           allow="autoplay; encrypted-media"
           allowFullScreen
           style={{
-            position: 'absolute', inset: 0,
-            width: '100%', height: '100%',
+            position: 'absolute',
+            top: '-10%',
+            left: 0,
+            width: '100%',
+            height: '120%',
             border: 'none', display: 'block',
             pointerEvents: 'none',
           }}
@@ -104,13 +108,13 @@ const VideoCardsSection = () => {
           </h2>
         </div>
 
-        <div className="video-stagger-grid">
+        <div className="video-stagger-grid" style={{ maxWidth: '88rem', margin: '0 auto' }}>
           {cols.map(({ colIndex, cards }) => (
             <div
               key={colIndex}
               style={{
                 display: 'flex', flexDirection: 'column', gap: '1.6rem',
-                marginTop: colIndex !== 1 ? '8rem' : '0',
+                marginTop: colIndex !== 1 ? '5rem' : '0',
               }}
             >
               {cards.map((card, i) => (
