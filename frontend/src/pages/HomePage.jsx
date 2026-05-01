@@ -10,6 +10,7 @@ import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 import CldImg from '../components/CldImg';
 import QuickShopModal from '../components/QuickShopModal';
+import VideoCardsSection from '../components/VideoCardsSection';
 
 /* ── Card produit — copie exacte du style "regarde" ── */
 const HomeProductCard = ({ product }) => {
@@ -158,17 +159,9 @@ const useInView = () => {
 
 /* ── Page ── */
 const HomePage = () => {
-  const [newProducts, setNewProducts] = useState([]);
-  const [loadingNew, setLoadingNew] = useState(true);
-  const [sectionRef, sectionVisible] = useInView();
-
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
   const [featuredRef, featuredVisible] = useInView();
-
-  useEffect(() => {
-    apiClient.get('/products/new/').then((r) => setNewProducts(r.data)).catch(() => {}).finally(() => setLoadingNew(false));
-  }, []);
 
   useEffect(() => {
     apiClient.get('/products/featured/').then((r) => setFeaturedProducts(r.data)).catch(() => {}).finally(() => setLoadingFeatured(false));
@@ -192,64 +185,9 @@ const HomePage = () => {
         <FullWidthBanner />
       </div>
 
-      {/* ── 5. NOUVEAUTÉS ── */}
-      <section id="collection" style={{ padding: '8rem 0 8rem', background: '#FAF6EE' }}>
-        <div className="container">
+      {/* ── 5. VIDÉOS ── */}
+      <VideoCardsSection />
 
-          {/* En-tête */}
-          <div ref={sectionRef} style={{
-            marginBottom: '5rem', textAlign: 'center',
-            opacity: sectionVisible ? 1 : 0, transform: sectionVisible ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'opacity 0.8s ease, transform 0.8s ease',
-          }}>
-            <p style={{
-              display: 'inline-block',
-              fontSize: '1rem', fontFamily: 'Inter, sans-serif',
-              textTransform: 'uppercase', letterSpacing: '0.4em',
-              color: '#FAF6EE', background: '#B8960A',
-              padding: '0.6rem 2rem', marginBottom: '1.6rem',
-            }}>
-              Nouveautés
-            </p>
-            <h2 style={{
-              fontFamily: 'Aclonica, sans-serif',
-              fontSize: 'clamp(2.8rem, 4vw, 4.2rem)',
-              color: '#1A1208', letterSpacing: '-0.01em', lineHeight: 1.1,
-            }}>
-              Nos Dernières Créations
-            </h2>
-          </div>
-
-          {/* Grille 4 colonnes */}
-          {loadingNew ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2.4rem' }} className="products-grid">
-              {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
-            </div>
-          ) : (
-            <div
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2.4rem' }}
-              className="products-grid"
-            >
-              {newProducts.slice(0, 4).map((p, i) => (
-                <div
-                  key={p.id}
-                  style={{
-                    opacity: sectionVisible ? 1 : 0,
-                    transform: sectionVisible ? 'translateY(0)' : 'translateY(20px)',
-                    transition: `opacity 0.5s ease ${0.1 * i + 0.3}s, transform 0.5s ease ${0.1 * i + 0.3}s`,
-                  }}
-                >
-                  <HomeProductCard product={p} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <style>{`
-          @media (max-width: 1023px) { .products-grid { grid-template-columns: repeat(2, 1fr) !important; } }
-          @media (max-width: 479px)  { .products-grid { grid-template-columns: repeat(1, 1fr) !important; } }
-        `}</style>
-      </section>
 
       {/* ── 6. MEILLEURES VENTES ── */}
       <section style={{ padding: '0 0 8rem', background: '#FAF6EE' }}>
