@@ -75,17 +75,7 @@ const AProposPage = () => {
               La couture africaine<br />
               <span style={{ color: C.gold }}>autrement</span>
             </h1>
-            <p style={{
-              fontSize: '1.5rem', fontFamily: 'Inter, sans-serif',
-              color: C.muted, lineHeight: 1.8,
-              maxWidth: '64rem',
-            }}>
-              Golden Pousso est un salon de couture haut de gamme né à Pikine, Dakar. Depuis plus d'une décennie, nous sublisons les tissus africains avec des coupes contemporaines et un savoir-faire artisanal irréprochable.
-            </p>
           </div>
-
-          {/* Ligne décorative */}
-          <div className="ap-line" style={{ height: '1px', background: C.border, marginTop: '6rem' }} />
         </section>
 
         {/* ══════════════════════════════════

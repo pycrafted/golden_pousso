@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 import CldImg from './CldImg';
+import QuickShopModal from './QuickShopModal';
 
 const SPEED = 1.0;
 const GAP_REM = 2.4;
@@ -33,15 +33,15 @@ const useInView = () => {
   return [ref, visible];
 };
 
-const ProductsCarousel = () => {
-  const navigate  = useNavigate();
+const ProductsCarousel = ({ categorySlug }) => {
   const currency  = useSettingsStore((s) => s.currency);
+  const [quickShopSlug, setQuickShopSlug] = useState(null);
 
   const [carouselRef, carouselVisible] = useInView();
 
-  const [products, setProducts] = useState([]);
+  const [products,        setProducts]        = useState([]);
   const [carouselHovered, setCarouselHovered] = useState(false);
-  const [cardWidth, setCardWidth] = useState(getCardWidth);
+  const [cardWidth,       setCardWidth]       = useState(getCardWidth);
 
   useEffect(() => {
     const onResize = () => setCardWidth(getCardWidth());
@@ -67,13 +67,15 @@ const ProductsCarousel = () => {
 
   /* ── API produits ───────────────────────────────────────── */
   useEffect(() => {
-    apiClient.get('/products/')
+    const params = categorySlug ? { category: categorySlug } : {};
+    apiClient.get('/products/', { params })
       .then((res) => {
         const data = res.data.results ?? res.data;
-        if (data.length) setProducts(data.slice(0, 8));
+        posRef.current = 0;
+        setProducts(categorySlug ? data : data.slice(0, 8));
       })
       .catch(() => {});
-  }, []);
+  }, [categorySlug]);
 
   /* ── Boucle d'animation ────────────────────────────────── */
   const tick = useCallback(() => {
@@ -109,7 +111,7 @@ const ProductsCarousel = () => {
     return (
       <div
         key={key}
-        onClick={() => navigate(`/produit/${p.slug}`)}
+        onClick={() => setQuickShopSlug(p.slug)}
         style={{ flexShrink: 0, width: `${cardWidth}px`, cursor: 'pointer' }}
       >
       <div style={{ aspectRatio: '3 / 4', position: 'relative', overflow: 'hidden' }}>
@@ -192,13 +194,12 @@ const ProductsCarousel = () => {
         </h2>
       </div>
 
-      {/* Carousel + flèches */}
+      {/* Carousel auto-scroll */}
       <div
         style={{ position: 'relative' }}
         onMouseEnter={() => setCarouselHovered(true)}
         onMouseLeave={() => setCarouselHovered(false)}
       >
-
         {/* Flèche gauche */}
         <button
           onClick={() => handleArrow(-1)}
@@ -243,10 +244,7 @@ const ProductsCarousel = () => {
           </svg>
         </button>
 
-        <div
-          ref={carouselRef}
-          style={{ overflow: 'hidden' }}
-        >
+        <div ref={carouselRef} style={{ overflow: 'hidden' }}>
           {products.length > 0 && (
             <div
               ref={trackRef}
@@ -261,6 +259,7 @@ const ProductsCarousel = () => {
           )}
         </div>
       </div>
+    {quickShopSlug && <QuickShopModal slug={quickShopSlug} onClose={() => setQuickShopSlug(null)} />}
     </section>
   );
 };

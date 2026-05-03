@@ -3,19 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 
 const FALLBACK = [
-  { num: '01', title: 'Boubous & Bazin',      subtitle: 'Tenues de cérémonie',  href: '/boutique?category=boubous' },
-  { num: '02', title: 'Robes & Ensembles',    subtitle: 'Prêt-à-porter femme',  href: '/boutique?category=robes'   },
-  { num: '03', title: 'Bijoux & Accessoires', subtitle: 'Finitions artisanales', href: '/boutique?category=bijoux'  },
-  { num: '04', title: 'Sur Mesure',           subtitle: 'Votre vision, nos mains', href: '/contact'                },
+  { num: '01', title: 'Boubous & Bazin',      subtitle: 'Tenues de cérémonie',    href: '/boutique?category=boubous', slug: 'boubous' },
+  { num: '02', title: 'Robes & Ensembles',    subtitle: 'Prêt-à-porter femme',    href: '/boutique?category=robes',   slug: 'robes'   },
+  { num: '03', title: 'Bijoux & Accessoires', subtitle: 'Finitions artisanales',  href: '/boutique?category=bijoux',  slug: 'bijoux'  },
+  { num: '04', title: 'Sur Mesure',           subtitle: 'Votre vision, nos mains', href: '/contact',                  slug: null      },
 ];
 
-const CategoryCard = ({ item, index }) => {
+const CategoryCard = ({ item, index, onSelect, isActive }) => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
 
+  const handleClick = () => {
+    if (onSelect && item.slug) {
+      onSelect(item.slug);
+    } else {
+      navigate(item.href);
+    }
+  };
+
+  const active = isActive && item.slug;
+
   return (
     <div
-      onClick={() => navigate(item.href)}
+      onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -28,18 +38,18 @@ const CategoryCard = ({ item, index }) => {
         padding: '2rem 3.2rem',
         cursor: 'pointer',
         borderRight: index < 3 ? '1px solid #E0D0B8' : 'none',
-        background: hovered ? 'rgba(184,150,10,0.06)' : 'transparent',
+        background: active ? 'rgba(184,150,10,0.10)' : hovered ? 'rgba(184,150,10,0.06)' : 'transparent',
         transition: 'background 0.4s ease',
         overflow: 'hidden',
       }}
     >
-      {/* Ligne dorée haut — glisse à l'entrée */}
+      {/* Ligne dorée haut — permanente si actif, glisse au hover sinon */}
       <div style={{
         position: 'absolute',
         top: 0, left: 0, right: 0,
         height: '2px',
         background: '#B8960A',
-        transform: hovered ? 'scaleX(1)' : 'scaleX(0)',
+        transform: (active || hovered) ? 'scaleX(1)' : 'scaleX(0)',
         transformOrigin: 'left',
         transition: 'transform 0.45s cubic-bezier(0.77,0,0.175,1)',
       }} />
@@ -50,7 +60,7 @@ const CategoryCard = ({ item, index }) => {
         <h3 style={{
           fontFamily: 'Aclonica, sans-serif',
           fontSize: 'clamp(1.8rem, 2vw, 2.8rem)',
-          color: hovered ? '#1A1208' : '#7A6A50',
+          color: (active || hovered) ? '#1A1208' : '#7A6A50',
           lineHeight: 1.1,
           letterSpacing: '-0.01em',
           marginBottom: '1.4rem',
@@ -65,8 +75,8 @@ const CategoryCard = ({ item, index }) => {
           alignItems: 'center',
           justifyContent: 'center',
           gap: '0.8rem',
-          opacity: hovered ? 1 : 0,
-          transform: hovered ? 'translateY(0)' : 'translateY(8px)',
+          opacity: (active || hovered) ? 1 : 0,
+          transform: (active || hovered) ? 'translateY(0)' : 'translateY(8px)',
           transition: 'opacity 0.3s ease, transform 0.3s ease',
         }}>
           <span style={{
@@ -90,7 +100,7 @@ const CategoryCard = ({ item, index }) => {
   );
 };
 
-const CategoryTeaser = () => {
+const CategoryTeaser = ({ onSelect, activeSlug }) => {
   const [categories, setCategories] = useState(FALLBACK);
 
   useEffect(() => {
@@ -104,6 +114,7 @@ const CategoryTeaser = () => {
             title:    cat.name,
             subtitle: FALLBACK[i].subtitle,
             href:     `/boutique?category=${cat.slug}`,
+            slug:     cat.slug,
           }))
         );
       })
@@ -122,7 +133,13 @@ const CategoryTeaser = () => {
       }}
     >
       {categories.map((item, i) => (
-        <CategoryCard key={item.title} item={item} index={i} />
+        <CategoryCard
+          key={item.title}
+          item={item}
+          index={i}
+          onSelect={onSelect}
+          isActive={activeSlug === item.slug}
+        />
       ))}
 
       <style>{`

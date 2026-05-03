@@ -12,12 +12,11 @@ const ScrollToTop = () => {
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const BoutiquePage = lazy(() => import('./pages/BoutiquePage'));
-const ProduitPage = lazy(() => import('./pages/ProduitPage'));
 const PanierPage = lazy(() => import('./pages/PanierPage'));
 const CommandePage = lazy(() => import('./pages/CommandePage'));
 const SuiviCommandePage = lazy(() => import('./pages/SuiviCommandePage'));
-const MonComptePage = lazy(() => import('./pages/MonComptePage'));
 const CollectionsPage = lazy(() => import('./pages/CollectionsPage'));
+const ProfilPage = lazy(() => import('./pages/MonComptePage'));
 const CollectionDetailPage = lazy(() => import('./pages/CollectionDetailPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const AProposPage = lazy(() => import('./pages/AProposPage'));
@@ -43,12 +42,11 @@ function App() {
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/boutique" element={<BoutiquePage />} />
-            <Route path="/produit/:slug" element={<ProduitPage />} />
             <Route path="/panier" element={<PanierPage />} />
             <Route path="/commande" element={<CommandePage />} />
             <Route path="/commande/suivi" element={<SuiviCommandePage />} />
             <Route path="/commande/suivi/:orderNumber" element={<SuiviCommandePage />} />
-            <Route path="/mon-compte" element={<MonComptePage />} />
+            <Route path="/profil" element={<ProfilPage />} />
             <Route path="/collections" element={<CollectionsPage />} />
             <Route path="/collections/:slug" element={<CollectionDetailPage />} />
             <Route path="/contact" element={<ContactPage />} />

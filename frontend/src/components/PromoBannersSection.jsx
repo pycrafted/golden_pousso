@@ -1,53 +1,39 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiClient from '../api/client';
 
-const SLIDES = [
-  {
-    image: '/images/hero.jpg',
-    eyebrow: 'Collection Prestige',
-    title: 'ÉLÉGANCE\nAFRICAINE',
-    cta: 'Découvrir la boutique',
-    link: '/boutique',
-  },
-  {
-    image: '/images/woman-in-cart.png',
-    eyebrow: 'Prêt-à-Porter',
-    title: 'TENUES\nAU FÉMININ',
-    cta: 'Voir la boutique',
-    link: '/boutique',
-  },
-];
-
-const BANNERS = [
-  {
-    image: '/images/hero.jpg',
-    eyebrow: 'Cérémonie & Gala',
-    title: 'Robes de\nPrestige',
-    cta: 'Je commande',
-    link: '/boutique',
-  },
-  {
-    image: '/images/woman-in-cart.png',
-    eyebrow: 'Nouveautés',
-    title: 'Collection\nFemme',
-    cta: 'Découvrir',
-    link: '/boutique',
-  },
-];
+const toItem = (col) => ({
+  image: col.cover_image,
+  eyebrow: col.date ? new Date(col.date).getFullYear().toString() : 'Collection',
+  title: col.name.toUpperCase(),
+  description: col.description,
+  cta: 'Découvrir',
+  link: '/collections',
+});
 
 const INTERVAL = 5000;
 
 const PromoBannersSection = () => {
   const navigate = useNavigate();
+  const [slides, setSlides] = useState([]);
+  const [banners, setBanners] = useState([]);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const [arrowHovered, setArrowHovered] = useState(null);
   const [bannerHovered, setBannerHovered] = useState(null);
   const timerRef = useRef(null);
 
+  useEffect(() => {
+    apiClient.get('/collections/').then((r) => {
+      const withImage = (r.data.results ?? r.data).filter(c => c.cover_image);
+      setSlides(withImage.slice(0, 3).map(toItem));
+      setBanners(withImage.slice(0, 2).map(toItem));
+    }).catch(() => {});
+  }, []);
+
   const resetTimer = () => {
     clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => setActive(p => (p + 1) % SLIDES.length), INTERVAL);
+    timerRef.current = setInterval(() => setActive(p => (p + 1) % slides.length), INTERVAL);
   };
 
   useEffect(() => {
@@ -57,15 +43,18 @@ const PromoBannersSection = () => {
   }, [paused]);
 
   const goTo = (i) => { setActive(i); resetTimer(); };
-  const prev = () => { setActive(p => (p - 1 + SLIDES.length) % SLIDES.length); resetTimer(); };
-  const next = () => { setActive(p => (p + 1) % SLIDES.length); resetTimer(); };
+  const prev = () => { setActive(p => (p - 1 + slides.length) % slides.length); resetTimer(); };
+  const next = () => { setActive(p => (p + 1) % slides.length); resetTimer(); };
+
+  if (!slides.length || !banners.length) return null;
 
   return (
+    <div style={{ background: '#FAF6EE', padding: '1.2rem' }}>
     <div style={{
       display: 'flex',
       gap: '1.2rem',
-      background: '#FAF6EE',
-      padding: '1.2rem',
+      maxWidth: '110rem',
+      margin: '0 auto',
       height: '72vh',
       minHeight: '48rem',
       maxHeight: '75rem',
@@ -75,12 +64,12 @@ const PromoBannersSection = () => {
 
       {/* ── CAROUSEL GAUCHE ── */}
       <div
-        style={{ flex: '0 0 72%', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+        style={{ flex: '0 0 62%', position: 'relative', overflow: 'hidden', cursor: 'pointer', background: '#0A0A0A' }}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
-        onClick={() => navigate(SLIDES[active].link)}
+        onClick={() => navigate(slides[active].link)}
       >
-        {SLIDES.map((slide, i) => (
+        {slides.map((slide, i) => (
           <div key={i} style={{
             position: 'absolute', inset: 0,
             opacity: i === active ? 1 : 0,
@@ -88,7 +77,8 @@ const PromoBannersSection = () => {
             pointerEvents: i === active ? 'auto' : 'none',
           }}>
             <img src={slide.image} alt="" style={{
-              width: '100%', height: '100%', objectFit: 'cover',
+              width: '100%', height: '100%',
+              objectFit: 'contain', objectPosition: 'center center',
               transform: i === active ? 'scale(1.03)' : 'scale(1)',
               transition: 'transform 6s ease',
             }} />
@@ -99,7 +89,9 @@ const PromoBannersSection = () => {
 
             {/* Texte */}
             <div style={{
-              position: 'absolute', bottom: '14%', left: '7%',
+              position: 'absolute', bottom: '14%', left: 0, right: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+              padding: '0 4rem',
               opacity: i === active ? 1 : 0,
               transform: i === active ? 'translateY(0)' : 'translateY(24px)',
               transition: 'opacity 0.7s ease 0.35s, transform 0.7s ease 0.35s',
@@ -170,7 +162,7 @@ const PromoBannersSection = () => {
           position: 'absolute', bottom: '2.8rem', left: '50%', transform: 'translateX(-50%)',
           display: 'flex', gap: '0.7rem', alignItems: 'center',
         }}>
-          {SLIDES.map((_, i) => (
+          {slides.map((_, i) => (
             <button key={i}
               onClick={e => { e.stopPropagation(); goTo(i); }}
               style={{
@@ -201,15 +193,16 @@ const PromoBannersSection = () => {
 
       {/* ── BANNIÈRES DROITE ── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-        {BANNERS.map((banner, i) => (
+        {banners.map((banner, i) => (
           <div key={i}
             onClick={() => navigate(banner.link)}
             onMouseEnter={() => setBannerHovered(i)}
             onMouseLeave={() => setBannerHovered(null)}
-            style={{ flex: 1, position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+            style={{ flex: 1, position: 'relative', overflow: 'hidden', cursor: 'pointer', background: '#0A0A0A' }}
           >
             <img src={banner.image} alt="" style={{
-              width: '100%', height: '100%', objectFit: 'cover',
+              width: '100%', height: '100%',
+              objectFit: 'contain', objectPosition: 'center center',
               transform: bannerHovered === i ? 'scale(1.06)' : 'scale(1)',
               transition: 'transform 0.6s ease',
             }} />
@@ -218,7 +211,10 @@ const PromoBannersSection = () => {
               background: 'linear-gradient(to top, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.15) 55%, transparent 100%)',
             }} />
             <div style={{
-              position: 'absolute', bottom: '1.8rem', left: '1.8rem', color: '#F5F0EB',
+              position: 'absolute', inset: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              justifyContent: 'center', textAlign: 'center',
+              padding: '0 1.2rem', color: '#F5F0EB',
               transform: bannerHovered === i ? 'translateY(-4px)' : 'translateY(0)',
               transition: 'transform 0.35s ease',
             }}>
@@ -233,7 +229,7 @@ const PromoBannersSection = () => {
                 fontFamily: 'Aclonica, sans-serif',
                 fontSize: 'clamp(1.4rem, 2vw, 2rem)',
                 lineHeight: 1.2, marginBottom: '1.2rem',
-                whiteSpace: 'pre-line',
+                whiteSpace: 'pre-line', color: '#F5F0EB',
               }}>
                 {banner.title}
               </h3>
@@ -277,6 +273,7 @@ const PromoBannersSection = () => {
           }
         }
       `}</style>
+    </div>
     </div>
   );
 };

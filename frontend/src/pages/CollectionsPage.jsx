@@ -1,8 +1,8 @@
 import { useRef, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 import CldImg from '../components/CldImg';
+import QuickShopModal from '../components/QuickShopModal';
 
 const useInView = () => {
   const ref = useRef(null);
@@ -140,15 +140,10 @@ const MasonryGrid = ({ items }) => (
 );
 
 const CollectionsPage = () => {
-  const navigate = useNavigate();
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
-  const tabRefs = useRef({});
-  const [underline, setUnderline] = useState({ left: 0, width: 0 });
-
-  const [detailProducts, setDetailProducts] = useState([]);
-  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [quickShopSlug, setQuickShopSlug] = useState(null);
+  const [activeSlug, setActiveSlug] = useState(null);
 
   useEffect(() => {
     apiClient.get('/collections/')
@@ -157,32 +152,6 @@ const CollectionsPage = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    if (activeTab === 'all') {
-      setDetailProducts([]);
-      return;
-    }
-    setLoadingDetail(true);
-    apiClient.get(`/collections/${activeTab}/`)
-      .then((res) => setDetailProducts(res.data.products ?? []))
-      .catch(() => setDetailProducts([]))
-      .finally(() => setLoadingDetail(false));
-  }, [activeTab]);
-
-  const tabs = [
-    { key: 'all', label: 'Toutes' },
-    ...collections.map(c => ({ key: c.slug, label: c.name })),
-  ];
-
-  useEffect(() => {
-    const el = tabRefs.current[activeTab];
-    if (el) setUnderline({ left: el.offsetLeft, width: el.offsetWidth });
-  }, [activeTab, collections]);
-
-  const isAll = activeTab === 'all';
-  const activeCollection = collections.find(c => c.slug === activeTab);
-
-  /* Aplatir toutes les product_images de toutes les collections */
   const allImages = collections.flatMap((c) => {
     const year = c.date ? new Date(c.date).getFullYear() : '';
     const images = c.product_images?.length ? c.product_images : (c.cover_image ? [c.cover_image] : []);
@@ -192,19 +161,13 @@ const CollectionsPage = () => {
       name: c.name,
       year,
       description: null,
-      onClick: () => navigate(`/collections/${c.slug}`),
+      slug: c.slug,
+      onClick: () => setActiveSlug(prev => prev === c.slug ? null : c.slug),
     }));
   });
 
-  /* Items pour la vue collection spécifique */
-  const detailItems = detailProducts.map((p) => ({
-    key: `p-${p.id}`,
-    image: p.primary_image,
-    name: p.name,
-    year: '',
-    description: null,
-    onClick: () => navigate(`/produit/${p.slug}`),
-  }));
+  const visibleImages = activeSlug ? allImages.filter(i => i.slug === activeSlug) : allImages;
+  const activeCollection = activeSlug ? collections.find(c => c.slug === activeSlug) : null;
 
   const skeletonItems = Array.from({ length: 9 }).map((_, i) => ({
     key: `sk-${i}`,
@@ -214,7 +177,7 @@ const CollectionsPage = () => {
   return (
     <>
       <SEOHead
-        title={isAll ? 'Collections' : activeCollection?.name ?? 'Collections'}
+        title="Collections"
         description="Découvrez les défilés et collections saisonnières de Golden Pousso — Haute couture africaine à Dakar, Sénégal."
         url="/collections"
       />
@@ -240,63 +203,46 @@ const CollectionsPage = () => {
               <br />
               <span style={{ color: '#B8960A' }}>&amp; Collections</span>
             </h1>
-          </div>
 
-          {/* Tabs */}
-          {!loading && collections.length > 0 && (
-            <div style={{ position: 'relative', borderBottom: '1px solid #E0D0B8', marginBottom: '5rem' }}>
-              <div style={{ display: 'flex', gap: 0, overflowX: 'auto' }}>
-                {tabs.map(({ key, label }) => (
-                  <button
-                    key={key}
-                    ref={el => { tabRefs.current[key] = el; }}
-                    onClick={() => setActiveTab(key)}
-                    style={{
-                      padding: '1.2rem 3rem 1.8rem',
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      fontSize: '1.3rem', fontFamily: 'Inter, sans-serif',
-                      fontWeight: 500, letterSpacing: '0.12em',
-                      textTransform: 'uppercase', whiteSpace: 'nowrap',
-                      color: activeTab === key ? '#1A1208' : '#7A6A50',
-                      transition: 'color 0.25s ease',
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
+            {activeCollection && (
+              <div style={{ marginTop: '2.4rem', display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
+                <span style={{
+                  fontFamily: 'Inter, sans-serif', fontSize: '1.1rem',
+                  textTransform: 'uppercase', letterSpacing: '0.2em',
+                  color: '#7A6A50',
+                }}>
+                  Filtre :
+                </span>
+                <button
+                  onClick={() => setActiveSlug(null)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.8rem',
+                    background: '#1A1208', color: '#FAF6EE',
+                    border: 'none', borderRadius: '2px',
+                    padding: '0.6rem 1.4rem',
+                    fontFamily: 'Inter, sans-serif', fontSize: '1.1rem',
+                    fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {activeCollection.name}
+                  <span style={{ fontSize: '1.4rem', lineHeight: 1, opacity: 0.7 }}>×</span>
+                </button>
               </div>
-              <div style={{
-                position: 'absolute', bottom: -1, height: '2px',
-                background: '#B8960A',
-                left: underline.left, width: underline.width,
-                transition: 'left 0.3s ease, width 0.3s ease',
-              }} />
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Grille */}
         <div style={{ padding: '0 6rem 10rem', maxWidth: '110rem', margin: '0 auto' }}>
           {loading ? (
             <MasonryGrid items={skeletonItems} />
-          ) : isAll ? (
-            allImages.length === 0 ? (
-              <p style={{ textAlign: 'center', color: '#7A6A50', fontFamily: 'Inter, sans-serif', padding: '6rem 0' }}>
-                Aucune collection disponible pour le moment.
-              </p>
-            ) : (
-              <MasonryGrid key="all" items={allImages} />
-            )
+          ) : visibleImages.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#7A6A50', fontFamily: 'Inter, sans-serif', padding: '6rem 0' }}>
+              Aucune collection disponible pour le moment.
+            </p>
           ) : (
-            loadingDetail ? (
-              <MasonryGrid key={`${activeTab}-loading`} items={skeletonItems} />
-            ) : detailItems.length === 0 ? (
-              <p style={{ textAlign: 'center', color: '#7A6A50', fontFamily: 'Inter, sans-serif', padding: '6rem 0', fontSize: '1.4rem' }}>
-                Aucun produit dans cette collection pour le moment.
-              </p>
-            ) : (
-              <MasonryGrid key={activeTab} items={detailItems} />
-            )
+            <MasonryGrid key={activeSlug ?? 'all'} items={visibleImages} />
           )}
         </div>
 
@@ -318,6 +264,7 @@ const CollectionsPage = () => {
           }
         `}</style>
       </div>
+      {quickShopSlug && <QuickShopModal slug={quickShopSlug} onClose={() => setQuickShopSlug(null)} />}
     </>
   );
 };

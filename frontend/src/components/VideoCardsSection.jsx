@@ -34,30 +34,32 @@ const VideoCardsSection = () => {
   const [headerRef, headerVisible] = useInView();
   const n = VIDEOS.length;
 
-  const [activeIdx,          setActiveIdx]          = useState(0);
-  const [offset,             setOffset]             = useState(BASE);
-  const [animated,           setAnimated]           = useState(false);
-  const [sliding,            setSliding]            = useState(false);
+  const [activeIdx,         setActiveIdx]         = useState(0);
+  const [offset,            setOffset]            = useState(BASE);
+  const [animated,          setAnimated]          = useState(false);
+  const [sliding,           setSliding]           = useState(false);
+  const [playingDelta,      setPlayingDelta]      = useState(null);
+  const [hoveredDelta,      setHoveredDelta]      = useState(null);
   /*
    * Pendant l'animation, la carte "centre visuel" est à delta=dir.
    * À l'état de repos, le centre visuel est toujours delta=0.
    */
-  const [visualCenterDelta,  setVisualCenterDelta]  = useState(0);
+  const [visualCenterDelta, setVisualCenterDelta] = useState(0);
 
   const getIdx = useCallback((delta) =>
     ((activeIdx + delta) % n + n) % n, [activeIdx, n]);
 
   const go = useCallback((dir) => {
     if (sliding) return;
+    setPlayingDelta(null);
     setSliding(true);
     setAnimated(true);
-    setVisualCenterDelta(dir);          // la carte entrante est à delta=dir
+    setVisualCenterDelta(dir);
     setOffset(BASE + dir * -STEP);
 
     setTimeout(() => {
-      /* Reset instantané : tout bascule sans transition */
       setAnimated(false);
-      setVisualCenterDelta(0);          // delta=0 reprend le rôle de centre
+      setVisualCenterDelta(0);
       setActiveIdx(prev => ((prev + dir) % n + n) % n);
       setOffset(BASE);
       setTimeout(() => setSliding(false), 50);
@@ -67,18 +69,8 @@ const VideoCardsSection = () => {
   const containerW = 3 * CARD_REM + 2 * GAP_REM;
   const deltas = [-2, -1, 0, 1, 2];
 
-  /*
-   * Pendant l'animation : le "centre" est visualCenterDelta (1 ou -1).
-   * Au repos : le "centre" est toujours 0.
-   */
   const effectiveCenter = animated ? visualCenterDelta : 0;
 
-  /*
-   * Transitions :
-   * - Pendant l'animation  → on anime scale + margin-top (carte entrante monte, sortante descend)
-   * - Pendant le reset     → 'none' pour que tout bascule instantanément
-   * - Au repos             → on anime pour les interactions futures
-   */
   const cardTransition = (!sliding || animated)
     ? 'transform 0.5s ease, margin-top 0.5s ease'
     : 'none';
@@ -117,7 +109,7 @@ const VideoCardsSection = () => {
         <div style={{ position: 'relative' }}>
 
           <ArrowBtn dir="left"  onClick={() => go(-1)} disabled={sliding}
-            pos={{ left:  `calc(50% - ${containerW / 2}rem - 6rem)` }} />
+            pos={{ left:  `calc(50% - ${containerW / 2}rem - 8rem)` }} />
 
           <div style={{
             width: `${containerW}rem`,
@@ -136,18 +128,17 @@ const VideoCardsSection = () => {
               {deltas.map((delta) => {
                 const idx      = getIdx(delta);
                 const videoId  = VIDEOS[idx].videoId;
-                // style visuel animé (monte/descend pendant le slide)
-                const isCenter = delta === effectiveCenter;
-                // autoplay uniquement sur delta=0, jamais changé pendant l'animation
-                const isAutoplay = delta === 0;
-
-                const embedUrl = isAutoplay
-                  ? `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1`
-                  : `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=0&modestbranding=1&rel=0`;
+                const isCenter   = delta === effectiveCenter;
+                const isVisible  = Math.abs(delta) <= 1;
+                const isPlaying  = playingDelta === delta;
+                const isHovered  = hoveredDelta === delta;
+                const thumb      = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
                 return (
                   <div
                     key={delta}
+                    onMouseEnter={isVisible ? () => setHoveredDelta(delta) : undefined}
+                    onMouseLeave={isVisible ? () => setHoveredDelta(null) : undefined}
                     style={{
                       flex: `0 0 ${CARD_REM}rem`,
                       marginTop: isCenter ? '0' : '5rem',
@@ -161,21 +152,85 @@ const VideoCardsSection = () => {
                       aspectRatio: '9/16',
                       overflow: 'hidden',
                       borderRadius: '4px',
+                      background: '#1a1208',
                     }}>
-                      <iframe
-                        src={embedUrl}
-                        allow="autoplay; encrypted-media; fullscreen"
-                        allowFullScreen
-                        style={{
-                          position: 'absolute',
-                          top: isCenter ? '0' : '-10%',
-                          left: 0,
-                          width: '100%',
-                          height: isCenter ? '100%' : '120%',
-                          border: 'none', display: 'block',
-                          pointerEvents: isAutoplay ? 'auto' : 'none',
-                        }}
-                      />
+
+                      {/* Thumbnail — visible tant que la vidéo n'est pas lancée */}
+                      {!isPlaying && (
+                        <img
+                          src={thumb}
+                          alt=""
+                          style={{
+                            position: 'absolute', inset: 0,
+                            width: '100%', height: '100%',
+                            objectFit: 'cover', display: 'block',
+                            transition: 'transform 0.3s ease',
+                            transform: isHovered ? 'scale(1.04)' : 'scale(1)',
+                          }}
+                        />
+                      )}
+
+                      {/* Voile sombre sur les cartes latérales — s'allège au hover */}
+                      {!isCenter && !isPlaying && (
+                        <div style={{
+                          position: 'absolute', inset: 0,
+                          background: isHovered ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.38)',
+                          transition: 'background 0.3s ease',
+                          zIndex: 1,
+                        }} />
+                      )}
+
+                      {/* Iframe — dès que l'utilisateur lance la vidéo */}
+                      {isPlaying && (
+                        <iframe
+                          key={videoId}
+                          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+                          allow="autoplay; encrypted-media; fullscreen"
+                          allowFullScreen
+                          style={{
+                            position: 'absolute',
+                            top: isCenter ? '0' : '-10%',
+                            left: 0,
+                            width: '100%',
+                            height: isCenter ? '100%' : '120%',
+                            border: 'none', display: 'block',
+                          }}
+                        />
+                      )}
+
+                      {/* Bouton play — toute carte visible, vidéo non lancée */}
+                      {isVisible && !isPlaying && (
+                        <div
+                          onClick={() => setPlayingDelta(delta)}
+                          style={{
+                            position: 'absolute', inset: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer',
+                            zIndex: 2,
+                            opacity: 1,
+                          }}
+                        >
+                          <div style={{
+                            width: isCenter ? '5.6rem' : '4.4rem',
+                            height: isCenter ? '5.6rem' : '4.4rem',
+                            borderRadius: '50%',
+                            background: 'rgba(255,255,255,0.92)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
+                            transition: 'transform 0.2s ease',
+                            transform: isHovered ? 'scale(1.08)' : 'scale(1)',
+                          }}>
+                            <svg
+                              width={isCenter ? 24 : 18}
+                              height={isCenter ? 24 : 18}
+                              viewBox="0 0 24 24" fill="#B8960A"
+                            >
+                              <polygon points="6 3 20 12 6 21 6 3" />
+                            </svg>
+                          </div>
+                        </div>
+                      )}
+
                     </div>
                   </div>
                 );
@@ -184,22 +239,7 @@ const VideoCardsSection = () => {
           </div>
 
           <ArrowBtn dir="right" onClick={() => go(1)}  disabled={sliding}
-            pos={{ right: `calc(50% - ${containerW / 2}rem - 6rem)` }} />
-        </div>
-
-        {/* Points de navigation */}
-        <div style={{
-          display: 'flex', justifyContent: 'center',
-          gap: '0.8rem', marginTop: '3.2rem',
-        }}>
-          {VIDEOS.map((_, i) => (
-            <div key={i} style={{
-              width: i === activeIdx ? '2.4rem' : '0.6rem',
-              height: '0.6rem', borderRadius: '3px',
-              background: i === activeIdx ? '#B8960A' : '#D0C0A0',
-              transition: 'width 0.3s ease, background 0.3s ease',
-            }} />
-          ))}
+            pos={{ right: `calc(50% - ${containerW / 2}rem - 8rem)` }} />
         </div>
 
       </div>
@@ -217,22 +257,22 @@ const ArrowBtn = ({ dir, onClick, disabled, pos }) => {
       onMouseLeave={() => setHovered(false)}
       style={{
         position: 'absolute', top: '50%',
-        transform: 'translateY(-50%)',
+        transform: hovered ? 'translateY(-50%) scale(1.1)' : 'translateY(-50%) scale(1)',
         ...pos,
         zIndex: 2,
-        width: '4.8rem', height: '4.8rem',
+        width: '6rem', height: '6rem',
         borderRadius: '50%',
-        border: '1.5px solid #B8960A',
-        background: hovered ? '#B8960A' : 'transparent',
+        border: 'none',
+        background: 'transparent',
         cursor: disabled ? 'default' : 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'background 0.2s ease',
-        opacity: disabled ? 0.4 : 1,
+        transition: 'transform 0.2s ease',
+        opacity: disabled ? 0.3 : 1,
       }}
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-        stroke={hovered ? '#FAF6EE' : '#B8960A'} strokeWidth="2"
-        style={{ transition: 'stroke 0.2s ease' }}>
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
+        stroke="#B8960A" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round">
         {dir === 'left'
           ? <polyline points="15 18 9 12 15 6" />
           : <polyline points="9 18 15 12 9 6" />}

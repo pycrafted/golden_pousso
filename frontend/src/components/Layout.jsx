@@ -104,15 +104,15 @@ const WhatsAppChat = () => {
           style={{
             position: 'fixed', bottom: '8rem', right: '2.4rem', zIndex: 9999,
             width: '5.8rem', height: '5.8rem', borderRadius: '50%', border: 'none',
-            background: '#25D366', cursor: 'pointer',
+            background: '#000000', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 20px rgba(37,211,102,0.45)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
             transition: 'background 0.25s, transform 0.25s, box-shadow 0.25s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#1DA851'; e.currentTarget.style.transform = 'scale(1.08)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#25D366'; e.currentTarget.style.transform = 'scale(1)'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#1A1A1A'; e.currentTarget.style.transform = 'scale(1.08)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#000000'; e.currentTarget.style.transform = 'scale(1)'; }}
         >
-          <i className="bx bxl-whatsapp" style={{ fontSize: '3rem', color: 'white', lineHeight: 1 }} />
+          <i className="bx bxl-whatsapp" style={{ fontSize: '3rem', color: '#D4AF37', lineHeight: 1 }} />
         </button>
       )}
 

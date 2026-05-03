@@ -400,41 +400,11 @@ const Dashboard = () => {
     <div style={{ background: C.bg, minHeight: '100vh', color: C.cream }}>
 
       {/* ── Page header ── */}
-      <div style={{ borderBottom: `1px solid ${C.border}`, padding: '0 4rem' }}>
-        <div style={{ maxWidth: '140rem', margin: '0 auto', paddingTop: '12rem', paddingBottom: '4rem', display: 'flex', justifyContent: 'flex-end' }}>
-          {/* Bloc profil aligné à droite */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold, marginBottom: '0.8rem' }}>
-                Mon compte
-              </p>
-              <h1 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(2rem, 3vw, 3.2rem)', color: C.cream, lineHeight: 1.1 }}>
-                {user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Bienvenue'}
-              </h1>
-              {user?.email && (
-                <p style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: C.muted, marginTop: '0.4rem' }}>
-                  {user.email}
-                </p>
-              )}
-            </div>
-            {/* Avatar */}
-            <div style={{
-              width: '7rem', height: '7rem', borderRadius: '50%',
-              background: 'rgba(184,150,10,0.1)',
-              border: `1px solid rgba(184,150,10,0.25)`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              overflow: 'hidden', flexShrink: 0,
-            }}>
-              {avatarPreview
-                ? <img src={avatarPreview} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ fontFamily: 'Aclonica, serif', fontSize: '2.2rem', color: C.gold }}>{initials}</span>
-              }
-            </div>
-          </div>
-        </div>
+      <div style={{ padding: '0 4rem' }}>
+        <div style={{ maxWidth: '140rem', margin: '0 auto', paddingTop: '12rem', paddingBottom: '4rem' }} />
 
         {/* Tab nav */}
-        <div className="db-tabs" style={{ maxWidth: '140rem', margin: '0 auto', display: 'flex', gap: '0' }}>
+        <div className="db-tabs" style={{ maxWidth: '140rem', margin: '0 auto', display: 'flex', gap: '0', justifyContent: 'center' }}>
           {NAV_TABS.map(({ key, label }) => (
             <button
               key={key}
@@ -458,7 +428,7 @@ const Dashboard = () => {
       </div>
 
       {/* ── Tab content ── */}
-      <div style={{ padding: '5rem 4rem 12rem', maxWidth: '140rem', margin: '0 auto' }}>
+      <div style={{ padding: '5rem 4rem 12rem', maxWidth: '90rem', margin: '0 auto' }}>
 
         {/* ── Profil ── */}
         {tab === 'profil' && (

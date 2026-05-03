@@ -185,21 +185,14 @@ const PanierPage = () => {
                     </div>
                     {/* Nom + variante */}
                     <div style={{ minWidth: 0 }}>
-                      <Link
-                        to={`/produit/${item.product.slug}`}
-                        style={{
+                      <span style={{
                           fontSize: '1.4rem', fontFamily: 'Inter, sans-serif',
                           fontWeight: 500, color: C.cream,
-                          textDecoration: 'none', lineHeight: 1.4,
-                          display: 'block',
+                          lineHeight: 1.4, display: 'block',
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                          transition: 'color 0.2s',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = C.gold}
-                        onMouseLeave={(e) => e.currentTarget.style.color = C.cream}
-                      >
+                        }}>
                         {item.product.name}
-                      </Link>
+                      </span>
                       {item.variant && (
                         <p style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: C.muted, marginTop: '0.4rem' }}>
                           {[item.variant.size, item.variant.color].filter(Boolean).join(' · ')}

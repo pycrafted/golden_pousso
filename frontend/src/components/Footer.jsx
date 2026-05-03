@@ -75,9 +75,8 @@ const NewsletterCTA = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.6rem' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-        <i className="bx bxl-whatsapp" style={{ fontSize: '2.2rem', color: '#25D366', marginTop: '0.2rem', flexShrink: 0 }} />
         <p style={{ fontSize: '1.3rem', color: C.muted, fontFamily: 'Inter, sans-serif', lineHeight: 1.7 }}>
-          Créez un compte avec votre numéro de téléphone et recevez automatiquement nos nouvelles collections directement sur <strong style={{ color: C.cream }}>WhatsApp</strong>.
+          Créez un compte avec votre numéro de téléphone et recevez automatiquement nos nouvelles collections.
         </p>
       </div>
       <button
@@ -124,12 +123,23 @@ const Footer = () => (
           Chaque pièce est confectionnée à la main par nos artisans de Pikine,
           alliant couture traditionnelle et esthétique contemporaine.
         </p>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <SocialBtn icon="bxl-facebook"   label="Facebook" />
-          <SocialBtn icon="bxl-instagram"  label="Instagram" />
-          <SocialBtn icon="bxl-whatsapp"   label="WhatsApp" />
-          <SocialBtn icon="bxl-tiktok"     label="TikTok" />
-          <SocialBtn icon="bxl-youtube"    label="YouTube" />
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.8rem' }}>
+          {['VISA', 'WAVE', 'ORANGE MONEY', 'FREE MONEY'].map((method) => (
+            <span key={method} style={{
+              padding: '0.5rem 1.2rem',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '4px',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '1rem',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              color: C.muted,
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+            }}>
+              {method}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -153,65 +163,6 @@ const Footer = () => (
       </div>
     </div>
 
-    {/* ── Barre bottom ── */}
-    <div style={{ background: C.bgBot, borderTop: `1px solid ${C.border}` }}>
-      <div style={{
-        maxWidth: '120rem', margin: '0 auto',
-        padding: '2rem 6rem',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        flexWrap: 'wrap', gap: '1.4rem',
-      }} className="footer-bottom">
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2.4rem', flexWrap: 'wrap' }}>
-          {[
-            { to: '/a-propos', label: 'À Propos' },
-            { to: '/boutique', label: 'Boutique' },
-            { to: '/collections', label: 'Collections' },
-            { to: '/contact', label: 'Contact' },
-          ].map(({ to, label }) => (
-            <Link key={to} to={to} style={{
-              fontSize: '1.1rem', color: '#555', textDecoration: 'none',
-              fontFamily: 'Inter, sans-serif', letterSpacing: '0.08em',
-              textTransform: 'uppercase', transition: 'color 0.2s',
-            }}
-              onMouseEnter={e => e.currentTarget.style.color = C.muted}
-              onMouseLeave={e => e.currentTarget.style.color = '#555'}
-            >
-              {label}
-            </Link>
-          ))}
-          <span style={{ fontSize: '1.1rem', color: '#444', fontFamily: 'Inter, sans-serif' }}>
-            Copyright {new Date().getFullYear()} © Golden Pousso
-          </span>
-        </div>
-
-        {/* Méthodes de paiement */}
-        <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-          {['VISA', 'WAVE', 'OM'].map(name => (
-            <span key={name} style={{
-              padding: '0.4rem 0.9rem',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: '0.3rem',
-              fontSize: '1rem', fontWeight: 700,
-              color: C.muted, fontFamily: 'Inter, sans-serif',
-              letterSpacing: '0.06em',
-            }}>
-              {name}
-            </span>
-          ))}
-          <span style={{
-            padding: '0.4rem 0.9rem',
-            border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: '0.3rem',
-            fontSize: '1rem', fontWeight: 700,
-            color: C.muted, fontFamily: 'Inter, sans-serif',
-            letterSpacing: '0.06em',
-          }}>
-            MASTERCARD
-          </span>
-        </div>
-      </div>
-    </div>
 
     <style>{`
       @media (max-width: 1024px) {

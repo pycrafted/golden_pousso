@@ -174,6 +174,7 @@ const SuiviCommandePage = () => {
   return (
     <>
       <SEOHead title={`Commande #${order.order_number}`} url={`/commande/suivi/${order.order_number}`} noindex />
+      <Navbar />
 
       <div style={{ background: '#0A0A0A', minHeight: '100vh', color: '#F5F0EB', paddingTop: '12rem', paddingBottom: '10rem' }}>
         <div style={{ maxWidth: '86rem', margin: '0 auto', padding: '0 4rem' }}>

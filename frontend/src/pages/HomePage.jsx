@@ -162,10 +162,31 @@ const HomePage = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
   const [featuredRef, featuredVisible] = useInView();
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [carouselHovered, setCarouselHovered] = useState(false);
+  const [featOffset, setFeatOffset] = useState(0);
+  const gridRef = useRef(null);
+  const COLS = 4;
+
+  const scrollFeat = (dir) => {
+    const el = gridRef.current;
+    if (!el) return;
+    const cardW = el.scrollWidth / (featuredProducts.length || 1);
+    const maxOffset = el.scrollWidth - el.parentElement.offsetWidth;
+    setFeatOffset(prev => Math.max(0, Math.min(prev + dir * cardW, maxOffset)));
+  };
 
   useEffect(() => {
     apiClient.get('/products/featured/').then((r) => setFeaturedProducts(r.data)).catch(() => {}).finally(() => setLoadingFeatured(false));
   }, []);
+
+  const handleCategorySelect = (slug) => {
+    const next = slug === activeCategory ? null : slug;
+    setActiveCategory(next);
+    setTimeout(() => {
+      document.getElementById('nos-produits')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
 
   return (
     <>
@@ -175,10 +196,10 @@ const HomePage = () => {
       <Hero />
 
       {/* ── 2. CATÉGORIES — 4 cartes éditoriales ── */}
-      <CategoryTeaser />
+      <CategoryTeaser onSelect={handleCategorySelect} activeSlug={activeCategory} />
 
       {/* ── 3. NOS PRODUITS ── */}
-      <CategoryGrid />
+      <CategoryGrid categorySlug={activeCategory} />
 
       {/* ── 4. BANNIÈRE PLEINE LARGEUR ── */}
       <div style={{ paddingTop: '4rem', background: '#FAF6EE' }}>
@@ -221,19 +242,54 @@ const HomePage = () => {
               {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : featuredProducts.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2.4rem' }} className="products-grid">
-              {featuredProducts.slice(0, 4).map((p, i) => (
-                <div
-                  key={p.id}
-                  style={{
-                    opacity: featuredVisible ? 1 : 0,
-                    transform: featuredVisible ? 'translateY(0)' : 'translateY(20px)',
-                    transition: `opacity 0.5s ease ${0.1 * i + 0.3}s, transform 0.5s ease ${0.1 * i + 0.3}s`,
-                  }}
-                >
-                  <HomeProductCard product={p} />
+            <div
+              style={{ position: 'relative' }}
+              onMouseEnter={() => setCarouselHovered(true)}
+              onMouseLeave={() => setCarouselHovered(false)}
+            >
+              {/* Flèche gauche */}
+              <button onClick={() => scrollFeat(-1)} aria-label="Précédent" style={{
+                position: 'absolute', left: '-5rem', top: '40%', transform: 'translateY(-50%)',
+                zIndex: 10, background: 'transparent', border: 'none', cursor: 'pointer',
+                opacity: 1,
+                padding: 0,
+              }}>
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#B8960A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+
+              {/* Flèche droite */}
+              <button onClick={() => scrollFeat(1)} aria-label="Suivant" style={{
+                position: 'absolute', right: '-5rem', top: '40%', transform: 'translateY(-50%)',
+                zIndex: 10, background: 'transparent', border: 'none', cursor: 'pointer',
+                opacity: 1,
+                padding: 0,
+              }}>
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#B8960A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+
+              <div style={{ overflow: 'hidden' }}>
+                <div ref={gridRef} style={{
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${featuredProducts.length}, calc((100% - ${(COLS - 1)} * 2.4rem) / ${COLS}))`,
+                  gap: '2.4rem',
+                  transform: `translateX(-${featOffset}px)`,
+                  transition: 'transform 0.5s ease',
+                }}>
+                  {featuredProducts.map((p, i) => (
+                    <div key={p.id} style={{
+                      opacity: featuredVisible ? 1 : 0,
+                      transform: featuredVisible ? 'translateY(0)' : 'translateY(20px)',
+                      transition: `opacity 0.5s ease ${0.1 * i + 0.3}s, transform 0.5s ease ${0.1 * i + 0.3}s`,
+                    }}>
+                      <HomeProductCard product={p} />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           ) : null}
         </div>

@@ -17,6 +17,139 @@ const C = {
   cardBg: '#1A1A1A',
 };
 
+const inputStyle = {
+  width: '100%', padding: '1.1rem 0', background: 'transparent',
+  border: 'none', borderBottom: '1px solid #333', color: '#F5F0EB',
+  fontFamily: 'Inter, sans-serif', fontSize: '1.3rem',
+  outline: 'none', boxSizing: 'border-box',
+};
+
+/* ── Dropdown profil ── */
+const ProfileDropdown = () => {
+  const [open, setOpen]       = useState(false);
+  const [mode, setMode]       = useState('login'); // 'login' | 'register'
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState('');
+  const [form, setForm]       = useState({ phone: '', password: '', first_name: '', last_name: '' });
+  const ref = useRef(null);
+  const navigate = useNavigate();
+  const { isAuthenticated, user, login, logout, register } = useAuthStore();
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const reset = () => { setForm({ phone: '', password: '', first_name: '', last_name: '' }); setError(''); };
+  const switchMode = (m) => { setMode(m); reset(); };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true); setError('');
+    try {
+      if (mode === 'login') {
+        await login(form.phone, form.password);
+      } else {
+        await register({ phone: form.phone, password: form.password, first_name: form.first_name, last_name: form.last_name });
+      }
+      setOpen(false); reset();
+    } catch (err) {
+      const data = err?.response?.data;
+      if (data) {
+        const msg = Object.values(data).flat().join(' ');
+        setError(msg || 'Une erreur est survenue.');
+      } else {
+        setError(mode === 'login' ? 'Téléphone ou mot de passe incorrect.' : 'Une erreur est survenue.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <IconBtn onClick={() => isAuthenticated ? navigate('/profil') : setOpen(o => !o)} title="Mon compte">
+        <i className="bx bx-user" style={{ fontSize: '2.2rem' }}></i>
+      </IconBtn>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 1.2rem)', right: 0,
+          width: '32rem', background: '#111', border: '1px solid #222',
+          borderRadius: '4px', padding: '2.4rem',
+          boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+          zIndex: 200,
+        }}>
+          {isAuthenticated ? (
+            <>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '0.6rem' }}>
+                Connecté en tant que
+              </p>
+              <p style={{ fontFamily: 'Aclonica, sans-serif', fontSize: '1.5rem', color: C.gold, marginBottom: '2rem' }}>
+                {user?.first_name || user?.phone || 'Mon compte'}
+              </p>
+              <button
+                onClick={() => { logout(); navigate('/'); setOpen(false); }}
+                style={{ width: '100%', padding: '1.1rem', background: 'transparent', border: '1px solid #333', color: '#888', fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'border-color 0.2s, color 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#C2662D'; e.currentTarget.style.color = '#C2662D'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.color = '#888'; }}
+              >
+                Se déconnecter
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Toggle connexion / inscription */}
+              <div style={{ display: 'flex', marginBottom: '2.4rem', borderBottom: '1px solid #222' }}>
+                {['login', 'register'].map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => switchMode(m)}
+                    style={{
+                      flex: 1, padding: '1rem', background: 'none', border: 'none',
+                      borderBottom: mode === m ? `2px solid ${C.gold}` : '2px solid transparent',
+                      color: mode === m ? '#F5F0EB' : '#666',
+                      fontFamily: 'Inter, sans-serif', fontSize: '1.2rem',
+                      fontWeight: mode === m ? 600 : 400,
+                      letterSpacing: '0.1em', textTransform: 'uppercase',
+                      cursor: 'pointer', transition: 'color 0.2s',
+                      marginBottom: '-1px',
+                    }}
+                  >
+                    {m === 'login' ? 'Connexion' : 'Créer un compte'}
+                  </button>
+                ))}
+              </div>
+
+              <form onSubmit={handleSubmit}>
+                {mode === 'register' && (
+                  <>
+                    <input type="text" placeholder="Prénom" value={form.first_name} onChange={set('first_name')} required style={{ ...inputStyle, marginBottom: '1.4rem' }} />
+                    <input type="text" placeholder="Nom" value={form.last_name} onChange={set('last_name')} style={{ ...inputStyle, marginBottom: '1.4rem' }} />
+                  </>
+                )}
+                <input type="tel" placeholder="Téléphone" value={form.phone} onChange={set('phone')} required style={{ ...inputStyle, marginBottom: '1.4rem' }} />
+                <input type="password" placeholder="Mot de passe" value={form.password} onChange={set('password')} required style={{ ...inputStyle, marginBottom: '0.8rem' }} />
+
+                {error && <p style={{ color: '#C2662D', fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', marginTop: '0.8rem' }}>{error}</p>}
+
+                <button
+                  type="submit" disabled={loading}
+                  style={{ width: '100%', padding: '1.2rem', marginTop: '1.6rem', background: C.gold, border: 'none', color: '#0A0A0A', fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
+                >
+                  {loading ? '…' : mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Navbar = () => {
   const [navOpen, setNavOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -72,7 +205,7 @@ const Navbar = () => {
     <div style={{ position: 'relative', zIndex: 1000 }}>
       {/* Main navbar */}
       <nav style={{
-        background: sticky ? 'rgba(10,10,10,0.92)' : C.dark,
+        background: sticky ? 'rgba(0,0,0,0.96)' : '#000000',
         backdropFilter: sticky ? 'blur(16px)' : 'none',
         borderBottom: sticky ? '1px solid rgba(255,255,255,0.06)' : 'none',
         padding: '1.8rem 0',
@@ -89,12 +222,25 @@ const Navbar = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          position: 'relative',
         }}>
-          {/* Devise + Langue — à gauche */}
-          <div className="nav-selectors" style={{ display: 'flex', alignItems: 'center', gap: '0', flex: '0 0 auto' }}>
-            <NavDropdown value={currency} options={CURRENCIES} onChange={setCurrency} />
-            <span style={{ color: 'rgba(255,255,255,0.12)', fontSize: '1.4rem', margin: '0 0.2rem' }}>|</span>
-            <NavDropdown value={language} options={LANGUAGES} onChange={setLanguage} />
+
+          {/* Logo + nom — gauche, hors flux pour ne pas étirer le navbar */}
+          <div style={{ position: 'absolute', left: '4rem', top: '50%', transform: 'translateY(-50%)', zIndex: 2, display: 'flex', alignItems: 'center', gap: '0' }}>
+            <img
+              src="/gemini.png"
+              alt="Golden Pousso"
+              style={{ height: '6rem', display: 'block', objectFit: 'contain' }}
+            />
+            <span style={{
+              fontFamily: 'Aclonica, sans-serif',
+              fontSize: '1.8rem',
+              color: C.gold,
+              letterSpacing: '0.04em',
+              whiteSpace: 'nowrap',
+            }}>
+              Golden Pousso
+            </span>
           </div>
 
           {/* Desktop nav links (center) */}
@@ -117,9 +263,7 @@ const Navbar = () => {
             <IconBtn onClick={() => setSearchOpen(true)} title="Rechercher">
               <i className="bx bx-search" style={{ fontSize: '2.2rem' }}></i>
             </IconBtn>
-            <IconBtn onClick={() => navigate('/mon-compte')} title="Mon compte">
-              <i className="bx bx-user" style={{ fontSize: '2.2rem' }}></i>
-            </IconBtn>
+            <ProfileDropdown />
             <div ref={cartRef} style={{ position: 'relative' }}>
               <IconBtn onClick={() => setCartOpen((o) => !o)} title="Panier">
                 <i className="bx bx-cart" style={{ fontSize: '2.2rem' }}></i>
@@ -137,7 +281,7 @@ const Navbar = () => {
               </IconBtn>
             </div>
             {isAuthenticated && (
-              <IconBtn onClick={() => logout()} title="Se déconnecter">
+              <IconBtn onClick={() => { logout(); navigate('/'); }} title="Se déconnecter">
                 <i className="bx bx-log-out" style={{ fontSize: '2.2rem' }}></i>
               </IconBtn>
             )}
@@ -498,26 +642,6 @@ const Navbar = () => {
               </button>
             </div>
 
-            {/* Sélecteurs devise + langue */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.4rem', marginBottom: '2.4rem' }}>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <select value={currency} onChange={(e) => setCurrency(e.target.value)} style={mobileSelectStyle}>
-                  {CURRENCIES.map((c) => (
-                    <option key={c.value} value={c.value} style={{ background: '#141414', color: '#F5F0EB' }}>{c.label}</option>
-                  ))}
-                </select>
-                <svg style={{ position: 'absolute', right: '0.8rem', pointerEvents: 'none' }} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-              <span style={{ color: '#2A2A2A' }}>|</span>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <select value={language} onChange={(e) => setLanguage(e.target.value)} style={mobileSelectStyle}>
-                  {LANGUAGES.map((l) => (
-                    <option key={l.value} value={l.value} style={{ background: '#141414', color: '#F5F0EB' }}>{l.label}</option>
-                  ))}
-                </select>
-                <svg style={{ position: 'absolute', right: '0.8rem', pointerEvents: 'none' }} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-            </div>
 
             <p style={{ fontSize: '1.2rem', color: '#444', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
               Made in Dakar · Savoir-faire Africain

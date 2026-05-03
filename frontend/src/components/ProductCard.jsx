@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import QuickShopModal from './QuickShopModal';
 
 const formatFCFA = (price) =>
   new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
 
 /* ── Variante sombre (homepage featured/new) ── */
 const ProductCardDark = ({ product, showBadge = true }) => {
-  const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const [btnHovered, setBtnHovered] = useState(false);
+  const [modal, setModal] = useState(false);
 
   const discountPercent =
     product.old_price && product.old_price > product.price
@@ -19,8 +19,9 @@ const ProductCardDark = ({ product, showBadge = true }) => {
   const hasSecondary = Boolean(product.secondary_image);
 
   return (
+    <>
     <div
-      onClick={() => !outOfStock && navigate(`/produit/${product.slug}`)}
+      onClick={() => !outOfStock && setModal(true)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); setBtnHovered(false); }}
       style={{
@@ -166,13 +167,15 @@ const ProductCardDark = ({ product, showBadge = true }) => {
         </div>
       </div>
     </div>
+    {modal && <QuickShopModal slug={product.slug} onClose={() => setModal(false)} />}
+    </>
   );
 };
 
 /* ── Variante claire (boutique, etc.) ── */
 const ProductCardLight = ({ product, showBadge = true }) => {
-  const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
+  const [modal, setModal] = useState(false);
 
   const discountPercent =
     product.old_price && product.old_price > product.price
@@ -183,8 +186,9 @@ const ProductCardLight = ({ product, showBadge = true }) => {
   const hasSecondary = Boolean(product.secondary_image);
 
   return (
+    <>
     <div
-      onClick={() => !outOfStock && navigate(`/produit/${product.slug}`)}
+      onClick={() => !outOfStock && setModal(true)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -311,6 +315,8 @@ const ProductCardLight = ({ product, showBadge = true }) => {
         </div>
       </div>
     </div>
+    {modal && <QuickShopModal slug={product.slug} onClose={() => setModal(false)} />}
+    </>
   );
 };
 

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 import useCartStore from '../store/cartStore';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
@@ -50,7 +49,6 @@ const SimilarCard = ({ product, currency, onClick }) => {
 };
 
 const QuickShopModal = ({ slug, onClose }) => {
-  const navigate = useNavigate();
   const addItem = useCartStore((s) => s.addItem);
   const currency = useSettingsStore((s) => s.currency);
 
@@ -137,40 +135,21 @@ const QuickShopModal = ({ slug, onClose }) => {
 
   const modal = (
     <div
+      onClick={(e) => { e.stopPropagation(); onClose(); }}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '2rem',
+        background: 'rgba(10,8,5,0.78)',
+        backdropFilter: 'blur(3px)',
       }}
     >
-      {/* Backdrop cliquable */}
+      {/* Contenu du modal — stopPropagation pour ne pas fermer au clic intérieur */}
       <div
-        onClick={onClose}
-        style={{
-          position: 'absolute', inset: 0,
-          background: 'rgba(10,8,5,0.78)',
-          backdropFilter: 'blur(3px)',
-        }}
-      />
+        onClick={(e) => e.stopPropagation()}
+        style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '88rem' }}
+      >
 
-      {/* Contenu du modal — au-dessus du backdrop */}
-      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '88rem' }}>
-
-        {/* ── Bouton fermer ── hors du grid pour ne jamais être masqué */}
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute', top: '1.6rem', right: '1.6rem', zIndex: 20,
-            background: 'none', border: '1px solid #E0D0B8', cursor: 'pointer',
-            width: '3.6rem', height: '3.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#1A1208', fontSize: '2rem', lineHeight: 1,
-            transition: 'border-color 0.2s, color 0.2s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#B8960A'; e.currentTarget.style.color = '#B8960A'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E0D0B8'; e.currentTarget.style.color = '#1A1208'; }}
-        >
-          ×
-        </button>
 
         <div className="qs-grid" style={{
           background: '#FAF6EE',
@@ -287,23 +266,32 @@ const QuickShopModal = ({ slug, onClose }) => {
                   <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#7A6A50', marginBottom: '1rem' }}>
                     Taille
                   </p>
-                  <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
-                    {sizes.map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => setSelectedSize(size)}
-                        style={{
-                          padding: '0.8rem 1.6rem', cursor: 'pointer',
-                          border: `1px solid ${selectedSize === size ? '#B8960A' : '#E0D0B8'}`,
-                          background: selectedSize === size ? '#B8960A' : 'transparent',
-                          color: selectedSize === size ? '#FAF6EE' : '#1A1208',
-                          fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', fontWeight: 500,
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        {size}
-                      </button>
-                    ))}
+                  <div style={{ position: 'relative' }}>
+                    <select
+                      value={selectedSize ?? ''}
+                      onChange={(e) => setSelectedSize(e.target.value || null)}
+                      style={{
+                        width: '100%', padding: '1.1rem 3.6rem 1.1rem 1.4rem',
+                        appearance: 'none', WebkitAppearance: 'none',
+                        border: `1px solid ${selectedSize ? '#B8960A' : '#E0D0B8'}`,
+                        background: '#FAF6EE', color: selectedSize ? '#1A1208' : '#7A6A50',
+                        fontFamily: 'Inter, sans-serif', fontSize: '1.3rem', fontWeight: 500,
+                        cursor: 'pointer', outline: 'none',
+                        transition: 'border-color 0.2s',
+                      }}
+                    >
+                      <option value="">Choisir une taille</option>
+                      {sizes.map((size) => (
+                        <option key={size} value={size}>{size}</option>
+                      ))}
+                    </select>
+                    <svg
+                      style={{ position: 'absolute', right: '1.2rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+                      width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      stroke={selectedSize ? '#B8960A' : '#7A6A50'} strokeWidth="2" strokeLinecap="round"
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
                   </div>
                 </div>
               )}
@@ -374,21 +362,6 @@ const QuickShopModal = ({ slug, onClose }) => {
                 {added ? '✓ Ajouté !' : '+ Ajouter au panier'}
               </button>
 
-              {/* Voir la page produit */}
-              <button
-                onClick={() => { onClose(); navigate(`/produit/${product.slug}`); }}
-                style={{
-                  background: 'none', border: '1px solid #E0D0B8',
-                  color: '#7A6A50', padding: '1.4rem', width: '100%',
-                  fontFamily: 'Inter, sans-serif', fontSize: '1.2rem',
-                  letterSpacing: '0.15em', textTransform: 'uppercase',
-                  cursor: 'pointer', transition: 'border-color 0.2s, color 0.2s',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#B8960A'; e.currentTarget.style.color = '#B8960A'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E0D0B8'; e.currentTarget.style.color = '#7A6A50'; }}
-              >
-                Voir la page produit →
-              </button>
 
               {/* Description courte */}
               {product.description && (
