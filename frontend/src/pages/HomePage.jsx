@@ -46,7 +46,7 @@ const HomeProductCard = ({ product }) => {
         {product.primary_image ? (
           <CldImg src={product.primary_image} alt={product.name}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            widths={[300, 600, 900]}
+            widths={[300, 600]}
             style={{
               position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
               opacity: hovered && product.secondary_image ? 0 : 1,
@@ -61,7 +61,7 @@ const HomeProductCard = ({ product }) => {
         {product.secondary_image && (
           <CldImg src={product.secondary_image} alt={product.name}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            widths={[300, 600, 900]}
+            widths={[300, 600]}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: hovered ? 1 : 0, transition: 'opacity 0.7s ease' }} />
         )}
 

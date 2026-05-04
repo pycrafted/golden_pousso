@@ -258,8 +258,8 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Icônes centrées entre nav et sélecteurs */}
-          <div className="nav-icons" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: '0 0 auto' }}>
+          {/* Icônes — droite, hors flux pour ne pas décaler le centrage des liens */}
+          <div className="nav-icons" style={{ position: 'absolute', right: '4rem', top: '50%', transform: 'translateY(-50%)', zIndex: 2, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <IconBtn onClick={() => setSearchOpen(true)} title="Rechercher">
               <i className="bx bx-search" style={{ fontSize: '2.2rem' }}></i>
             </IconBtn>

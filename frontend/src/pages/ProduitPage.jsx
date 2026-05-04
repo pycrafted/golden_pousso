@@ -243,7 +243,7 @@ const ProduitPage = () => {
                 <CldImg src={currentImage.image} alt={currentImage.alt_text || product.name}
                   eager
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  widths={[600, 900, 1200]}
+                  widths={[600, 900]}
                   style={{
                     width: '100%', height: '100%', objectFit: 'cover',
                     transform: imgZoomed ? 'scale(1.8)' : 'scale(1)',

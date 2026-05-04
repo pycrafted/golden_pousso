@@ -60,7 +60,7 @@ const ProductCard = ({ product, index }) => {
               src={product.primary_image}
               alt={product.name}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
-              widths={[300, 600, 900]}
+              widths={[300, 600]}
               style={{
                 position: 'absolute', inset: 0,
                 width: '100%', height: '100%', objectFit: 'cover',
@@ -74,7 +74,7 @@ const ProductCard = ({ product, index }) => {
                 src={product.secondary_image}
                 alt={product.name}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
-                widths={[300, 600, 900]}
+                widths={[300, 600]}
                 style={{
                   position: 'absolute', inset: 0,
                   width: '100%', height: '100%', objectFit: 'cover',

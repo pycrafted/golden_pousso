@@ -1,14 +1,7 @@
-/**
- * CldImg — image Cloudinary optimisée
- * - Génère automatiquement un srcset multi-résolution
- * - Ajoute loading="lazy" par défaut (eager pour les images above-the-fold)
- * - Fonctionne aussi avec les URLs locales (dev) sans srcset
- */
-
 const cldVariant = (url, width) => {
   if (!url?.includes('res.cloudinary.com')) return url;
   if (url.includes('w_')) return url.replace(/w_\d+/, `w_${width}`);
-  return url.replace('/upload/', `/upload/w_${width},f_auto,q_auto,c_limit/`);
+  return url.replace('/upload/', `/upload/w_${width},f_auto,q_auto:eco,c_limit/`);
 };
 
 const CldImg = ({
@@ -16,21 +9,23 @@ const CldImg = ({
   alt = '',
   style,
   sizes = '100vw',
-  widths = [400, 800, 1200],
+  widths = [300, 600],
   eager = false,
   ...props
 }) => {
-  const srcSet = src?.includes('res.cloudinary.com')
+  const isCld = src?.includes('res.cloudinary.com');
+  const srcSet = isCld
     ? widths.map(w => `${cldVariant(src, w)} ${w}w`).join(', ')
     : undefined;
 
   return (
     <img
-      src={src}
+      src={isCld ? cldVariant(src, widths[widths.length - 1]) : src}
       srcSet={srcSet}
       sizes={sizes}
       alt={alt}
       loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
       style={style}
       {...props}
     />
