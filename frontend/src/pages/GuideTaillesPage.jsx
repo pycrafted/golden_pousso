@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 
 const C = {
-  bg:        '#0A0A0A',
+  bg:        '#1A1208',
   panel:     '#111111',
   border:    '#1E1E1E',
   borderMid: '#2A2A2A',
-  gold:      '#D4AF37',
+  gold:      '#B8960A',
   terra:     '#C2662D',
-  cream:     '#F5F0EB',
-  muted:     '#8A8A8A',
+  cream:     '#FAF6EE',
+  muted:     'rgba(250,246,238,0.6)',
 };
 
 const useInView = () => {
@@ -94,7 +94,7 @@ const Table = ({ headers, rows, keys }) => (
           <tr
             key={i}
             style={{ borderBottom: `1px solid ${C.border}`, transition: 'background 0.2s' }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212,175,55,0.03)'}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(184,150,10,0.03)'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
             {keys.map((k, j) => (
@@ -135,7 +135,7 @@ const Section = ({ titre, label, children }) => {
         </p>
       </div>
       <h2 style={{
-        fontFamily: 'Aclonica, serif',
+        fontFamily: 'Syne, sans-serif',
         fontSize: 'clamp(2.2rem, 3vw, 3.2rem)',
         color: C.cream, marginBottom: '3rem', lineHeight: 1.1,
       }}>
@@ -183,7 +183,7 @@ const GuideTaillesPage = () => {
               <div style={{ width: '4.8rem', height: '1px', background: C.gold }} />
               <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>Tailles & Mesures</p>
             </div>
-            <h1 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(3.5rem, 6vw, 6rem)', color: C.cream, letterSpacing: '0.02em', lineHeight: 1.05, textTransform: 'uppercase', marginBottom: '2.4rem' }}>
+            <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(3.5rem, 6vw, 6rem)', color: C.cream, letterSpacing: '0.02em', lineHeight: 1.05, textTransform: 'uppercase', marginBottom: '2.4rem' }}>
               Guide des tailles
             </h1>
             <p style={{ fontSize: '1.45rem', fontFamily: 'Inter, sans-serif', color: C.muted, lineHeight: 1.8, maxWidth: '60rem' }}>
@@ -237,13 +237,13 @@ const GuideTaillesPage = () => {
                   background: C.panel, border: `1px solid ${C.border}`,
                   padding: '3rem', transition: 'border-color 0.25s',
                 }}
-                  onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(212,175,55,0.3)'}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(184,150,10,0.3)'}
                   onMouseLeave={(e) => e.currentTarget.style.borderColor = C.border}
                 >
                   <p style={{ fontSize: '1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: C.gold, marginBottom: '1.2rem' }}>
                     0{i + 1}
                   </p>
-                  <h3 style={{ fontFamily: 'Aclonica, serif', fontSize: '1.8rem', color: C.cream, marginBottom: '1.2rem' }}>
+                  <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.8rem', color: C.cream, marginBottom: '1.2rem' }}>
                     {c.titre}
                   </h3>
                   <p style={{ fontSize: '1.35rem', fontFamily: 'Inter, sans-serif', color: C.muted, lineHeight: 1.75 }}>
@@ -265,7 +265,7 @@ const GuideTaillesPage = () => {
               <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold, marginBottom: '1.2rem' }}>
                 Vous n'avez pas trouvé votre taille ?
               </p>
-              <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(2.2rem, 3vw, 3.2rem)', color: C.cream, lineHeight: 1.1 }}>
+              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.2rem, 3vw, 3.2rem)', color: C.cream, lineHeight: 1.1 }}>
                 Commandez sur-mesure
               </h2>
             </div>
@@ -274,14 +274,14 @@ const GuideTaillesPage = () => {
               style={{
                 display: 'inline-flex', alignItems: 'center',
                 padding: '1.7rem 5rem',
-                background: C.gold, color: '#0A0A0A',
+                background: C.gold, color: '#1A1208',
                 fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
                 fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
                 textDecoration: 'none', flexShrink: 0,
                 transition: 'background 0.25s, color 0.25s',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#0A0A0A'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#1A1208'; }}
             >
               Nous contacter →
             </Link>

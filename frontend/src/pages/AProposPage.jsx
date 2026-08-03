@@ -1,5 +1,10 @@
 import { useRef, useState, useEffect } from 'react';
 import SEOHead from '../components/SEOHead';
+import apiClient from '../api/client';
+import { getCachedImageUrl, setCachedImageUrl } from '../utils/imageCache';
+
+// Affichée tant que le propriétaire n'a pas encore mis en ligne de photo d'atelier (Espace Gestion → Contenu du site).
+const FALLBACK_ATELIER_IMAGE = '/images/test.jpg';
 
 /* ── Palette ── */
 const C = {
@@ -35,6 +40,17 @@ const useInView = (options = {}) => {
 const AProposPage = () => {
   const [heroRef, heroVisible] = useInView();
   const [histRef, histVisible] = useInView();
+  const [atelierImage, setAtelierImage] = useState(() => getCachedImageUrl('atelier_image') || FALLBACK_ATELIER_IMAGE);
+
+  useEffect(() => {
+    apiClient.get('/atelier-image/')
+      .then(({ data }) => {
+        if (!data.image_url) return;
+        setCachedImageUrl('atelier_image', data.image_url);
+        setAtelierImage(data.image_url);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <>
@@ -64,7 +80,7 @@ const AProposPage = () => {
               </p>
             </div>
             <h1 style={{
-              fontFamily: 'Aclonica, serif',
+              fontFamily: 'Syne, sans-serif',
               fontSize: 'clamp(4rem, 7vw, 7.2rem)',
               color: C.cream,
               letterSpacing: '0.04em',
@@ -104,7 +120,7 @@ const AProposPage = () => {
                 </p>
               </div>
               <h2 style={{
-                fontFamily: 'Aclonica, serif',
+                fontFamily: 'Syne, sans-serif',
                 fontSize: 'clamp(2.8rem, 3.5vw, 4.2rem)',
                 color: C.cream, lineHeight: 1.1, marginBottom: '3rem',
               }}>
@@ -131,7 +147,7 @@ const AProposPage = () => {
                 overflow: 'hidden',
               }}>
                 <img
-                  src="/images/test.jpg"
+                  src={atelierImage}
                   alt="Atelier Golden Pousso — Pikine, Dakar"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -145,10 +161,10 @@ const AProposPage = () => {
               {/* Badge flottant */}
               <div style={{
                 position: 'absolute', bottom: '-2rem', left: '-2rem',
-                background: C.gold, color: '#0A0A0A',
+                background: C.gold, color: '#1A1208',
                 padding: '2rem 2.8rem',
               }}>
-                <p style={{ fontFamily: 'Aclonica, serif', fontSize: '2.8rem', lineHeight: 1, marginBottom: '0.4rem' }}>
+                <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.8rem', lineHeight: 1, marginBottom: '0.4rem' }}>
                   2012
                 </p>
                 <p style={{ fontSize: '1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 600 }}>

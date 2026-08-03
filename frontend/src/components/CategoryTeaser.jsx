@@ -58,7 +58,7 @@ const CategoryCard = ({ item, index, onSelect, isActive }) => {
       {/* Bas — sous-titre + titre + CTA */}
       <div>
         <h3 style={{
-          fontFamily: 'Aclonica, sans-serif',
+          fontFamily: 'Syne, sans-serif',
           fontSize: 'clamp(1.8rem, 2vw, 2.8rem)',
           color: (active || hovered) ? '#1A1208' : '#7A6A50',
           lineHeight: 1.1,

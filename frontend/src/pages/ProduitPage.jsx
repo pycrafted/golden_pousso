@@ -6,9 +6,13 @@ import SkeletonCard from '../components/SkeletonCard';
 import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 import useCartStore from '../store/cartStore';
+import SizeGuideModal from '../components/SizeGuideModal';
+import StockAlertForm from '../components/StockAlertForm';
+import ReviewsSection from '../components/ReviewsSection';
 
 const formatFCFA = (price) => new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
 const toEUR = (fcfa) => Math.round(fcfa / 655.957);
+const WHATSAPP_NUMBER = '221781263535';
 
 /* ── Boutons de partage ── */
 const ShareButtons = ({ product }) => {
@@ -122,6 +126,7 @@ const ProduitPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [imgZoomed, setImgZoomed] = useState(false);
   const [zoomOrigin, setZoomOrigin] = useState('50% 50%');
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   const handleImgMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -169,8 +174,8 @@ const ProduitPage = () => {
     <div style={{ background: '#FAF6EE', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem', textAlign: 'center' }}>
       <div>
         <p style={{ fontSize: '4rem', marginBottom: '2rem', color: '#B8960A' }}>✕</p>
-        <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: '2.8rem', color: '#1A1208', marginBottom: '1.2rem' }}>Produit introuvable</h2>
-        <Link to="/boutique" style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: '#B8960A', textDecoration: 'none', borderBottom: '1px solid #D4AF37', paddingBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+        <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.8rem', color: '#1A1208', marginBottom: '1.2rem' }}>Produit introuvable</h2>
+        <Link to="/boutique" style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: '#B8960A', textDecoration: 'none', borderBottom: '1px solid #B8960A', paddingBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
           Retour à la boutique
         </Link>
       </div>
@@ -206,6 +211,19 @@ const ProduitPage = () => {
     ) ?? null;
     addItem(product, variant, quantity);
     navigate('/commande');
+  };
+
+  const whatsappOrderUrl = () => {
+    const lines = [
+      'Bonjour Golden Pousso, je souhaite commander :',
+      product.name,
+      selectedSize ? `Taille : ${selectedSize}` : null,
+      selectedColor ? `Couleur : ${selectedColor}` : null,
+      `Quantité : ${quantity}`,
+      `Prix : ${formatFCFA(product.price)}`,
+      window.location.href,
+    ].filter(Boolean);
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
   };
 
   return (
@@ -325,13 +343,13 @@ const ProduitPage = () => {
             </p>
 
             {/* Nom */}
-            <h1 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(2.8rem, 3.5vw, 4rem)', color: '#1A1208', letterSpacing: '-0.01em', lineHeight: 1.1, marginBottom: '2.4rem' }}>
+            <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.8rem, 3.5vw, 4rem)', color: '#1A1208', letterSpacing: '-0.01em', lineHeight: 1.1, marginBottom: '2.4rem' }}>
               {product.name}
             </h1>
 
             {/* Prix */}
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '1.6rem', marginBottom: '0.8rem' }}>
-              <span style={{ fontFamily: 'Aclonica, serif', fontSize: '2.8rem', color: '#B8960A', letterSpacing: '-0.01em' }}>
+              <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.8rem', color: '#B8960A', letterSpacing: '-0.01em' }}>
                 {formatFCFA(product.price)}
               </span>
               {product.old_price && (
@@ -360,9 +378,17 @@ const ProduitPage = () => {
             {/* Tailles */}
             {sizes.length > 0 && (
               <div style={{ marginBottom: '2.4rem' }}>
-                <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#7A6A50', marginBottom: '1.2rem' }}>
-                  Taille
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem' }}>
+                  <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#7A6A50' }}>
+                    Taille
+                  </p>
+                  <button
+                    onClick={() => setSizeGuideOpen(true)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', color: '#B8960A', textDecoration: 'underline', letterSpacing: '0.05em' }}
+                  >
+                    Guide des tailles
+                  </button>
+                </div>
                 <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
                   {sizes.map((size) => {
                     const v = product.variants?.find((v) => v.size === size);
@@ -408,7 +434,7 @@ const ProduitPage = () => {
                         style={{
                           padding: '0.8rem 2rem', borderRadius: '2px', cursor: 'pointer',
                           border: `1px solid ${active ? '#B8960A' : '#CEC0A0'}`,
-                          background: active ? 'rgba(212,175,55,0.1)' : 'transparent',
+                          background: active ? 'rgba(184,150,10,0.1)' : 'transparent',
                           color: active ? '#B8960A' : '#1A1208',
                           fontSize: '1.3rem', fontFamily: 'Inter, sans-serif',
                           transition: 'all 0.2s ease',
@@ -478,6 +504,42 @@ const ProduitPage = () => {
               </button>
             </div>
 
+            {outOfStock && (
+              <div style={{ marginTop: '1.6rem' }}>
+                <p style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: '#7A6A50', marginBottom: '1rem' }}>
+                  Ce produit est épuisé. Laissez votre email pour être averti(e) dès son retour en stock.
+                </p>
+                <StockAlertForm productSlug={product.slug} />
+              </div>
+            )}
+
+            {/* Commander via WhatsApp */}
+            <a
+              href={whatsappOrderUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.9rem',
+                width: '100%', padding: '1.4rem 2rem', marginTop: '1.2rem',
+                background: 'transparent', border: '1px solid #25D366', color: '#25D366',
+                fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', fontWeight: 600,
+                textTransform: 'uppercase', letterSpacing: '0.15em', textDecoration: 'none',
+                transition: 'background 0.2s, color 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#25D366'; e.currentTarget.style.color = '#FAF6EE'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#25D366'; }}
+            >
+              <i className="bx bxl-whatsapp" style={{ fontSize: '1.8rem' }}></i>
+              Commander via WhatsApp
+            </a>
+
+            {/* Fabrication — storytelling atelier */}
+            <div style={{ marginTop: '3rem', padding: '2rem 2.2rem', background: '#F4EFE4', borderLeft: '3px solid #B8960A' }}>
+              <p style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: '#5A4C36', lineHeight: 1.8, fontStyle: 'italic' }}>
+                « Confectionnée à la main dans notre atelier de Pikine Tally Boumack, Dakar — chaque pièce Golden Pousso peut nécessiter plusieurs jours de travail artisanal, dans le respect des techniques de couture traditionnelles sénégalaises. »
+              </p>
+            </div>
+
             {/* Partager */}
             <ShareButtons product={product} />
 
@@ -497,6 +559,12 @@ const ProduitPage = () => {
           </div>
         </div>
 
+        <ReviewsSection productSlug={product.slug} />
+
+        {sizeGuideOpen && (
+          <SizeGuideModal categorySlug={product.category?.slug} onClose={() => setSizeGuideOpen(false)} />
+        )}
+
         {/* ── Produits similaires ── */}
         {similar.length > 0 && (
           <div style={{ marginTop: '10rem', borderTop: '1px solid #2A2A2A', paddingTop: '7rem' }}>
@@ -506,7 +574,7 @@ const ProduitPage = () => {
                 Vous aimerez aussi
               </p>
             </div>
-            <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(2.8rem, 4vw, 4.2rem)', color: '#1A1208', letterSpacing: '-0.02em', marginBottom: '5rem' }}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.8rem, 4vw, 4.2rem)', color: '#1A1208', letterSpacing: '-0.02em', marginBottom: '5rem' }}>
               Pièces similaires
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2.4rem' }} className="similar-grid">

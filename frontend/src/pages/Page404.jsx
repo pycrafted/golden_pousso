@@ -2,14 +2,14 @@ import { Link } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 
 const C = {
-  bg:        '#0A0A0A',
+  bg:        '#1A1208',
   panel:     '#111111',
   border:    '#1E1E1E',
   borderMid: '#2A2A2A',
-  gold:      '#D4AF37',
+  gold:      '#B8960A',
   terra:     '#C2662D',
-  cream:     '#F5F0EB',
-  muted:     '#8A8A8A',
+  cream:     '#FAF6EE',
+  muted:     'rgba(250,246,238,0.6)',
 };
 
 const LINKS = [
@@ -32,11 +32,11 @@ const Page404 = () => (
 
       {/* Numéro 404 */}
       <p style={{
-        fontFamily: 'Aclonica, serif',
+        fontFamily: 'Syne, sans-serif',
         fontSize: 'clamp(10rem, 20vw, 18rem)',
         lineHeight: 1,
         letterSpacing: '-0.04em',
-        background: `linear-gradient(180deg, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.03) 100%)`,
+        background: `linear-gradient(180deg, rgba(184,150,10,0.15) 0%, rgba(184,150,10,0.03) 100%)`,
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
@@ -50,7 +50,7 @@ const Page404 = () => (
       <span style={{ fontSize: '1.6rem', color: C.gold, letterSpacing: '0.5em', marginBottom: '3rem' }}>✦ ✦ ✦</span>
 
       <h1 style={{
-        fontFamily: 'Aclonica, serif',
+        fontFamily: 'Syne, sans-serif',
         fontSize: 'clamp(2.4rem, 4vw, 4rem)',
         color: C.cream, letterSpacing: '-0.01em',
         lineHeight: 1.1, marginBottom: '1.6rem',
@@ -73,13 +73,13 @@ const Page404 = () => (
           style={{
             display: 'inline-flex', alignItems: 'center',
             padding: '1.6rem 5rem',
-            background: C.gold, color: '#0A0A0A',
+            background: C.gold, color: '#1A1208',
             fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
             fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
             textDecoration: 'none', transition: 'background 0.25s, color 0.25s',
           }}
           onMouseEnter={(e) => { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#0A0A0A'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#1A1208'; }}
         >
           Voir la boutique
         </Link>

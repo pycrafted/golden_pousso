@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 
 const C = {
-  bg:        '#0A0A0A',
+  bg:        '#1A1208',
   panel:     '#111111',
   border:    '#1E1E1E',
   borderMid: '#2A2A2A',
-  gold:      '#D4AF37',
+  gold:      '#B8960A',
   terra:     '#C2662D',
-  cream:     '#F5F0EB',
-  muted:     '#8A8A8A',
+  cream:     '#FAF6EE',
+  muted:     'rgba(250,246,238,0.6)',
 };
 
 const useInView = () => {
@@ -236,15 +236,15 @@ const CategoryTab = ({ cat, isActive, onClick }) => (
     style={{
       display: 'flex', alignItems: 'center', gap: '1rem',
       padding: '1.2rem 2.4rem',
-      background: isActive ? 'rgba(212,175,55,0.08)' : 'transparent',
-      border: isActive ? `1px solid rgba(212,175,55,0.3)` : `1px solid ${C.border}`,
+      background: isActive ? 'rgba(184,150,10,0.08)' : 'transparent',
+      border: isActive ? `1px solid rgba(184,150,10,0.3)` : `1px solid ${C.border}`,
       cursor: 'pointer',
       color: isActive ? C.gold : C.muted,
       fontSize: '1.2rem', fontFamily: 'Inter, sans-serif',
       textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 600,
       transition: 'all 0.2s', whiteSpace: 'nowrap',
     }}
-    onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.borderColor = 'rgba(212,175,55,0.2)'; e.currentTarget.style.color = C.cream; } }}
+    onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.borderColor = 'rgba(184,150,10,0.2)'; e.currentTarget.style.color = C.cream; } }}
     onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted; } }}
   >
     <span style={{ opacity: isActive ? 1 : 0.5 }}>{cat.icon}</span>
@@ -297,7 +297,7 @@ const FAQPage = () => {
               <div style={{ width: '4.8rem', height: '1px', background: C.gold }} />
               <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>Questions fréquentes</p>
             </div>
-            <h1 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(3.5rem, 6vw, 6rem)', color: C.cream, letterSpacing: '0.02em', lineHeight: 1.05, textTransform: 'uppercase', marginBottom: '2.4rem' }}>
+            <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(3.5rem, 6vw, 6rem)', color: C.cream, letterSpacing: '0.02em', lineHeight: 1.05, textTransform: 'uppercase', marginBottom: '2.4rem' }}>
               FAQ
             </h1>
             <p style={{ fontSize: '1.45rem', fontFamily: 'Inter, sans-serif', color: C.muted, lineHeight: 1.8, maxWidth: '60rem' }}>
@@ -371,7 +371,7 @@ const FAQPage = () => {
               <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold, marginBottom: '1.2rem' }}>
                 Vous n'avez pas trouvé votre réponse ?
               </p>
-              <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(2.2rem, 3vw, 3.2rem)', color: C.cream, lineHeight: 1.1 }}>
+              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.2rem, 3vw, 3.2rem)', color: C.cream, lineHeight: 1.1 }}>
                 Notre équipe vous répond
               </h2>
               <p style={{ marginTop: '1.2rem', fontSize: '1.35rem', fontFamily: 'Inter, sans-serif', color: C.muted }}>
@@ -384,14 +384,14 @@ const FAQPage = () => {
                 style={{
                   display: 'inline-flex', alignItems: 'center',
                   padding: '1.7rem 4rem',
-                  background: C.gold, color: '#0A0A0A',
+                  background: C.gold, color: '#1A1208',
                   fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
                   fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
                   textDecoration: 'none', flexShrink: 0,
                   transition: 'background 0.25s, color 0.25s',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#0A0A0A'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#1A1208'; }}
               >
                 Nous contacter
               </Link>

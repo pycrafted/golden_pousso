@@ -106,10 +106,10 @@ const AuthForm = () => {
         <div style={{ marginTop: '1.6rem' }}>
           <Link to="/" style={{ textDecoration: 'none' }}>
             <span style={{
-              fontFamily: 'Aclonica, sans-serif',
+              fontFamily: 'Syne, sans-serif',
               fontSize: '2.8rem',
               letterSpacing: '0.04em',
-              background: 'linear-gradient(90deg, #D4AF37, #F0D060, #C9A84C)',
+              background: 'linear-gradient(90deg, #B8960A, #F0D060, #B8960A)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
@@ -440,7 +440,7 @@ const Dashboard = () => {
                   Profil
                 </p>
               </div>
-              <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: '3.2rem', color: C.cream, lineHeight: 1.1 }}>
+              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '3.2rem', color: C.cream, lineHeight: 1.1 }}>
                 Mes informations
               </h2>
             </div>
@@ -458,7 +458,7 @@ const Dashboard = () => {
                 }}>
                   {avatarPreview
                     ? <img src={avatarPreview} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <span style={{ fontFamily: 'Aclonica, serif', fontSize: '2.8rem', color: C.gold }}>{initials}</span>
+                    : <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.8rem', color: C.gold }}>{initials}</span>
                   }
                 </div>
                 <div>
@@ -550,7 +550,7 @@ const Dashboard = () => {
                   Historique
                 </p>
               </div>
-              <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: '3.2rem', color: C.cream, lineHeight: 1.1 }}>
+              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '3.2rem', color: C.cream, lineHeight: 1.1 }}>
                 Mes commandes
               </h2>
             </div>
@@ -568,7 +568,7 @@ const Dashboard = () => {
                     <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
                   </svg>
                 </div>
-                <p style={{ fontFamily: 'Aclonica, serif', fontSize: '2.4rem', color: C.cream, marginBottom: '1rem' }}>
+                <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.4rem', color: C.cream, marginBottom: '1rem' }}>
                   Aucune commande
                 </p>
                 <p style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: C.muted, marginBottom: '3.5rem' }}>
@@ -682,7 +682,7 @@ const Dashboard = () => {
                   Sécurité
                 </p>
               </div>
-              <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: '3.2rem', color: C.cream, lineHeight: 1.1 }}>
+              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '3.2rem', color: C.cream, lineHeight: 1.1 }}>
                 Changer le mot de passe
               </h2>
             </div>
@@ -759,7 +759,7 @@ const Dashboard = () => {
                   Livraison
                 </p>
               </div>
-              <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: '3.2rem', color: C.cream, lineHeight: 1.1 }}>
+              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '3.2rem', color: C.cream, lineHeight: 1.1 }}>
                 Mes adresses
               </h2>
             </div>

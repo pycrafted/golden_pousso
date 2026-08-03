@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 import CldImg from './CldImg';
-import QuickShopModal from './QuickShopModal';
 
 const SPEED = 1.0;
 const GAP_REM = 2.4;
@@ -12,9 +12,10 @@ const CONTAINER_PAD_REM = 3;
 
 const getCardWidth = () => {
   const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const cols = window.innerWidth <= 640 ? 2 : COLS;
   const gap = GAP_REM * rem;
   const containerW = Math.min(window.innerWidth, CONTAINER_MAX_REM * rem) - 2 * CONTAINER_PAD_REM * rem;
-  return (containerW - (COLS - 1) * gap) / COLS;
+  return (containerW - (cols - 1) * gap) / cols;
 };
 
 const useInView = () => {
@@ -35,7 +36,7 @@ const useInView = () => {
 
 const ProductsCarousel = ({ categorySlug }) => {
   const currency  = useSettingsStore((s) => s.currency);
-  const [quickShopSlug, setQuickShopSlug] = useState(null);
+  const navigate = useNavigate();
 
   const [carouselRef, carouselVisible] = useInView();
 
@@ -111,7 +112,7 @@ const ProductsCarousel = ({ categorySlug }) => {
     return (
       <div
         key={key}
-        onClick={() => setQuickShopSlug(p.slug)}
+        onClick={() => navigate(`/produit/${p.slug}`)}
         style={{ flexShrink: 0, width: `${cardWidth}px`, cursor: 'pointer' }}
       >
       <div style={{ aspectRatio: '3 / 4', position: 'relative', overflow: 'hidden' }}>
@@ -144,7 +145,7 @@ const ProductsCarousel = ({ categorySlug }) => {
       </div>
       <div style={{ padding: '1.2rem 0.4rem 0' }}>
         <h3 style={{
-          fontFamily:   'Aclonica, serif',
+          fontFamily:   'Syne, sans-serif',
           fontSize:     '1.4rem',
           color:        '#1A1208',
           lineHeight:   1.3,
@@ -186,7 +187,7 @@ const ProductsCarousel = ({ categorySlug }) => {
           Boutique
         </p>
         <h2 style={{
-          fontFamily: 'Aclonica, sans-serif',
+          fontFamily: 'Syne, sans-serif',
           fontSize: 'clamp(2.8rem, 4vw, 4.2rem)',
           color: '#1A1208', letterSpacing: '-0.01em', lineHeight: 1.1,
         }}>
@@ -259,7 +260,6 @@ const ProductsCarousel = ({ categorySlug }) => {
           )}
         </div>
       </div>
-    {quickShopSlug && <QuickShopModal slug={quickShopSlug} onClose={() => setQuickShopSlug(null)} />}
     </section>
   );
 };

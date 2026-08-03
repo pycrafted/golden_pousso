@@ -134,7 +134,7 @@ const ContactPage = () => {
               <div style={{ width: '4.8rem', height: '1px', background: C.gold }} />
             </div>
             <h1 style={{
-              fontFamily: 'Aclonica, serif',
+              fontFamily: 'Syne, sans-serif',
               fontSize: 'clamp(4rem, 7vw, 7.2rem)',
               color: C.cream,
               letterSpacing: '0.04em',
@@ -185,7 +185,7 @@ const ContactPage = () => {
               </div>
 
               <h2 style={{
-                fontFamily: 'Aclonica, serif',
+                fontFamily: 'Syne, sans-serif',
                 fontSize: 'clamp(2.8rem, 3.5vw, 4.2rem)',
                 color: C.cream, lineHeight: 1.1, marginBottom: '4.5rem',
               }}>

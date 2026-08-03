@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 
 const C = {
-  bg:        '#0A0A0A',
+  bg:        '#1A1208',
   panel:     '#111111',
   border:    '#1E1E1E',
   borderMid: '#2A2A2A',
-  gold:      '#D4AF37',
+  gold:      '#B8960A',
   terra:     '#C2662D',
-  cream:     '#F5F0EB',
-  muted:     '#8A8A8A',
+  cream:     '#FAF6EE',
+  muted:     'rgba(250,246,238,0.6)',
 };
 
 const useInView = () => {
@@ -74,7 +74,7 @@ const Card = ({ children, style = {} }) => (
     transition: 'border-color 0.25s',
     ...style,
   }}
-    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(212,175,55,0.25)'}
+    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(184,150,10,0.25)'}
     onMouseLeave={(e) => e.currentTarget.style.borderColor = C.border}
   >
     {children}
@@ -118,7 +118,7 @@ const LivraisonRetoursPage = () => {
               <div style={{ width: '4.8rem', height: '1px', background: C.gold }} />
               <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>Service client</p>
             </div>
-            <h1 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(3.5rem, 6vw, 6rem)', color: C.cream, letterSpacing: '0.02em', lineHeight: 1.05, textTransform: 'uppercase', marginBottom: '2.4rem' }}>
+            <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(3.5rem, 6vw, 6rem)', color: C.cream, letterSpacing: '0.02em', lineHeight: 1.05, textTransform: 'uppercase', marginBottom: '2.4rem' }}>
               Livraison &amp; Retours
             </h1>
             <p style={{ fontSize: '1.45rem', fontFamily: 'Inter, sans-serif', color: C.muted, lineHeight: 1.8, maxWidth: '60rem' }}>
@@ -136,7 +136,7 @@ const LivraisonRetoursPage = () => {
               <div style={{ width: '4rem', height: '1px', background: C.gold }} />
               <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>Zones de livraison</p>
             </div>
-            <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(2.2rem, 3vw, 3.2rem)', color: C.cream, marginBottom: '4rem', lineHeight: 1.1 }}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.2rem, 3vw, 3.2rem)', color: C.cream, marginBottom: '4rem', lineHeight: 1.1 }}>
               Frais et délais
             </h2>
 
@@ -145,7 +145,7 @@ const LivraisonRetoursPage = () => {
                 <Card key={z.zone} style={{ textAlign: 'center', opacity: zonesVisible ? 1 : 0, transform: zonesVisible ? 'translateY(0)' : 'translateY(20px)', transition: `opacity 0.5s ease ${i * 0.1}s, transform 0.5s ease ${i * 0.1}s` }}>
                   <span style={{ fontSize: '3rem', display: 'block', marginBottom: '2rem' }}>{z.icone}</span>
                   <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.4rem', fontWeight: 600, color: C.cream, marginBottom: '1.6rem', lineHeight: 1.3 }}>{z.zone}</h3>
-                  <p style={{ fontFamily: 'Aclonica, serif', fontSize: '2.2rem', color: C.gold, marginBottom: '0.8rem' }}>{z.frais}</p>
+                  <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.2rem', color: C.gold, marginBottom: '0.8rem' }}>{z.frais}</p>
                   <p style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: C.muted, textTransform: 'uppercase', letterSpacing: '0.15em' }}>⏱ {z.delai}</p>
                 </Card>
               ))}
@@ -163,7 +163,7 @@ const LivraisonRetoursPage = () => {
               <div style={{ width: '4rem', height: '1px', background: C.gold }} />
               <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>Processus</p>
             </div>
-            <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(2.2rem, 3vw, 3.2rem)', color: C.cream, marginBottom: '4rem', lineHeight: 1.1 }}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.2rem, 3vw, 3.2rem)', color: C.cream, marginBottom: '4rem', lineHeight: 1.1 }}>
               Comment ça fonctionne
             </h2>
 
@@ -178,12 +178,12 @@ const LivraisonRetoursPage = () => {
                 <div key={e.num} style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
                   <div style={{
                     width: '7rem', height: '7rem', borderRadius: '50%',
-                    background: 'rgba(212,175,55,0.08)',
-                    border: `1px solid rgba(212,175,55,0.3)`,
+                    background: 'rgba(184,150,10,0.08)',
+                    border: `1px solid rgba(184,150,10,0.3)`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     margin: '0 auto 2.4rem',
                   }}>
-                    <span style={{ fontFamily: 'Aclonica, serif', fontSize: '1.8rem', color: C.gold }}>{e.num}</span>
+                    <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.8rem', color: C.gold }}>{e.num}</span>
                   </div>
                   <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.4rem', fontWeight: 600, color: C.cream, marginBottom: '1.2rem' }}>{e.titre}</h3>
                   <p style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: C.muted, lineHeight: 1.7 }}>{e.texte}</p>
@@ -198,7 +198,7 @@ const LivraisonRetoursPage = () => {
               <div style={{ width: '4rem', height: '1px', background: C.gold }} />
               <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>Politique de retour</p>
             </div>
-            <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(2.2rem, 3vw, 3.2rem)', color: C.cream, marginBottom: '4rem', lineHeight: 1.1 }}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.2rem, 3vw, 3.2rem)', color: C.cream, marginBottom: '4rem', lineHeight: 1.1 }}>
               Retours & échanges
             </h2>
 
@@ -238,12 +238,12 @@ const LivraisonRetoursPage = () => {
               <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold, marginBottom: '1.2rem' }}>
                 Une question ?
               </p>
-              <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(2rem, 2.8vw, 3rem)', color: C.cream, lineHeight: 1.1 }}>
+              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2rem, 2.8vw, 3rem)', color: C.cream, lineHeight: 1.1 }}>
                 Notre équipe vous répond sous 24h
               </h2>
             </div>
             <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap' }}>
-              <Link to="/contact" style={{ display: 'inline-flex', alignItems: 'center', padding: '1.6rem 4rem', background: C.gold, color: '#0A0A0A', fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', textDecoration: 'none', transition: 'background 0.25s, color 0.25s' }} onMouseEnter={(e) => { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; }} onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#0A0A0A'; }}>
+              <Link to="/contact" style={{ display: 'inline-flex', alignItems: 'center', padding: '1.6rem 4rem', background: C.gold, color: '#1A1208', fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', textDecoration: 'none', transition: 'background 0.25s, color 0.25s' }} onMouseEnter={(e) => { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; }} onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#1A1208'; }}>
                 Nous contacter
               </Link>
               <Link to="/faq" style={{ display: 'inline-flex', alignItems: 'center', padding: '1.6rem 4rem', background: 'transparent', color: C.muted, border: `1px solid ${C.borderMid}`, fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', letterSpacing: '0.2em', textTransform: 'uppercase', textDecoration: 'none', transition: 'border-color 0.2s, color 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.borderMid; e.currentTarget.style.color = C.muted; }}>

@@ -95,7 +95,7 @@ const StepIndicator = ({ current }) => (
 /* ── Récapitulatif commande (colonne droite) ── */
 const OrderSummary = ({ items, subtotal, deliveryFee, total }) => (
   <div style={{ background: '#F0E8D8', border: '1px solid #CEC0A0', padding: '3rem' }}>
-    <h3 style={{ fontFamily: 'Aclonica, serif', fontSize: '1.8rem', color: '#B8960A', marginBottom: '2.5rem', letterSpacing: '0.02em' }}>
+    <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.8rem', color: '#B8960A', marginBottom: '2.5rem', letterSpacing: '0.02em' }}>
       Votre commande
     </h3>
     {items.map((item, i) => (
@@ -128,7 +128,7 @@ const OrderSummary = ({ items, subtotal, deliveryFee, total }) => (
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '1.6rem', borderTop: '1px solid #E0D0B8' }}>
         <span style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.15em', color: '#7A6A50' }}>Total</span>
-        <span style={{ fontFamily: 'Aclonica, serif', fontSize: '2.2rem', color: '#B8960A' }}>{formatFCFA(total)}</span>
+        <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.2rem', color: '#B8960A' }}>{formatFCFA(total)}</span>
       </div>
     </div>
   </div>
@@ -137,7 +137,7 @@ const OrderSummary = ({ items, subtotal, deliveryFee, total }) => (
 /* ── Étape 1 : Livraison ── */
 const Step1 = ({ form, set, setStep }) => (
   <div>
-    <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: '2.4rem', color: '#1A1208', marginBottom: '4rem', letterSpacing: '-0.01em' }}>
+    <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.4rem', color: '#1A1208', marginBottom: '4rem', letterSpacing: '-0.01em' }}>
       Informations de livraison
     </h2>
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 3rem' }} className="form-grid">
@@ -199,6 +199,40 @@ const Step1 = ({ form, set, setStep }) => (
             onBlur={(e) => e.currentTarget.style.borderColor = '#CEC0A0'} />
         </div>
       )}
+      <div style={{ gridColumn: '1 / -1', marginBottom: '3rem' }}>
+        <label style={{
+          display: 'flex', alignItems: 'center', gap: '1.2rem', padding: '1.6rem 2rem', cursor: 'pointer',
+          border: `1px solid ${form.is_gift ? '#B8960A' : '#CEC0A0'}`,
+          background: form.is_gift ? 'rgba(184,150,10,0.06)' : 'transparent',
+          transition: 'border-color 0.2s, background 0.2s',
+        }}>
+          <input type="checkbox" checked={form.is_gift} onChange={(e) => set('is_gift', e.target.checked)}
+            style={{ accentColor: '#B8960A', width: '1.8rem', height: '1.8rem', flexShrink: 0 }} />
+          <span style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: '#1A1208' }}>
+            🎁 C'est un cadeau pour quelqu'un d'autre
+          </span>
+        </label>
+
+        {form.is_gift && (
+          <div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 3rem' }} className="form-grid">
+            <div style={{ gridColumn: '1 / -1', marginBottom: '2rem' }}>
+              <Label>Nom du destinataire</Label>
+              <input value={form.gift_recipient} onChange={(e) => set('gift_recipient', e.target.value)}
+                placeholder="Prénom et nom" style={inputStyle}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#B8960A'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#CEC0A0'} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <Label>Message cadeau (optionnel)</Label>
+              <textarea value={form.gift_message} onChange={(e) => set('gift_message', e.target.value)}
+                placeholder="Un petit mot pour accompagner le cadeau..." rows={2}
+                style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#B8960A'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#CEC0A0'} />
+            </div>
+          </div>
+        )}
+      </div>
       <div style={{ gridColumn: '1 / -1', marginBottom: '4rem' }}>
         <Label>Notes / Instructions (optionnel)</Label>
         <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)}
@@ -227,7 +261,7 @@ const Step1 = ({ form, set, setStep }) => (
 /* ── Étape 2 : Paiement ── */
 const Step2 = ({ form, set, setStep }) => (
   <div>
-    <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: '2.4rem', color: '#1A1208', marginBottom: '4rem', letterSpacing: '-0.01em' }}>
+    <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.4rem', color: '#1A1208', marginBottom: '4rem', letterSpacing: '-0.01em' }}>
       Mode de paiement
     </h2>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginBottom: '4rem' }}>
@@ -280,7 +314,7 @@ const Step2 = ({ form, set, setStep }) => (
 /* ── Étape 3 : Récapitulatif ── */
 const Step3 = ({ form, zone, setStep, handleConfirm, loading }) => (
   <div>
-    <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: '2.4rem', color: '#1A1208', marginBottom: '4rem', letterSpacing: '-0.01em' }}>
+    <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.4rem', color: '#1A1208', marginBottom: '4rem', letterSpacing: '-0.01em' }}>
       Récapitulatif
     </h2>
     <div style={{ background: '#F0E8D8', border: '1px solid #CEC0A0', padding: '2.4rem', marginBottom: '2rem' }}>
@@ -335,7 +369,7 @@ const Step4 = ({ form, orderNumber, total }) => {
       <p style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: '#B8960A', marginBottom: '1.6rem' }}>
         Commande enregistrée
       </p>
-      <h2 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(2.8rem, 4vw, 4.2rem)', color: '#1A1208', letterSpacing: '-0.02em', marginBottom: '1.2rem', lineHeight: 1.1 }}>
+      <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.8rem, 4vw, 4.2rem)', color: '#1A1208', letterSpacing: '-0.02em', marginBottom: '1.2rem', lineHeight: 1.1 }}>
         #{orderNumber}
       </h2>
       <p style={{ fontSize: '1.4rem', fontFamily: 'Inter, sans-serif', color: '#7A6A50', marginBottom: '4rem' }}>
@@ -348,7 +382,7 @@ const Step4 = ({ form, orderNumber, total }) => {
         <p style={{ fontSize: '1.4rem', fontFamily: 'Inter, sans-serif', color: '#7A6A50', lineHeight: 1.8 }}>{pm?.instructions}</p>
         <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid #E0D0B8', display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.15em', color: '#7A6A50' }}>Montant à payer</span>
-          <span style={{ fontFamily: 'Aclonica, serif', fontSize: '2rem', color: '#B8960A' }}>{formatFCFA(total)}</span>
+          <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '2rem', color: '#B8960A' }}>{formatFCFA(total)}</span>
         </div>
       </div>
       <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -395,6 +429,7 @@ const CommandePage = () => {
     customer_name: '', customer_phone: '', customer_email: '',
     delivery_address: '', delivery_zone: 'dakar_centre', notes: '',
     payment_method: 'cash_on_delivery',
+    is_gift: false, gift_recipient: '', gift_message: '',
   });
 
   const zone = DELIVERY_ZONES.find((z) => z.value === form.delivery_zone);
@@ -411,6 +446,13 @@ const CommandePage = () => {
   const handleConfirm = async () => {
     setLoading(true);
     const fullPhone = form.customer_phone ? `+221${form.customer_phone}` : '';
+    const notes = form.is_gift
+      ? [
+          `🎁 CADEAU — Destinataire : ${form.gift_recipient || '(non précisé)'}`,
+          form.gift_message ? `Message : ${form.gift_message}` : null,
+          form.notes || null,
+        ].filter(Boolean).join('\n')
+      : form.notes;
     const payload = {
       customer_name: form.customer_name,
       customer_phone: fullPhone,
@@ -418,7 +460,7 @@ const CommandePage = () => {
       delivery_address: form.delivery_address,
       delivery_zone: form.delivery_zone,
       payment_method: form.payment_method,
-      notes: form.notes,
+      notes,
       items: items.map((i) => ({
         product_id: i.product.id,
         variant_id: i.variant?.id ?? null,
@@ -462,7 +504,7 @@ const CommandePage = () => {
               Golden Pousso
             </p>
           </div>
-          <h1 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(3rem, 4vw, 4.5rem)', color: '#1A1208', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+          <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(3rem, 4vw, 4.5rem)', color: '#1A1208', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
             Finaliser ma commande
           </h1>
         </div>

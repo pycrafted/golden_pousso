@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 
 const C = {
-  bg:        '#0A0A0A',
+  bg:        '#1A1208',
   panel:     '#111111',
   border:    '#1E1E1E',
   borderMid: '#2A2A2A',
-  gold:      '#D4AF37',
+  gold:      '#B8960A',
   terra:     '#C2662D',
-  cream:     '#F5F0EB',
-  muted:     '#8A8A8A',
+  cream:     '#FAF6EE',
+  muted:     'rgba(250,246,238,0.6)',
 };
 
 const useInView = () => {
@@ -51,7 +51,7 @@ const LegalSection = ({ id, label, titre, children }) => {
         </p>
       </div>
       <h2 style={{
-        fontFamily: 'Aclonica, serif',
+        fontFamily: 'Syne, sans-serif',
         fontSize: 'clamp(2.2rem, 3vw, 3.2rem)',
         color: C.cream, marginBottom: '3.5rem', lineHeight: 1.1,
       }}>
@@ -72,7 +72,7 @@ const P = ({ children, style }) => (
 );
 
 const H3 = ({ children }) => (
-  <h3 style={{ fontFamily: 'Aclonica, serif', fontSize: '1.8rem', color: C.cream, marginBottom: '1.2rem', marginTop: '3rem' }}>
+  <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.8rem', color: C.cream, marginBottom: '1.2rem', marginTop: '3rem' }}>
     {children}
   </h3>
 );
@@ -132,7 +132,7 @@ const MentionsLegalesPage = () => {
               <div style={{ width: '4.8rem', height: '1px', background: C.gold }} />
               <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>Informations légales</p>
             </div>
-            <h1 style={{ fontFamily: 'Aclonica, serif', fontSize: 'clamp(3rem, 5vw, 5.5rem)', color: C.cream, letterSpacing: '0.02em', lineHeight: 1.05, textTransform: 'uppercase', marginBottom: '2.4rem' }}>
+            <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(3rem, 5vw, 5.5rem)', color: C.cream, letterSpacing: '0.02em', lineHeight: 1.05, textTransform: 'uppercase', marginBottom: '2.4rem' }}>
               Mentions légales & CGV
             </h1>
             <p style={{ fontSize: '1.4rem', fontFamily: 'Inter, sans-serif', color: C.muted, lineHeight: 1.8, maxWidth: '60rem', marginBottom: '4rem' }}>

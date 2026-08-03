@@ -9,21 +9,21 @@ import FullWidthBanner from '../components/FullWidthBanner';
 import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 import CldImg from '../components/CldImg';
-import QuickShopModal from '../components/QuickShopModal';
 import VideoCardsSection from '../components/VideoCardsSection';
+import TestimonialsSection from '../components/TestimonialsSection';
 
 /* ── Card produit — copie exacte du style "regarde" ── */
 const HomeProductCard = ({ product }) => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
-  const [quickShop, setQuickShop] = useState(false);
   const outOfStock = product.stock === 0;
   const currency = useSettingsStore((s) => s.currency);
+  const goToProduct = () => !outOfStock && navigate(`/produit/${product.slug}`);
 
   return (
     /* Tout le card se soulève au hover, comme dans regarde */
     <div
-      onClick={() => !outOfStock && setQuickShop(true)}
+      onClick={goToProduct}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -68,7 +68,7 @@ const HomeProductCard = ({ product }) => {
         {/* Bouton œil Quick Shop */}
         {!outOfStock && (
           <div
-            onClick={e => { e.stopPropagation(); setQuickShop(true); }}
+            onClick={e => { e.stopPropagation(); goToProduct(); }}
             style={{
               position: 'absolute', top: '50%', left: '50%',
               transform: hovered ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(0.7)',
@@ -95,14 +95,14 @@ const HomeProductCard = ({ product }) => {
               color: '#FAF6EE', background: 'rgba(10,8,5,0.6)',
               padding: '0.3rem 1rem', borderRadius: '2px',
             }}>
-              Quick Shop
+              Voir le produit
             </span>
           </div>
         )}
 
         {/* Bouton ADD TO CART slide-up */}
         <button
-          onClick={e => { e.stopPropagation(); if (!outOfStock) setQuickShop(true); }}
+          onClick={e => { e.stopPropagation(); goToProduct(); }}
           style={{
             position: 'absolute', bottom: '1.6rem', left: '1.6rem', right: '1.6rem',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
@@ -120,7 +120,7 @@ const HomeProductCard = ({ product }) => {
           onMouseEnter={e => { e.currentTarget.style.background = '#C2662D'; e.currentTarget.style.color = '#1A1208'; }}
           onMouseLeave={e => { e.currentTarget.style.background = '#B8960A'; e.currentTarget.style.color = '#FAF6EE'; }}
         >
-          + Ajouter
+          Voir le produit
         </button>
       </div>
 
@@ -132,10 +132,6 @@ const HomeProductCard = ({ product }) => {
       <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.4rem', color: '#B8960A' }}>
         {formatPrice(product.price, currency)}
       </p>
-
-      {quickShop && (
-        <QuickShopModal slug={product.slug} onClose={() => setQuickShop(false)} />
-      )}
     </div>
   );
 };
@@ -165,8 +161,15 @@ const HomePage = () => {
   const [activeCategory, setActiveCategory] = useState(null);
   const [carouselHovered, setCarouselHovered] = useState(false);
   const [featOffset, setFeatOffset] = useState(0);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
   const gridRef = useRef(null);
   const COLS = 4;
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const scrollFeat = (dir) => {
     const el = gridRef.current;
@@ -229,7 +232,7 @@ const HomePage = () => {
               Meilleures Ventes
             </p>
             <h2 style={{
-              fontFamily: 'Aclonica, sans-serif',
+              fontFamily: 'Syne, sans-serif',
               fontSize: 'clamp(2.8rem, 4vw, 4.2rem)',
               color: '#1A1208', letterSpacing: '-0.01em', lineHeight: 1.1,
             }}>
@@ -238,64 +241,87 @@ const HomePage = () => {
           </div>
 
           {loadingFeatured ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2.4rem' }} className="products-grid">
+            <div className="hp-feat-grid">
               {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : featuredProducts.length > 0 ? (
-            <div
-              style={{ position: 'relative' }}
-              onMouseEnter={() => setCarouselHovered(true)}
-              onMouseLeave={() => setCarouselHovered(false)}
-            >
-              {/* Flèche gauche */}
-              <button onClick={() => scrollFeat(-1)} aria-label="Précédent" style={{
-                position: 'absolute', left: '-5rem', top: '40%', transform: 'translateY(-50%)',
-                zIndex: 10, background: 'transparent', border: 'none', cursor: 'pointer',
-                opacity: 1,
-                padding: 0,
-              }}>
-                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#B8960A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-
-              {/* Flèche droite */}
-              <button onClick={() => scrollFeat(1)} aria-label="Suivant" style={{
-                position: 'absolute', right: '-5rem', top: '40%', transform: 'translateY(-50%)',
-                zIndex: 10, background: 'transparent', border: 'none', cursor: 'pointer',
-                opacity: 1,
-                padding: 0,
-              }}>
-                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#B8960A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
-
-              <div style={{ overflow: 'hidden' }}>
-                <div ref={gridRef} style={{
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${featuredProducts.length}, calc((100% - ${(COLS - 1)} * 2.4rem) / ${COLS}))`,
-                  gap: '2.4rem',
-                  transform: `translateX(-${featOffset}px)`,
-                  transition: 'transform 0.5s ease',
+            isMobile ? (
+              /* Mobile — grille 2 colonnes simple */
+              <div className="hp-feat-grid">
+                {featuredProducts.map((p, i) => (
+                  <div key={p.id} style={{
+                    opacity: featuredVisible ? 1 : 0,
+                    transform: featuredVisible ? 'translateY(0)' : 'translateY(20px)',
+                    transition: `opacity 0.5s ease ${0.1 * i + 0.2}s, transform 0.5s ease ${0.1 * i + 0.2}s`,
+                  }}>
+                    <HomeProductCard product={p} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Desktop — carousel avec flèches */
+              <div
+                style={{ position: 'relative' }}
+                onMouseEnter={() => setCarouselHovered(true)}
+                onMouseLeave={() => setCarouselHovered(false)}
+              >
+                <button onClick={() => scrollFeat(-1)} aria-label="Précédent" style={{
+                  position: 'absolute', left: '-5rem', top: '40%', transform: 'translateY(-50%)',
+                  zIndex: 10, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
                 }}>
-                  {featuredProducts.map((p, i) => (
-                    <div key={p.id} style={{
-                      opacity: featuredVisible ? 1 : 0,
-                      transform: featuredVisible ? 'translateY(0)' : 'translateY(20px)',
-                      transition: `opacity 0.5s ease ${0.1 * i + 0.3}s, transform 0.5s ease ${0.1 * i + 0.3}s`,
-                    }}>
-                      <HomeProductCard product={p} />
-                    </div>
-                  ))}
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#B8960A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+                <button onClick={() => scrollFeat(1)} aria-label="Suivant" style={{
+                  position: 'absolute', right: '-5rem', top: '40%', transform: 'translateY(-50%)',
+                  zIndex: 10, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
+                }}>
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#B8960A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+                <div style={{ overflow: 'hidden' }}>
+                  <div ref={gridRef} style={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${featuredProducts.length}, calc((100% - ${(COLS - 1)} * 2.4rem) / ${COLS}))`,
+                    gap: '2.4rem',
+                    transform: `translateX(-${featOffset}px)`,
+                    transition: 'transform 0.5s ease',
+                  }}>
+                    {featuredProducts.map((p, i) => (
+                      <div key={p.id} style={{
+                        opacity: featuredVisible ? 1 : 0,
+                        transform: featuredVisible ? 'translateY(0)' : 'translateY(20px)',
+                        transition: `opacity 0.5s ease ${0.1 * i + 0.3}s, transform 0.5s ease ${0.1 * i + 0.3}s`,
+                      }}>
+                        <HomeProductCard product={p} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )
           ) : null}
         </div>
       </section>
 
+      {/* ── 7. AVIS CLIENTS ── */}
+      <TestimonialsSection />
 
+      <style>{`
+        .hp-feat-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 2.4rem;
+        }
+        @media (max-width: 768px) {
+          .hp-feat-grid { grid-template-columns: repeat(2, 1fr); gap: 1.6rem; }
+        }
+        @media (max-width: 400px) {
+          .hp-feat-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
     </>
   );
 };

@@ -5,21 +5,22 @@ import useSettingsStore, { formatPrice, CURRENCIES, LANGUAGES } from '../store/s
 import useAuthStore from '../store/authStore';
 import SearchOverlay from './SearchOverlay';
 import CldImg from './CldImg';
+import { COLORS } from '../theme';
 
 const C = {
-  dark: '#0A0A0A',
+  dark: COLORS.ink,
   dark2: '#0D0D0D',
-  gold: '#D4AF37',
-  goldDim: '#C9A84C',
-  terracotta: '#C2662D',
-  cream: '#F5F0EB',
-  muted: '#8A8A8A',
+  gold: COLORS.gold,
+  goldDim: COLORS.gold,
+  terracotta: COLORS.terracotta,
+  cream: COLORS.cream,
+  muted: COLORS.mutedOnDark,
   cardBg: '#1A1A1A',
 };
 
 const inputStyle = {
   width: '100%', padding: '1.1rem 0', background: 'transparent',
-  border: 'none', borderBottom: '1px solid #333', color: '#F5F0EB',
+  border: 'none', borderBottom: '1px solid #333', color: '#FAF6EE',
   fontFamily: 'Inter, sans-serif', fontSize: '1.3rem',
   outline: 'none', boxSizing: 'border-box',
 };
@@ -87,7 +88,7 @@ const ProfileDropdown = () => {
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '0.6rem' }}>
                 Connecté en tant que
               </p>
-              <p style={{ fontFamily: 'Aclonica, sans-serif', fontSize: '1.5rem', color: C.gold, marginBottom: '2rem' }}>
+              <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.5rem', color: C.gold, marginBottom: '2rem' }}>
                 {user?.first_name || user?.phone || 'Mon compte'}
               </p>
               <button
@@ -110,7 +111,7 @@ const ProfileDropdown = () => {
                     style={{
                       flex: 1, padding: '1rem', background: 'none', border: 'none',
                       borderBottom: mode === m ? `2px solid ${C.gold}` : '2px solid transparent',
-                      color: mode === m ? '#F5F0EB' : '#666',
+                      color: mode === m ? '#FAF6EE' : '#666',
                       fontFamily: 'Inter, sans-serif', fontSize: '1.2rem',
                       fontWeight: mode === m ? 600 : 400,
                       letterSpacing: '0.1em', textTransform: 'uppercase',
@@ -137,7 +138,7 @@ const ProfileDropdown = () => {
 
                 <button
                   type="submit" disabled={loading}
-                  style={{ width: '100%', padding: '1.2rem', marginTop: '1.6rem', background: C.gold, border: 'none', color: '#0A0A0A', fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
+                  style={{ width: '100%', padding: '1.2rem', marginTop: '1.6rem', background: C.gold, border: 'none', color: '#1A1208', fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
                 >
                   {loading ? '…' : mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
                 </button>
@@ -169,7 +170,7 @@ const Navbar = () => {
   const setCurrency = useSettingsStore((s) => s.setCurrency);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
 
-  const { isAuthenticated, logout } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
 
   // Sticky on scroll
   useEffect(() => {
@@ -205,7 +206,7 @@ const Navbar = () => {
     <div style={{ position: 'relative', zIndex: 1000 }}>
       {/* Main navbar */}
       <nav style={{
-        background: sticky ? 'rgba(0,0,0,0.96)' : '#000000',
+        background: sticky ? 'rgba(0,0,0,0.96)' : '#1A1208',
         backdropFilter: sticky ? 'blur(16px)' : 'none',
         borderBottom: sticky ? '1px solid rgba(255,255,255,0.06)' : 'none',
         padding: '1.8rem 0',
@@ -223,17 +224,19 @@ const Navbar = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           position: 'relative',
-        }}>
+        }}
+          className="nav-inner"
+        >
 
           {/* Logo + nom — gauche, hors flux pour ne pas étirer le navbar */}
-          <div style={{ position: 'absolute', left: '4rem', top: '50%', transform: 'translateY(-50%)', zIndex: 2, display: 'flex', alignItems: 'center', gap: '0' }}>
+          <div className="nav-logo" style={{ position: 'absolute', left: '4rem', top: '50%', transform: 'translateY(-50%)', zIndex: 2, display: 'flex', alignItems: 'center', gap: '0' }}>
             <img
               src="/gemini.png"
               alt="Golden Pousso"
               style={{ height: '6rem', display: 'block', objectFit: 'contain' }}
             />
-            <span style={{
-              fontFamily: 'Aclonica, sans-serif',
+            <span className="nav-logo-text" style={{
+              fontFamily: 'Syne, sans-serif',
               fontSize: '1.8rem',
               color: C.gold,
               letterSpacing: '0.04em',
@@ -263,6 +266,11 @@ const Navbar = () => {
             <IconBtn onClick={() => setSearchOpen(true)} title="Rechercher">
               <i className="bx bx-search" style={{ fontSize: '2.2rem' }}></i>
             </IconBtn>
+            {isAuthenticated && user?.is_staff && (
+              <IconBtn onClick={() => navigate('/gestion')} title="Espace Gestion">
+                <i className="bx bx-cog" style={{ fontSize: '2.2rem' }}></i>
+              </IconBtn>
+            )}
             <ProfileDropdown />
             <div ref={cartRef} style={{ position: 'relative' }}>
               <IconBtn onClick={() => setCartOpen((o) => !o)} title="Panier">
@@ -291,14 +299,19 @@ const Navbar = () => {
           <button
             onClick={() => setNavOpen(true)}
             style={{
+              position: 'absolute', right: '2rem', top: '50%', transform: 'translateY(-50%)',
               background: 'none', border: 'none', color: C.cream, cursor: 'pointer',
               fontSize: '2.6rem', padding: '0.4rem', display: 'none',
-              alignItems: 'center', justifyContent: 'center',
+              alignItems: 'center', justifyContent: 'center', zIndex: 2,
             }}
             className="hamburger-btn"
             aria-label="Menu"
           >
-            <i className="bx bx-menu-alt-right"></i>
+            <svg width="24" height="18" viewBox="0 0 24 18" fill="none">
+                <rect x="0" y="0" width="24" height="2.5" rx="1.25" fill="#FAF6EE"/>
+                <rect x="0" y="7.75" width="24" height="2.5" rx="1.25" fill="#FAF6EE"/>
+                <rect x="0" y="15.5" width="24" height="2.5" rx="1.25" fill="#FAF6EE"/>
+              </svg>
           </button>
         </div>
       </nav>
@@ -331,7 +344,7 @@ const Navbar = () => {
           top: 0, right: 0, bottom: 0,
           width: '44rem',
           maxWidth: '100vw',
-          background: '#0A0A0A',
+          background: '#1A1208',
           zIndex: 1200,
           transform: cartOpen ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -351,7 +364,7 @@ const Navbar = () => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
               <h2 style={{
-                fontFamily: 'Aclonica, sans-serif',
+                fontFamily: 'Syne, sans-serif',
                 fontSize: '1.9rem',
                 color: C.gold,
                 letterSpacing: '0.04em',
@@ -361,8 +374,8 @@ const Navbar = () => {
               </h2>
               {totalItems > 0 && (
                 <span style={{
-                  background: 'rgba(212,175,55,0.12)',
-                  border: '1px solid rgba(212,175,55,0.25)',
+                  background: 'rgba(184,150,10,0.12)',
+                  border: '1px solid rgba(184,150,10,0.25)',
                   color: C.gold,
                   fontSize: '1.1rem',
                   fontFamily: 'Inter, sans-serif',
@@ -400,7 +413,7 @@ const Navbar = () => {
             {items.length === 0 ? (
               /* Panier vide */
               <div style={{ padding: '7rem 3rem', textAlign: 'center' }}>
-                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.2)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto 2.5rem' }}>
+                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="rgba(184,150,10,0.2)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto 2.5rem' }}>
                   <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
                 </svg>
                 <p style={{ fontSize: '1.4rem', color: C.muted, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', marginBottom: '3rem' }}>
@@ -450,7 +463,7 @@ const Navbar = () => {
               padding: '2.4rem',
               borderTop: '1px solid #2A2A2A',
               flexShrink: 0,
-              background: '#0A0A0A',
+              background: '#1A1208',
             }}>
               {/* Sous-total */}
               <div style={{
@@ -463,7 +476,7 @@ const Navbar = () => {
                   Sous-total
                 </span>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: '2rem', color: C.gold, fontFamily: 'Aclonica, sans-serif', fontWeight: 400, lineHeight: 1.2 }}>
+                  <p style={{ fontSize: '2rem', color: C.gold, fontFamily: 'Syne, sans-serif', fontWeight: 400, lineHeight: 1.2 }}>
                     {formatPrice(totalPrice, currency)}
                   </p>
                 </div>
@@ -591,7 +604,7 @@ const Navbar = () => {
                     display: 'block',
                     padding: '2.2rem 0',
                     fontSize: '2.8rem',
-                    fontFamily: 'Aclonica, sans-serif',
+                    fontFamily: 'Syne, sans-serif',
                     color: C.cream,
                     textDecoration: 'none',
                     transition: 'color 0.2s',
@@ -640,6 +653,21 @@ const Navbar = () => {
                 <i className="bx bx-search" style={{ fontSize: '1.8rem' }}></i>
                 Rechercher
               </button>
+
+              {isAuthenticated && user?.is_staff && (
+                <button
+                  onClick={() => { setNavOpen(false); navigate('/gestion'); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.8rem',
+                    background: 'none', border: `1px solid ${C.gold}`,
+                    color: C.gold, padding: '1.2rem 2rem', cursor: 'pointer',
+                    fontSize: '1.4rem', fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  <i className="bx bx-cog" style={{ fontSize: '1.8rem' }}></i>
+                  Espace Gestion
+                </button>
+              )}
             </div>
 
 
@@ -657,6 +685,10 @@ const Navbar = () => {
           .nav-icons { display: none !important; }
           .hamburger-btn { display: flex !important; }
           .nav-selectors { display: none !important; }
+          .nav-inner { padding: 0 1.6rem !important; min-height: 4.8rem; }
+          .nav-logo { left: 1.6rem !important; }
+          .nav-logo img { height: 4.8rem !important; }
+          .nav-logo-text { display: none !important; }
         }
         @media (min-width: 769px) {
           .hamburger-btn { display: none !important; }
@@ -679,7 +711,7 @@ const mobileSelectStyle = {
   appearance: 'none',
   background: 'transparent',
   border: '1px solid rgba(255,255,255,0.12)',
-  color: '#8A8A8A',
+  color: 'rgba(250,246,238,0.6)',
   fontSize: '1.3rem',
   fontFamily: 'Inter, sans-serif',
   textTransform: 'uppercase',
@@ -711,19 +743,19 @@ const NavDropdown = ({ value, options, onChange }) => {
         style={{
           display: 'flex', alignItems: 'center', gap: '0.5rem',
           background: 'none', border: 'none', cursor: 'pointer',
-          color: open ? 'rgba(245,240,235,0.9)' : 'rgba(245,240,235,0.6)',
+          color: open ? 'rgba(250,246,238,0.9)' : 'rgba(250,246,238,0.6)',
           fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
           textTransform: 'uppercase', letterSpacing: '0.15em',
           padding: '0.6rem 0.8rem',
           transition: 'color 0.2s',
         }}
-        onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(245,240,235,0.9)'}
-        onMouseLeave={(e) => { if (!open) e.currentTarget.style.color = 'rgba(245,240,235,0.6)'; }}
+        onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(250,246,238,0.9)'}
+        onMouseLeave={(e) => { if (!open) e.currentTarget.style.color = 'rgba(250,246,238,0.6)'; }}
       >
         {selected.label}
         <svg
           width="9" height="9" viewBox="0 0 24 24" fill="none"
-          stroke="rgba(245,240,235,0.4)" strokeWidth="2"
+          stroke="rgba(250,246,238,0.4)" strokeWidth="2"
           style={{ transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}
         >
           <polyline points="6 9 12 15 18 9"/>
@@ -748,16 +780,16 @@ const NavDropdown = ({ value, options, onChange }) => {
               style={{
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '1rem 1.6rem',
-                background: opt.value === value ? 'rgba(212,175,55,0.08)' : 'none',
+                background: opt.value === value ? 'rgba(184,150,10,0.08)' : 'none',
                 border: 'none', cursor: 'pointer',
                 fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
                 textTransform: 'uppercase', letterSpacing: '0.15em',
-                color: opt.value === value ? '#D4AF37' : 'rgba(245,240,235,0.6)',
+                color: opt.value === value ? '#B8960A' : 'rgba(250,246,238,0.6)',
                 transition: 'background 0.15s, color 0.15s',
                 whiteSpace: 'nowrap',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,175,55,0.12)'; e.currentTarget.style.color = 'rgba(245,240,235,0.9)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = opt.value === value ? 'rgba(212,175,55,0.08)' : 'none'; e.currentTarget.style.color = opt.value === value ? '#D4AF37' : 'rgba(245,240,235,0.6)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,150,10,0.12)'; e.currentTarget.style.color = 'rgba(250,246,238,0.9)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = opt.value === value ? 'rgba(184,150,10,0.08)' : 'none'; e.currentTarget.style.color = opt.value === value ? '#B8960A' : 'rgba(250,246,238,0.6)'; }}
             >
               {opt.label}
             </button>
@@ -781,7 +813,7 @@ const NavLink = ({ to, label }) => {
         fontSize: '1.4rem',
         fontWeight: 500,
         letterSpacing: '0.06em',
-        color: hovered ? '#D4AF37' : 'rgba(245,240,235,0.85)',
+        color: hovered ? '#B8960A' : 'rgba(250,246,238,0.85)',
         textDecoration: 'none',
         transition: 'color 0.2s',
         fontFamily: 'Inter, sans-serif',
@@ -917,7 +949,7 @@ const CartItem = ({ item, onUpdate, onRemove, C }) => {
                 lineHeight: 1,
                 transition: 'background 0.2s, border-color 0.2s, color 0.2s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = '#0A0A0A'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = '#1A1208'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = '#2A2A2A'; e.currentTarget.style.color = C.cream; }}
             >
               −
@@ -948,7 +980,7 @@ const CartItem = ({ item, onUpdate, onRemove, C }) => {
                 lineHeight: 1,
                 transition: 'background 0.2s, border-color 0.2s, color 0.2s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = '#0A0A0A'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = '#1A1208'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = '#2A2A2A'; e.currentTarget.style.color = C.cream; }}
             >
               +
@@ -972,7 +1004,7 @@ const IconBtn = ({ onClick, title, children }) => {
         position: 'relative',
         background: hovered ? 'rgba(255,255,255,0.07)' : 'none',
         border: 'none',
-        color: hovered ? '#D4AF37' : 'rgba(245,240,235,0.85)',
+        color: hovered ? '#B8960A' : 'rgba(250,246,238,0.85)',
         cursor: 'pointer',
         padding: '0.8rem',
         display: 'flex',

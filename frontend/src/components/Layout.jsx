@@ -112,7 +112,7 @@ const WhatsAppChat = () => {
           onMouseEnter={e => { e.currentTarget.style.background = '#1A1A1A'; e.currentTarget.style.transform = 'scale(1.08)'; }}
           onMouseLeave={e => { e.currentTarget.style.background = '#000000'; e.currentTarget.style.transform = 'scale(1)'; }}
         >
-          <i className="bx bxl-whatsapp" style={{ fontSize: '3rem', color: '#D4AF37', lineHeight: 1 }} />
+          <i className="bx bxl-whatsapp" style={{ fontSize: '3rem', color: '#B8960A', lineHeight: 1 }} />
         </button>
       )}
 

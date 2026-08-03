@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 import CldImg from '../components/CldImg';
-import QuickShopModal from '../components/QuickShopModal';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
 /* ─── Constants ─────────────────────────────────────────── */
@@ -19,8 +18,8 @@ const SORT_OPTIONS = [
 const PLPCard = ({ product, index }) => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
-  const [quickShop, setQuickShop] = useState(false);
   const currency = useSettingsStore((s) => s.currency);
+  const goToProduct = () => navigate(`/produit/${product.slug}`);
 
   const discountPercent =
     product.old_price && product.old_price > product.price
@@ -34,7 +33,7 @@ const PLPCard = ({ product, index }) => {
       className="plp-card"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => !outOfStock && setQuickShop(true)}
+      onClick={() => !outOfStock && goToProduct()}
       style={{
         cursor: outOfStock ? 'default' : 'pointer',
         opacity: outOfStock ? 0.55 : 1,
@@ -135,7 +134,7 @@ const PLPCard = ({ product, index }) => {
         {/* Bouton œil Quick Shop */}
         {!outOfStock && (
           <div
-            onClick={(e) => { e.stopPropagation(); setQuickShop(true); }}
+            onClick={(e) => { e.stopPropagation(); goToProduct(); }}
             style={{
               position: 'absolute', top: '50%', left: '50%',
               transform: hovered ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(0.7)',
@@ -162,7 +161,7 @@ const PLPCard = ({ product, index }) => {
               color: '#FAF6EE', background: 'rgba(10,8,5,0.6)',
               padding: '0.3rem 1rem', borderRadius: '2px',
             }}>
-              Quick Shop
+              Voir le produit
             </span>
           </div>
         )}
@@ -170,7 +169,7 @@ const PLPCard = ({ product, index }) => {
         {/* Bouton ADD TO CART en bas */}
         {!outOfStock && (
           <button
-            onClick={(e) => { e.stopPropagation(); setQuickShop(true); }}
+            onClick={(e) => { e.stopPropagation(); goToProduct(); }}
             style={{
               position: 'absolute', bottom: '1.6rem', left: '1.6rem', right: '1.6rem',
               background: '#1A1208', color: '#FAF6EE', border: 'none',
@@ -185,7 +184,7 @@ const PLPCard = ({ product, index }) => {
             onMouseEnter={(e) => { e.currentTarget.style.background = '#B8960A'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = '#1A1208'; }}
           >
-            ADD TO CART
+            Voir le produit
           </button>
         )}
 
@@ -209,7 +208,7 @@ const PLPCard = ({ product, index }) => {
       {/* Infos produit */}
       <div style={{ paddingLeft: '0.2rem' }}>
         <h3 style={{
-          fontFamily: 'Aclonica, serif',
+          fontFamily: 'Syne, sans-serif',
           fontSize: '1.4rem', color: '#1A1208',
           marginBottom: '0.6rem', lineHeight: 1.35,
           overflow: 'hidden', display: '-webkit-box',
@@ -226,10 +225,6 @@ const PLPCard = ({ product, index }) => {
           )}
         </p>
       </div>
-
-      {quickShop && (
-        <QuickShopModal slug={product.slug} onClose={() => setQuickShop(false)} />
-      )}
     </article>
   );
 };
@@ -332,7 +327,7 @@ const BoutiquePage = () => {
 
         {/* ── Hero ── */}
         <section className="boutique-section" style={{ padding: '10rem 4rem 0', maxWidth: '130rem', margin: '0 auto' }}>
-          <div style={{ marginBottom: '5rem', paddingLeft: 'calc(28rem + 5rem)' }}>
+          <div className="boutique-title" style={{ marginBottom: '5rem', paddingLeft: 'calc(28rem + 5rem)' }}>
             <p style={{
               fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
               textTransform: 'uppercase', letterSpacing: '0.3em',
@@ -341,7 +336,7 @@ const BoutiquePage = () => {
               Boutique
             </p>
             <h1 style={{
-              fontFamily: 'Aclonica, sans-serif',
+              fontFamily: 'Syne, sans-serif',
               fontSize: 'clamp(3rem, 6vw, 6rem)',
               color: '#1A1208', textTransform: 'uppercase',
               letterSpacing: '0.02em', lineHeight: 1.1,
@@ -371,7 +366,7 @@ const BoutiquePage = () => {
           }}>
             {/* Header */}
             <div style={{ paddingBottom: '2rem', borderBottom: '1px solid #E0D0B8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-              <h3 style={{ fontFamily: 'Aclonica, serif', fontSize: '2rem', color: '#B8960A', margin: 0, letterSpacing: '0.04em', fontWeight: 400 }}>
+              <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '2rem', color: '#B8960A', margin: 0, letterSpacing: '0.04em', fontWeight: 400 }}>
                 Filtres
               </h3>
               {activeCount > 0 && (
@@ -386,68 +381,24 @@ const BoutiquePage = () => {
               )}
             </div>
 
-            {/* Recherche */}
-            <AccordionSection title="Recherche" sectionKey="search" open={openSections.includes('search')} onToggle={toggleSection}>
-              <input
-                type="text" placeholder="Nom, style, matière…"
-                value={searchQuery} onChange={(e) => updateFilter('search', e.target.value)}
-                style={inputStyle}
-                onFocus={(e) => e.currentTarget.style.borderBottomColor = '#B8960A'}
-                onBlur={(e) => e.currentTarget.style.borderBottomColor = '#CEC0A0'}
-              />
-            </AccordionSection>
-
             {/* Catégorie */}
-            <AccordionSection title="Catégorie" sectionKey="category" open={openSections.includes('category')} onToggle={toggleSection}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {[{ slug: '', name: 'Toutes les catégories' }, ...categories].map((cat) => {
-                  const active = selectedCategory === cat.slug;
-                  return (
-                    <button key={cat.slug} onClick={() => updateFilter('category', cat.slug)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '1.4rem', padding: '1.1rem 0', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid rgba(42,42,42,0.6)' }}>
-                      <span style={{ width: '1.5rem', height: '1.5rem', border: `1px solid ${active ? '#B8960A' : '#CEC0A0'}`, background: active ? '#B8960A' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-                        {active && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>}
-                      </span>
-                      <span style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: active ? '#1A1208' : '#7A6A50', transition: 'color 0.2s' }}>
-                        {cat.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </AccordionSection>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {[{ slug: '', name: 'Toutes les catégories' }, ...categories].map((cat) => {
+                const active = selectedCategory === cat.slug;
+                return (
+                  <button key={cat.slug} onClick={() => updateFilter('category', cat.slug)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '1.4rem', padding: '1.1rem 0', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid rgba(42,42,42,0.06)' }}>
+                    <span style={{ width: '1.5rem', height: '1.5rem', border: `1px solid ${active ? '#B8960A' : '#CEC0A0'}`, background: active ? '#B8960A' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                      {active && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#1A1208" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>}
+                    </span>
+                    <span style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: active ? '#1A1208' : '#7A6A50', transition: 'color 0.2s' }}>
+                      {cat.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-            {/* Budget */}
-            <AccordionSection title="Budget (FCFA)" sectionKey="price" open={openSections.includes('price')} onToggle={toggleSection}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                <div>
-                  <label style={{ fontSize: '1rem', fontFamily: 'Inter, sans-serif', color: '#555', display: 'block', marginBottom: '0.8rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Min</label>
-                  <input type="number" placeholder="0" value={minPrice} onChange={(e) => updateFilter('min_price', e.target.value)} style={inputStyle}
-                    onFocus={(e) => e.currentTarget.style.borderBottomColor = '#B8960A'} onBlur={(e) => e.currentTarget.style.borderBottomColor = '#CEC0A0'} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '1rem', fontFamily: 'Inter, sans-serif', color: '#555', display: 'block', marginBottom: '0.8rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Max</label>
-                  <input type="number" placeholder="—" value={maxPrice} onChange={(e) => updateFilter('max_price', e.target.value)} style={inputStyle}
-                    onFocus={(e) => e.currentTarget.style.borderBottomColor = '#B8960A'} onBlur={(e) => e.currentTarget.style.borderBottomColor = '#CEC0A0'} />
-                </div>
-              </div>
-            </AccordionSection>
-
-            {/* Trier par */}
-            <AccordionSection title="Trier par" sectionKey="sort" open={openSections.includes('sort')} onToggle={toggleSection}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {SORT_OPTIONS.map((o) => {
-                  const active = ordering === o.value;
-                  return (
-                    <button key={o.value} onClick={() => updateFilter('ordering', o.value)}
-                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.2rem 0', background: 'none', border: 'none', borderBottom: '1px solid rgba(42,42,42,0.6)', cursor: 'pointer', textAlign: 'left' }}>
-                      <span style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: active ? '#1A1208' : '#7A6A50', transition: 'color 0.2s' }}>{o.label}</span>
-                      {active && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
-                    </button>
-                  );
-                })}
-              </div>
-            </AccordionSection>
           </aside>
 
           {/* ── Colonne produits ── */}
@@ -491,7 +442,7 @@ const BoutiquePage = () => {
               </div>
             ) : products.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '10rem 2rem' }}>
-                <p style={{ fontFamily: 'Aclonica, serif', fontSize: '2.6rem', color: '#1A1208', marginBottom: '1.2rem' }}>Aucune pièce trouvée</p>
+                <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.6rem', color: '#1A1208', marginBottom: '1.2rem' }}>Aucune pièce trouvée</p>
                 <p style={{ fontSize: '1.4rem', fontFamily: 'Inter, sans-serif', color: '#7A6A50', marginBottom: '4rem', lineHeight: 1.7 }}>
                   Essayez d&apos;autres filtres pour découvrir nos créations.
                 </p>
@@ -561,6 +512,10 @@ const BoutiquePage = () => {
         @media (max-width: 860px) {
           .boutique-layout { grid-template-columns: 1fr !important; padding: 3rem 3rem 8rem !important; }
           .boutique-layout aside { position: static !important; max-height: none !important; }
+          .boutique-title { padding-left: 0 !important; }
+        }
+        @media (max-width: 640px) {
+          .boutique-section { padding-left: 2rem !important; padding-right: 2rem !important; }
         }
         @media (max-width: 560px) {
           .boutique-grid { grid-template-columns: 1fr !important; }
@@ -590,7 +545,7 @@ const AccordionSection = ({ title, sectionKey, open, onToggle, children }) => {
         </span>
         <svg
           width="12" height="12" viewBox="0 0 24 24" fill="none"
-          stroke="#8A8A8A" strokeWidth="1.5"
+          stroke="rgba(250,246,238,0.6)" strokeWidth="1.5"
           style={{ transition: 'transform 0.25s ease', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}
         >
           <polyline points="6 9 12 15 18 9"/>

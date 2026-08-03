@@ -1,38 +1,53 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import apiClient from '../api/client';
+
+const useIsMobile = () => {
+  const [mobile, setMobile] = useState(() => window.innerWidth <= 767);
+  useEffect(() => {
+    const fn = () => setMobile(window.innerWidth <= 767);
+    window.addEventListener('resize', fn);
+    return () => window.removeEventListener('resize', fn);
+  }, []);
+  return mobile;
+};
 
 const CARD_REM = 27;
 const GAP_REM  = 1.6;
 const STEP     = CARD_REM + GAP_REM;
 const BASE     = -STEP;
 
-/* ── Ajouter / remplacer les IDs YouTube Shorts ── */
-const VIDEOS = [
-  { videoId: 'KN7Q5iMw6TA' },
-  { videoId: 'WRHnxjFpjk8' },
-  { videoId: 'xMSJ2kl9918' },
-  { videoId: 'KN7Q5iMw6TA' }, // remplacer
-  { videoId: 'WRHnxjFpjk8' }, // remplacer
-];
-
+// Ref-callback plutôt que useRef : cette section rend `null` tant que les vidéos ne sont
+// pas chargées, donc le nœud DOM n'existe pas encore lors du tout premier rendu. Un useEffect
+// à deps [] classique raterait son attachement ; ici l'observer se (ré)attache dès que le
+// nœud apparaît réellement (une fois les vidéos arrivées).
 const useInView = () => {
-  const ref = useRef(null);
+  const [node, setNode] = useState(null);
   const [visible, setVisible] = useState(false);
+  const ref = useCallback((el) => setNode(el), []);
+
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    if (!node) return;
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
       { threshold: 0.08, rootMargin: '-60px' }
     );
-    obs.observe(el);
+    obs.observe(node);
     return () => obs.disconnect();
-  }, []);
+  }, [node]);
+
   return [ref, visible];
 };
 
 const VideoCardsSection = () => {
+  const isMobile = useIsMobile();
   const [headerRef, headerVisible] = useInView();
-  const n = VIDEOS.length;
+  const [videos, setVideos] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const n = videos.length;
+
+  useEffect(() => {
+    apiClient.get('/videos/').then(({ data }) => setVideos(data)).catch(() => {}).finally(() => setLoaded(true));
+  }, []);
 
   const [activeIdx,         setActiveIdx]         = useState(0);
   const [offset,            setOffset]            = useState(BASE);
@@ -75,6 +90,73 @@ const VideoCardsSection = () => {
     ? 'transform 0.5s ease, margin-top 0.5s ease'
     : 'none';
 
+  if (n === 0) return null; // rien tant que le propriétaire n'a pas ajouté de vidéo (Espace Gestion → Vidéos)
+
+  const centerVideoUrl = videos[getIdx(0)].video_url;
+
+  if (isMobile) {
+    return (
+      <section style={{ padding: '6rem 0', background: '#FAF6EE' }}>
+        <div className="container">
+          {/* En-tête */}
+          <div ref={headerRef} style={{
+            marginBottom: '4rem', textAlign: 'center',
+            opacity: headerVisible ? 1 : 0,
+            transform: headerVisible ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'opacity 0.8s ease, transform 0.8s ease',
+          }}>
+            <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: '#B8960A', marginBottom: '1.6rem' }}>
+              Univers Visuel
+            </p>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.4rem, 7vw, 4rem)', color: '#1A1208', textTransform: 'uppercase', letterSpacing: '0.02em', lineHeight: 1.1 }}>
+              Nos Créations<br /><span style={{ color: '#B8960A' }}>en Mouvement</span>
+            </h2>
+          </div>
+
+          {/* Carte unique */}
+          <div style={{ width: 'min(32rem, 85vw)', margin: '0 auto' }}>
+            <div style={{ position: 'relative', aspectRatio: '9/16', overflow: 'hidden', borderRadius: '4px', background: '#1a1208' }}>
+              {playingDelta === 0 ? (
+                <video
+                  key={centerVideoUrl}
+                  src={centerVideoUrl}
+                  controls
+                  autoPlay
+                  playsInline
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <>
+                  <video src={centerVideoUrl} muted playsInline preload="metadata" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
+                  <div
+                    onClick={() => setPlayingDelta(0)}
+                    style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 2 }}
+                  >
+                    <div style={{ width: '5.6rem', height: '5.6rem', borderRadius: '50%', background: 'rgba(255,255,255,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.35)' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="#B8960A"><polygon points="6 3 20 12 6 21 6 3" /></svg>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Flèches sous la carte */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '2.4rem', marginTop: '3rem' }}>
+            <button onClick={() => { setPlayingDelta(null); go(-1); }} disabled={sliding}
+              style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: 'transparent', border: 'none', cursor: sliding ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: sliding ? 0.3 : 1 }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#B8960A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            </button>
+            <button onClick={() => { setPlayingDelta(null); go(1); }} disabled={sliding}
+              style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: 'transparent', border: 'none', cursor: sliding ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: sliding ? 0.3 : 1 }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#B8960A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section style={{ padding: '8rem 0', background: '#FAF6EE' }}>
       <div className="container">
@@ -94,7 +176,7 @@ const VideoCardsSection = () => {
             Univers Visuel
           </p>
           <h2 style={{
-            fontFamily: 'Aclonica, sans-serif',
+            fontFamily: 'Syne, sans-serif',
             fontSize: 'clamp(3rem, 5vw, 5rem)',
             color: '#1A1208', textTransform: 'uppercase',
             letterSpacing: '0.02em', lineHeight: 1.1,
@@ -127,12 +209,11 @@ const VideoCardsSection = () => {
             }}>
               {deltas.map((delta) => {
                 const idx      = getIdx(delta);
-                const videoId  = VIDEOS[idx].videoId;
+                const videoUrl = videos[idx]?.video_url;
                 const isCenter   = delta === effectiveCenter;
                 const isVisible  = Math.abs(delta) <= 1;
                 const isPlaying  = playingDelta === delta;
                 const isHovered  = hoveredDelta === delta;
-                const thumb      = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
                 return (
                   <div
@@ -155,15 +236,18 @@ const VideoCardsSection = () => {
                       background: '#1a1208',
                     }}>
 
-                      {/* Thumbnail — visible tant que la vidéo n'est pas lancée */}
+                      {/* Aperçu (1ère image de la vidéo) — visible tant que la vidéo n'est pas lancée */}
                       {!isPlaying && (
-                        <img
-                          src={thumb}
-                          alt=""
+                        <video
+                          src={videoUrl}
+                          muted
+                          playsInline
+                          preload="metadata"
                           style={{
                             position: 'absolute', inset: 0,
                             width: '100%', height: '100%',
                             objectFit: 'cover', display: 'block',
+                            pointerEvents: 'none',
                             transition: 'transform 0.3s ease',
                             transform: isHovered ? 'scale(1.04)' : 'scale(1)',
                           }}
@@ -180,20 +264,18 @@ const VideoCardsSection = () => {
                         }} />
                       )}
 
-                      {/* Iframe — dès que l'utilisateur lance la vidéo */}
+                      {/* Lecteur vidéo — dès que l'utilisateur lance la lecture */}
                       {isPlaying && (
-                        <iframe
-                          key={videoId}
-                          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-                          allow="autoplay; encrypted-media; fullscreen"
-                          allowFullScreen
+                        <video
+                          key={videoUrl}
+                          src={videoUrl}
+                          controls
+                          autoPlay
+                          playsInline
                           style={{
-                            position: 'absolute',
-                            top: isCenter ? '0' : '-10%',
-                            left: 0,
-                            width: '100%',
-                            height: isCenter ? '100%' : '120%',
-                            border: 'none', display: 'block',
+                            position: 'absolute', inset: 0,
+                            width: '100%', height: '100%',
+                            objectFit: 'cover', display: 'block',
                           }}
                         />
                       )}

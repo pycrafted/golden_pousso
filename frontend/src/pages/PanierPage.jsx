@@ -6,14 +6,14 @@ import CldImg from '../components/CldImg';
 
 /* ── Palette ── */
 const C = {
-  bg:        '#0A0A0A',
+  bg:        '#1A1208',
   panel:     '#111111',
   border:    '#1E1E1E',
   borderMid: '#2A2A2A',
-  gold:      '#D4AF37',
+  gold:      '#B8960A',
   terra:     '#C2662D',
-  cream:     '#F5F0EB',
-  muted:     '#8A8A8A',
+  cream:     '#FAF6EE',
+  muted:     'rgba(250,246,238,0.6)',
 };
 
 const PanierPage = () => {
@@ -37,8 +37,8 @@ const PanierPage = () => {
           {/* Icône panier vide */}
           <div style={{
             width: '8rem', height: '8rem', borderRadius: '50%',
-            background: 'rgba(212,175,55,0.06)',
-            border: `1px solid rgba(212,175,55,0.2)`,
+            background: 'rgba(184,150,10,0.06)',
+            border: `1px solid rgba(184,150,10,0.2)`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             marginBottom: '3rem',
           }}>
@@ -51,7 +51,7 @@ const PanierPage = () => {
             Golden Pousso
           </p>
           <h2 style={{
-            fontFamily: 'Aclonica, serif',
+            fontFamily: 'Syne, sans-serif',
             fontSize: 'clamp(2.8rem, 4vw, 4rem)',
             color: C.cream, letterSpacing: '-0.01em',
             lineHeight: 1.1, marginBottom: '1.6rem',
@@ -66,13 +66,13 @@ const PanierPage = () => {
             style={{
               display: 'inline-flex', alignItems: 'center',
               padding: '1.6rem 5rem',
-              background: C.gold, color: '#0A0A0A',
+              background: C.gold, color: '#1A1208',
               fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
               fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
               textDecoration: 'none', transition: 'background 0.25s, color 0.25s',
             }}
             onMouseEnter={(e) => { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#0A0A0A'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#1A1208'; }}
           >
             Explorer la boutique
           </Link>
@@ -99,7 +99,7 @@ const PanierPage = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.6rem' }}>
               <h1 style={{
-                fontFamily: 'Aclonica, serif',
+                fontFamily: 'Syne, sans-serif',
                 fontSize: 'clamp(3rem, 4vw, 4.5rem)',
                 color: C.cream, letterSpacing: '-0.02em', lineHeight: 1.1,
               }}>
@@ -307,7 +307,7 @@ const PanierPage = () => {
               <div style={{ height: '3px', background: `linear-gradient(to right, ${C.gold}, ${C.terra}, transparent)`, margin: '-3.5rem -3.5rem 3.5rem' }} />
 
               <h3 style={{
-                fontFamily: 'Aclonica, serif', fontSize: '2rem',
+                fontFamily: 'Syne, sans-serif', fontSize: '2rem',
                 color: C.gold, marginBottom: '3rem', letterSpacing: '0.02em',
               }}>
                 Récapitulatif
@@ -352,7 +352,7 @@ const PanierPage = () => {
                   Total estimé
                 </span>
                 <span style={{
-                  fontFamily: 'Aclonica, serif', fontSize: '2.6rem', color: C.gold,
+                  fontFamily: 'Syne, sans-serif', fontSize: '2.6rem', color: C.gold,
                 }}>
                   {formatPrice(subtotal, currency)}
                 </span>
@@ -363,7 +363,7 @@ const PanierPage = () => {
                 onClick={() => navigate('/commande')}
                 style={{
                   width: '100%', padding: '1.8rem',
-                  background: C.gold, color: '#0A0A0A',
+                  background: C.gold, color: '#1A1208',
                   border: 'none', cursor: 'pointer',
                   fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
                   fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
@@ -371,7 +371,7 @@ const PanierPage = () => {
                   marginBottom: '2rem',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#0A0A0A'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#1A1208'; }}
               >
                 Passer la commande →
               </button>

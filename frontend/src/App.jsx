@@ -17,6 +17,7 @@ const CommandePage = lazy(() => import('./pages/CommandePage'));
 const SuiviCommandePage = lazy(() => import('./pages/SuiviCommandePage'));
 const CollectionsPage = lazy(() => import('./pages/CollectionsPage'));
 const ProfilPage = lazy(() => import('./pages/MonComptePage'));
+const ProduitPage = lazy(() => import('./pages/ProduitPage'));
 const CollectionDetailPage = lazy(() => import('./pages/CollectionDetailPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const AProposPage = lazy(() => import('./pages/AProposPage'));
@@ -26,9 +27,23 @@ const FAQPage = lazy(() => import('./pages/FAQPage'));
 const MentionsLegalesPage = lazy(() => import('./pages/MentionsLegalesPage'));
 const Page404 = lazy(() => import('./pages/Page404'));
 
+// Espace Gestion (back-office)
+const GestionLayout = lazy(() => import('./pages/gestion/GestionLayout'));
+const GestionDashboardPage = lazy(() => import('./pages/gestion/DashboardPage'));
+const GestionProduitsPage = lazy(() => import('./pages/gestion/ProduitsPage'));
+const GestionCategoriesPage = lazy(() => import('./pages/gestion/CategoriesPage'));
+const GestionCollectionsPage = lazy(() => import('./pages/gestion/CollectionsPage'));
+const GestionCommandesPage = lazy(() => import('./pages/gestion/CommandesPage'));
+const GestionAvisPage = lazy(() => import('./pages/gestion/AvisPage'));
+const GestionMessagesPage = lazy(() => import('./pages/gestion/MessagesPage'));
+const GestionContenuPage = lazy(() => import('./pages/gestion/ContenuPage'));
+const GestionClientsPage = lazy(() => import('./pages/gestion/ClientsPage'));
+const GestionStockAlertsPage = lazy(() => import('./pages/gestion/StockAlertsPage'));
+const GestionVideosPage = lazy(() => import('./pages/gestion/VideosPage'));
+
 const PageLoader = () => (
-  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh', background: '#0A0A0A' }}>
-    <div style={{ width: '4rem', height: '4rem', border: '3px solid #1E1E1E', borderTop: '3px solid #D4AF37', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh', background: '#1A1208' }}>
+    <div style={{ width: '4rem', height: '4rem', border: '3px solid #1E1E1E', borderTop: '3px solid #B8960A', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
     <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
   </div>
 );
@@ -43,10 +58,12 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/boutique" element={<BoutiquePage />} />
             <Route path="/panier" element={<PanierPage />} />
+            <Route path="/produit/:slug" element={<ProduitPage />} />
             <Route path="/commande" element={<CommandePage />} />
             <Route path="/commande/suivi" element={<SuiviCommandePage />} />
             <Route path="/commande/suivi/:orderNumber" element={<SuiviCommandePage />} />
             <Route path="/profil" element={<ProfilPage />} />
+            <Route path="/mon-compte" element={<ProfilPage />} />
             <Route path="/collections" element={<CollectionsPage />} />
             <Route path="/collections/:slug" element={<CollectionDetailPage />} />
             <Route path="/contact" element={<ContactPage />} />
@@ -56,6 +73,20 @@ function App() {
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
             <Route path="*" element={<Page404 />} />
+          </Route>
+
+          <Route path="/gestion" element={<GestionLayout />}>
+            <Route index element={<GestionDashboardPage />} />
+            <Route path="produits" element={<GestionProduitsPage />} />
+            <Route path="categories" element={<GestionCategoriesPage />} />
+            <Route path="collections" element={<GestionCollectionsPage />} />
+            <Route path="commandes" element={<GestionCommandesPage />} />
+            <Route path="avis" element={<GestionAvisPage />} />
+            <Route path="messages" element={<GestionMessagesPage />} />
+            <Route path="clients" element={<GestionClientsPage />} />
+            <Route path="alertes-stock" element={<GestionStockAlertsPage />} />
+            <Route path="videos" element={<GestionVideosPage />} />
+            <Route path="contenu" element={<GestionContenuPage />} />
           </Route>
         </Routes>
       </Suspense>

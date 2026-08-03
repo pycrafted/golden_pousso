@@ -4,7 +4,6 @@ import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 import CldImg from '../components/CldImg';
-import QuickShopModal from '../components/QuickShopModal';
 
 const useInView = () => {
   const ref = useRef(null);
@@ -24,9 +23,9 @@ const useInView = () => {
 
 const ProductCard = ({ product, index }) => {
   const currency = useSettingsStore((s) => s.currency);
+  const navigate = useNavigate();
   const [ref, visible] = useInView();
   const [hovered, setHovered] = useState(false);
-  const [modal, setModal] = useState(false);
   const delay = (index % 4) * 0.07;
   const outOfStock = product.stock === 0;
 
@@ -34,7 +33,7 @@ const ProductCard = ({ product, index }) => {
     <>
     <div
       ref={ref}
-      onClick={() => !outOfStock && setModal(true)}
+      onClick={() => !outOfStock && navigate(`/produit/${product.slug}`)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -113,7 +112,7 @@ const ProductCard = ({ product, index }) => {
         )}
 
         <button
-          onClick={e => { e.stopPropagation(); if (!outOfStock) setModal(true); }}
+          onClick={e => { e.stopPropagation(); if (!outOfStock) navigate(`/produit/${product.slug}`); }}
           style={{
             position: 'absolute', bottom: '1.6rem', left: '1.6rem', right: '1.6rem',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
@@ -131,7 +130,7 @@ const ProductCard = ({ product, index }) => {
           onMouseEnter={e => { e.currentTarget.style.background = '#96780A'; }}
           onMouseLeave={e => { e.currentTarget.style.background = '#B8960A'; }}
         >
-          Quick Shop
+          Voir le produit
         </button>
       </div>
 
@@ -145,7 +144,6 @@ const ProductCard = ({ product, index }) => {
         {formatPrice(product.price, currency)}
       </p>
     </div>
-    {modal && <QuickShopModal slug={product.slug} onClose={() => setModal(false)} />}
     </>
   );
 };
@@ -242,7 +240,7 @@ const CollectionDetailPage = () => {
                 </p>
               )}
               <h1 style={{
-                fontFamily: 'Aclonica, sans-serif',
+                fontFamily: 'Syne, sans-serif',
                 fontSize: 'clamp(3rem, 6vw, 5.6rem)',
                 color: '#1A1208', textTransform: 'uppercase',
                 letterSpacing: '0.02em', lineHeight: 1.1,

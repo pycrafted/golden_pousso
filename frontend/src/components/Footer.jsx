@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { COLORS } from '../theme';
 
 const C = {
   bg:     '#111111',
-  bgBot:  '#0A0A0A',
-  gold:   '#D4AF37',
-  cream:  '#F5F0EB',
-  muted:  '#9A9A9A',
+  bgBot:  COLORS.ink,
+  gold:   COLORS.gold,
+  cream:  COLORS.cream,
+  muted:  COLORS.mutedOnDark,
   border: 'rgba(255,255,255,0.08)',
 };
 
@@ -86,7 +87,7 @@ const NewsletterCTA = () => {
         style={{
           padding: '1.1rem',
           background: hov ? '#C2662D' : C.gold,
-          color: '#0A0A0A',
+          color: COLORS.ink,
           border: 'none', borderRadius: '0.4rem',
           fontSize: '1.2rem', fontWeight: 700,
           letterSpacing: '0.18em', textTransform: 'uppercase',
