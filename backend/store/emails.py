@@ -80,6 +80,34 @@ def send_order_confirmation_email(order):
         pass
 
 
+def send_stock_alert_emails(product):
+    """Notifie les clients en attente qu'un produit est de nouveau disponible."""
+    from .models import StockAlert
+    alerts = StockAlert.objects.filter(product=product, notified=False)
+    subject = f"Golden Pousso — {product.name} est de nouveau disponible !"
+    body = f"""Bonjour,
+
+Bonne nouvelle : {product.name} est de nouveau en stock chez Golden Pousso !
+
+Découvrez-le ici :
+{settings.FRONTEND_URL}/produit/{product.slug}
+
+L'équipe Golden Pousso
+"""
+    for alert in alerts:
+        try:
+            send_mail(
+                subject=subject,
+                message=body,
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'Golden Pousso <noreply@goldenpousso.com>'),
+                recipient_list=[alert.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+    alerts.update(notified=True)
+
+
 def send_order_status_email(order):
     """Notifie le client d'un changement de statut."""
     if not order.customer_email:

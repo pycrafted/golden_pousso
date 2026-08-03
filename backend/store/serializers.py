@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, AtelierImage
+from django.db.models import Avg
+from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, AtelierImage, Review, StockAlert, ShowcaseVideo
 
 
 def cld(url, transform='f_auto,q_auto'):
@@ -60,13 +61,23 @@ class ProductListSerializer(serializers.ModelSerializer):
     primary_image = serializers.SerializerMethodField()
     secondary_image = serializers.SerializerMethodField()
     discount_percent = serializers.SerializerMethodField()
+    rating_avg = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'slug', 'category', 'price', 'old_price',
-            'primary_image', 'secondary_image', 'discount_percent', 'is_new', 'is_featured', 'stock'
+            'primary_image', 'secondary_image', 'discount_percent', 'is_new', 'is_featured', 'stock',
+            'rating_avg', 'review_count',
         ]
+
+    def get_rating_avg(self, obj):
+        avg = obj.reviews.filter(is_approved=True).aggregate(avg=Avg('rating'))['avg']
+        return round(avg, 1) if avg else None
+
+    def get_review_count(self, obj):
+        return obj.reviews.filter(is_approved=True).count()
 
     def get_primary_image(self, obj):
         request = self.context.get('request')
@@ -97,6 +108,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     variants = ProductVariantSerializer(many=True, read_only=True)
     primary_image = serializers.SerializerMethodField()
     discount_percent = serializers.SerializerMethodField()
+    rating_avg = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -105,6 +118,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'price', 'old_price', 'discount_percent', 'stock',
             'is_active', 'is_featured', 'is_new',
             'primary_image', 'images', 'variants',
+            'rating_avg', 'review_count',
             'created_at', 'updated_at'
         ]
 
@@ -117,6 +131,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_discount_percent(self, obj):
         return obj.discount_percent
+
+    def get_rating_avg(self, obj):
+        avg = obj.reviews.filter(is_approved=True).aggregate(avg=Avg('rating'))['avg']
+        return round(avg, 1) if avg else None
+
+    def get_review_count(self, obj):
+        return obj.reviews.filter(is_approved=True).count()
 
 
 class CollectionDetailSerializer(serializers.ModelSerializer):
@@ -216,6 +237,20 @@ class OrderOutputSerializer(serializers.ModelSerializer):
         ]
 
 
+class ShowcaseVideoSerializer(serializers.ModelSerializer):
+    video_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ShowcaseVideo
+        fields = ['id', 'video_url']
+
+    def get_video_url(self, obj):
+        request = self.context.get('request')
+        if obj.video and request:
+            return request.build_absolute_uri(obj.video.url)
+        return None
+
+
 class ContactMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
@@ -248,3 +283,39 @@ class AtelierImageSerializer(serializers.ModelSerializer):
         if obj.image and request:
             return cld(request.build_absolute_uri(obj.image.url), 'w_1200,f_auto,q_auto,c_limit')
         return None
+
+
+# ── Avis clients ──
+
+class ReviewSerializer(serializers.ModelSerializer):
+    customer_name = serializers.SerializerMethodField()
+    photo = serializers.SerializerMethodField()
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    product_slug = serializers.CharField(source='product.slug', read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'customer_name', 'rating', 'comment', 'photo', 'product_name', 'product_slug', 'created_at']
+
+    def get_customer_name(self, obj):
+        return obj.customer.get_full_name() or obj.customer.first_name or 'Client Golden Pousso'
+
+    def get_photo(self, obj):
+        request = self.context.get('request')
+        if obj.photo and request:
+            return cld(request.build_absolute_uri(obj.photo.url), 'w_400,f_auto,q_auto,c_limit')
+        return None
+
+
+class ReviewCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ['rating', 'comment', 'photo']
+
+
+# ── Alertes de réassort ──
+
+class StockAlertCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StockAlert
+        fields = ['email']

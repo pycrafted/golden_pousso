@@ -73,7 +73,13 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
+        was_out_of_stock = False
+        if self.pk:
+            was_out_of_stock = Product.objects.filter(pk=self.pk, stock=0).exists()
         super().save(*args, **kwargs)
+        if was_out_of_stock and self.stock > 0:
+            from .emails import send_stock_alert_emails
+            send_stock_alert_emails(self)
 
     @property
     def primary_image(self):
@@ -250,6 +256,59 @@ class AtelierImage(models.Model):
         if self.is_active:
             AtelierImage.objects.exclude(pk=self.pk).update(is_active=False)
         super().save(*args, **kwargs)
+
+
+class Review(models.Model):
+    RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    customer = models.ForeignKey('accounts.Customer', on_delete=models.CASCADE, related_name='reviews')
+    rating = models.PositiveSmallIntegerField(choices=RATING_CHOICES)
+    comment = models.TextField()
+    photo = models.ImageField(upload_to='reviews/', blank=True, null=True)
+    is_approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Avis client'
+        verbose_name_plural = 'Avis clients'
+        ordering = ['-created_at']
+        unique_together = [('product', 'customer')]
+
+    def __str__(self):
+        return f"{self.customer} — {self.product.name} ({self.rating}★)"
+
+
+class StockAlert(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_alerts')
+    email = models.EmailField()
+    notified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Alerte de réassort'
+        verbose_name_plural = 'Alertes de réassort'
+        ordering = ['-created_at']
+        unique_together = [('product', 'email')]
+
+    def __str__(self):
+        return f"{self.email} — {self.product.name}"
+
+
+class ShowcaseVideo(models.Model):
+    title = models.CharField(max_length=200, blank=True, help_text="Repère interne, non affiché sur le site")
+    video = models.FileField(upload_to='videos/')
+    order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Vidéo — Univers visuel'
+        verbose_name_plural = 'Vidéos — Univers visuel'
+        ordering = ['order', '-created_at']
+
+    def __str__(self):
+        return self.title or f"Vidéo #{self.pk}"
 
 
 class ContactMessage(models.Model):

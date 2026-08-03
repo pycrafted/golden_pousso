@@ -10,12 +10,15 @@ class ContactRateThrottle(AnonRateThrottle):
     scope = 'contact'
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Category, Collection, Product, Order, ContactMessage, HeroBanner, AtelierImage
+from django.shortcuts import get_object_or_404
+from .models import Category, Collection, Product, Order, ContactMessage, HeroBanner, AtelierImage, Review, StockAlert, ShowcaseVideo
 from .serializers import (
     CategorySerializer, CollectionListSerializer, CollectionDetailSerializer,
     ProductListSerializer, ProductDetailSerializer,
     OrderCreateSerializer, OrderOutputSerializer, ContactMessageSerializer,
     HeroBannerSerializer, AtelierImageSerializer,
+    ReviewSerializer, ReviewCreateSerializer, StockAlertCreateSerializer,
+    ShowcaseVideoSerializer,
 )
 from .filters import ProductFilter
 from .emails import send_order_confirmation_email as _send_order_confirmation_email
@@ -277,6 +280,58 @@ def paydunya_callback(request):
 # ── Avis clients ──────────────────────────────────────────────
 
 
+@api_view(['GET', 'POST'])
+@permission_classes([AllowAny])
+def product_reviews(request, slug):
+    product = get_object_or_404(Product, slug=slug, is_active=True)
+
+    if request.method == 'GET':
+        reviews = product.reviews.filter(is_approved=True).select_related('customer').order_by('-created_at')
+        return Response(ReviewSerializer(reviews, many=True, context={'request': request}).data)
+
+    if not request.user.is_authenticated:
+        return Response({'detail': 'Connectez-vous pour laisser un avis.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    if Review.objects.filter(product=product, customer=request.user).exists():
+        return Response({'detail': 'Vous avez déjà laissé un avis pour ce produit.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer = ReviewCreateSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(product=product, customer=request.user)
+        return Response({'detail': 'Merci pour votre avis ! Il sera visible après modération.'}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def recent_reviews(request):
+    """Derniers avis approuvés, tous produits confondus — pour la section « Avis Clients » de la homepage."""
+    reviews = (
+        Review.objects
+        .filter(is_approved=True)
+        .select_related('product', 'customer')
+        .order_by('-created_at')[:8]
+    )
+    return Response(ReviewSerializer(reviews, many=True, context={'request': request}).data)
+
+
+# ── Alertes de réassort ───────────────────────────────────────
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def stock_alert_create(request, slug):
+    product = get_object_or_404(Product, slug=slug)
+    serializer = StockAlertCreateSerializer(data=request.data)
+    if serializer.is_valid():
+        StockAlert.objects.get_or_create(product=product, email=serializer.validated_data['email'])
+        return Response(
+            {'detail': 'Vous serez averti(e) dès que ce produit sera de nouveau disponible.'},
+            status=status.HTTP_201_CREATED,
+        )
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def hero_banner(request):
@@ -293,5 +348,12 @@ def atelier_image(request):
     if not image:
         return Response({'image_url': None})
     return Response(AtelierImageSerializer(image, context={'request': request}).data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def showcase_videos(request):
+    videos = ShowcaseVideo.objects.filter(is_active=True)
+    return Response(ShowcaseVideoSerializer(videos, many=True, context={'request': request}).data)
 
 

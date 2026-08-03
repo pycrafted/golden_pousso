@@ -14,6 +14,11 @@ urlpatterns = [
     path('products/featured/', views.product_featured, name='product-featured'),
     path('products/new/', views.product_new, name='product-new'),
     path('products/<slug:slug>/', views.ProductDetailView.as_view(), name='product-detail'),
+    path('products/<slug:slug>/reviews/', views.product_reviews, name='product-reviews'),
+    path('products/<slug:slug>/stock-alert/', views.stock_alert_create, name='stock-alert-create'),
+
+    # Avis récents (homepage)
+    path('reviews/recents/', views.recent_reviews, name='recent-reviews'),
 
     # Commandes
     path('orders/', views.order_create, name='order-create'),
@@ -32,4 +37,7 @@ urlpatterns = [
 
     # Atelier image
     path('atelier-image/', views.atelier_image, name='atelier-image'),
+
+    # Vidéos — section "Nos Créations en Mouvement"
+    path('videos/', views.showcase_videos, name='showcase-videos'),
 ]

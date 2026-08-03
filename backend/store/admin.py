@@ -1,7 +1,7 @@
 import csv
 from django.contrib import admin
 from django.http import HttpResponse
-from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, AtelierImage
+from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, AtelierImage, Review, StockAlert, ShowcaseVideo
 
 
 @admin.register(Category)
@@ -136,6 +136,39 @@ class ContactMessageAdmin(admin.ModelAdmin):
     search_fields = ['name', 'contact', 'subject', 'message']
     list_editable = ['is_read']
     readonly_fields = ['name', 'contact', 'subject', 'message', 'created_at']
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ['product', 'customer', 'rating', 'is_approved', 'created_at']
+    list_filter = ['is_approved', 'rating']
+    search_fields = ['product__name', 'customer__username', 'customer__first_name', 'comment']
+    list_editable = ['is_approved']
+    ordering = ['-created_at']
+    actions = ['approuver_avis', 'rejeter_avis']
+
+    def approuver_avis(self, request, queryset):
+        queryset.update(is_approved=True)
+    approuver_avis.short_description = 'Approuver les avis sélectionnés'
+
+    def rejeter_avis(self, request, queryset):
+        queryset.update(is_approved=False)
+    rejeter_avis.short_description = 'Rejeter les avis sélectionnés'
+
+
+@admin.register(StockAlert)
+class StockAlertAdmin(admin.ModelAdmin):
+    list_display = ['product', 'email', 'notified', 'created_at']
+    list_filter = ['notified']
+    search_fields = ['product__name', 'email']
+    ordering = ['-created_at']
+
+
+@admin.register(ShowcaseVideo)
+class ShowcaseVideoAdmin(admin.ModelAdmin):
+    list_display = ['__str__', 'video', 'order', 'is_active', 'created_at']
+    list_editable = ['order', 'is_active']
+    ordering = ['order', '-created_at']
 
 
 @admin.register(HeroBanner)

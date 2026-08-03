@@ -49,8 +49,8 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customer
-        fields = ['id', 'first_name', 'last_name', 'email', 'phone', 'default_address', 'avatar', 'avatar_url']
-        read_only_fields = ['id', 'email', 'avatar_url']
+        fields = ['id', 'first_name', 'last_name', 'email', 'phone', 'default_address', 'avatar', 'avatar_url', 'is_staff']
+        read_only_fields = ['id', 'email', 'avatar_url', 'is_staff']
         extra_kwargs = {'avatar': {'required': False, 'write_only': True}}
 
     def get_avatar_url(self, obj):
