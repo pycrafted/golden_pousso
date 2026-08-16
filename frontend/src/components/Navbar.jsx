@@ -5,6 +5,7 @@ import useSettingsStore, { formatPrice, CURRENCIES, LANGUAGES } from '../store/s
 import useAuthStore from '../store/authStore';
 import SearchOverlay from './SearchOverlay';
 import CldImg from './CldImg';
+import apiClient from '../api/client';
 import { COLORS } from '../theme';
 
 const C = {
@@ -172,6 +173,13 @@ const Navbar = () => {
 
   const { isAuthenticated, user, logout } = useAuthStore();
 
+  const [categories, setCategories] = useState([]);
+  useEffect(() => {
+    apiClient.get('/categories/')
+      .then((res) => setCategories(res.data.results ?? res.data))
+      .catch(() => {});
+  }, []);
+
   // Sticky on scroll
   useEffect(() => {
     const onScroll = () => setSticky(window.scrollY > 80);
@@ -196,20 +204,19 @@ const Navbar = () => {
 
   const navLinks = [
     { to: '/', label: 'Accueil' },
-    { to: '/boutique', label: 'Boutique' },
-    { to: '/collections', label: 'Collections' },
+    ...categories.map((cat) => ({ to: `/categorie/${cat.slug}`, label: cat.name })),
     { to: '/a-propos', label: 'À propos' },
     { to: '/contact', label: 'Contact' },
-  ];
+  ].map(({ to, label }) => ({ to, label: label.charAt(0).toUpperCase() + label.slice(1).toLowerCase() }));
 
   return (
     <div style={{ position: 'relative', zIndex: 1000 }}>
       {/* Main navbar */}
       <nav style={{
-        background: sticky ? 'rgba(0,0,0,0.96)' : '#1A1208',
+        background: '#000000',
         backdropFilter: sticky ? 'blur(16px)' : 'none',
         borderBottom: sticky ? '1px solid rgba(255,255,255,0.06)' : 'none',
-        padding: '1.8rem 0',
+        padding: '1.4rem 0',
         position: sticky ? 'fixed' : 'relative',
         top: 0,
         left: 0,
@@ -220,24 +227,20 @@ const Navbar = () => {
         <div style={{
           width: '100%',
           padding: '0 3rem',
-          display: 'flex',
+          display: 'grid',
+          gridTemplateColumns: 'auto 1fr auto',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          columnGap: '2rem',
           position: 'relative',
         }}
           className="nav-inner"
         >
 
-          {/* Logo + nom — gauche, hors flux pour ne pas étirer le navbar */}
-          <div className="nav-logo" style={{ position: 'absolute', left: '4rem', top: '50%', transform: 'translateY(-50%)', zIndex: 2, display: 'flex', alignItems: 'center', gap: '0' }}>
-            <img
-              src="/gemini.png"
-              alt="Golden Pousso"
-              style={{ height: '6rem', display: 'block', objectFit: 'contain' }}
-            />
+          {/* Nom — colonne gauche */}
+          <div className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: '0', minWidth: 0 }}>
             <span className="nav-logo-text" style={{
               fontFamily: 'Syne, sans-serif',
-              fontSize: '1.8rem',
+              fontSize: '2rem',
               color: C.gold,
               letterSpacing: '0.04em',
               whiteSpace: 'nowrap',
@@ -246,13 +249,14 @@ const Navbar = () => {
             </span>
           </div>
 
-          {/* Desktop nav links (center) */}
+          {/* Desktop nav links (colonne centrale, rétrécit sans jamais chevaucher logo/icônes) */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            flex: 1,
+            gap: '0.2rem',
             justifyContent: 'center',
+            minWidth: 0,
+            overflowX: 'auto',
           }}
             className="desktop-nav"
           >
@@ -261,8 +265,8 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Icônes — droite, hors flux pour ne pas décaler le centrage des liens */}
-          <div className="nav-icons" style={{ position: 'absolute', right: '4rem', top: '50%', transform: 'translateY(-50%)', zIndex: 2, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          {/* Icônes — colonne droite */}
+          <div className="nav-icons" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
             <IconBtn onClick={() => setSearchOpen(true)} title="Rechercher">
               <i className="bx bx-search" style={{ fontSize: '2.2rem' }}></i>
             </IconBtn>
@@ -420,7 +424,7 @@ const Navbar = () => {
                   Votre panier est vide
                 </p>
                 <button
-                  onClick={() => { setCartOpen(false); navigate('/boutique'); }}
+                  onClick={() => { setCartOpen(false); navigate('/recherche'); }}
                   style={{
                     padding: '1.3rem 3.5rem',
                     background: C.gold,
@@ -680,19 +684,18 @@ const Navbar = () => {
 
       {/* Inline styles for responsive + hover effects */}
       <style>{`
-        @media (max-width: 768px) {
+        @media (max-width: 1080px) {
           .desktop-nav { display: none !important; }
           .nav-icons { display: none !important; }
           .hamburger-btn { display: flex !important; }
           .nav-selectors { display: none !important; }
-          .nav-inner { padding: 0 1.6rem !important; min-height: 4.8rem; }
-          .nav-logo { left: 1.6rem !important; }
-          .nav-logo img { height: 4.8rem !important; }
-          .nav-logo-text { display: none !important; }
+          .nav-inner { padding: 0 1.6rem !important; min-height: 4.8rem; grid-template-columns: auto auto !important; }
         }
-        @media (min-width: 769px) {
+        @media (min-width: 1081px) {
           .hamburger-btn { display: none !important; }
         }
+        .desktop-nav::-webkit-scrollbar { display: none; }
+        .desktop-nav { scrollbar-width: none; -ms-overflow-style: none; }
         select option { background: #141414 !important; }
         @keyframes dropIn {
           from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
@@ -809,16 +812,16 @@ const NavLink = ({ to, label }) => {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-block',
-        padding: '0.8rem 1.4rem',
+        padding: '0.9rem 1.2rem',
         fontSize: '1.4rem',
         fontWeight: 500,
-        letterSpacing: '0.06em',
+        letterSpacing: '0.02em',
         color: hovered ? '#B8960A' : 'rgba(250,246,238,0.85)',
         textDecoration: 'none',
         transition: 'color 0.2s',
         fontFamily: 'Inter, sans-serif',
-        textTransform: 'uppercase',
         whiteSpace: 'nowrap',
+        flexShrink: 0,
       }}
     >
       {label}
@@ -1006,7 +1009,7 @@ const IconBtn = ({ onClick, title, children }) => {
         border: 'none',
         color: hovered ? '#B8960A' : 'rgba(250,246,238,0.85)',
         cursor: 'pointer',
-        padding: '0.8rem',
+        padding: '0.7rem',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

@@ -175,10 +175,10 @@ const CollectionDetailPage = () => {
             Collection introuvable.
           </p>
           <button
-            onClick={() => navigate('/collections')}
+            onClick={() => navigate('/recherche')}
             style={{ marginTop: '2rem', background: 'none', border: '1px solid #B8960A', color: '#B8960A', padding: '1rem 2.4rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}
           >
-            ← Retour aux collections
+            ← Retour à la boutique
           </button>
         </div>
       </div>
@@ -202,7 +202,7 @@ const CollectionDetailPage = () => {
           {/* Fil d'Ariane */}
           <div style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button
-              onClick={() => navigate('/collections')}
+              onClick={() => navigate('/recherche')}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontFamily: 'Inter, sans-serif', fontSize: '1.1rem',
@@ -218,7 +218,7 @@ const CollectionDetailPage = () => {
                 <line x1="19" y1="12" x2="5" y2="12" />
                 <polyline points="12 19 5 12 12 5" />
               </svg>
-              Collections
+              Boutique
             </button>
             <span style={{ color: '#C8B896', fontSize: '1.1rem' }}>/</span>
             <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', color: '#1A1208', letterSpacing: '0.1em' }}>

@@ -395,7 +395,7 @@ const Step4 = ({ form, orderNumber, total }) => {
           Suivre ma commande
         </Link>
         <Link
-          to="/boutique"
+          to="/recherche"
           style={{ ...ctaSecondary, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
           onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#B8960A'; e.currentTarget.style.color = '#B8960A'; }}
           onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#CEC0A0'; e.currentTarget.style.color = '#7A6A50'; }}

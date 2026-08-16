@@ -68,7 +68,7 @@ const FullWidthBanner = () => {
         <div style={{ width: '4rem', height: '2px', background: '#B8960A', marginBottom: '2.5rem' }} />
 
         <button
-          onClick={() => navigate('/collections')}
+          onClick={() => navigate('/recherche')}
           onMouseEnter={() => setBtnHovered(true)}
           onMouseLeave={() => setBtnHovered(false)}
           style={{

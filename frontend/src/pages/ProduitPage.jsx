@@ -175,7 +175,7 @@ const ProduitPage = () => {
       <div>
         <p style={{ fontSize: '4rem', marginBottom: '2rem', color: '#B8960A' }}>✕</p>
         <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.8rem', color: '#1A1208', marginBottom: '1.2rem' }}>Produit introuvable</h2>
-        <Link to="/boutique" style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: '#B8960A', textDecoration: 'none', borderBottom: '1px solid #B8960A', paddingBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+        <Link to="/recherche" style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: '#B8960A', textDecoration: 'none', borderBottom: '1px solid #B8960A', paddingBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
           Retour à la boutique
         </Link>
       </div>
@@ -337,7 +337,7 @@ const ProduitPage = () => {
 
             {/* Catégorie */}
             <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.25em', color: '#B8960A', marginBottom: '1.2rem' }}>
-              <Link to={`/boutique?category=${product.category.slug}`} style={{ color: '#B8960A', textDecoration: 'none' }}>
+              <Link to={`/categorie/${product.category.slug}`} style={{ color: '#B8960A', textDecoration: 'none' }}>
                 {product.category.name}
               </Link>
             </p>

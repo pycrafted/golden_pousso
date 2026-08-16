@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
@@ -77,10 +78,15 @@ apiClient.interceptors.response.use(
       original.headers.Authorization = `Bearer ${newToken}`;
       return apiClient(original);
     } catch {
-      // Refresh échoué → déconnexion silencieuse, endpoints publics fonctionnent sans token
+      // Refresh échoué → déconnexion complète (état persisté inclus), endpoints publics fonctionnent sans token
+      const wasAuthenticated = !!JSON.parse(localStorage.getItem('golden-pousso-auth') || '{}')?.state?.isAuthenticated;
       localStorage.removeItem('access_token');
       delete apiClient.defaults.headers.common.Authorization;
       processQueue(new Error('session expirée'), null);
+
+      const { default: useAuthStore } = await import('../store/authStore');
+      useAuthStore.getState().logout();
+      if (wasAuthenticated) toast.error('Session expirée, veuillez vous reconnecter.');
 
       // Réessaye sans token pour les endpoints publics
       delete original.headers.Authorization;

@@ -32,7 +32,7 @@ const SearchOverlay = ({ open, onClose }) => {
     e.preventDefault();
     if (!query.trim()) return;
     onClose();
-    navigate(`/boutique?search=${encodeURIComponent(query.trim())}`);
+    navigate(`/recherche?search=${encodeURIComponent(query.trim())}`);
   };
 
   return (
@@ -140,7 +140,7 @@ const SearchOverlay = ({ open, onClose }) => {
             {['Boubou brodé', 'Robe wax', 'Sandales cuir', 'Bijoux or', 'Sur mesure'].map((s) => (
               <button
                 key={s}
-                onClick={() => { onClose(); navigate(`/boutique?search=${encodeURIComponent(s)}`); }}
+                onClick={() => { onClose(); navigate(`/recherche?search=${encodeURIComponent(s)}`); }}
                 style={{
                   padding: '0.7rem 1.8rem',
                   background: 'none',

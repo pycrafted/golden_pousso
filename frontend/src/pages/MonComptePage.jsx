@@ -575,7 +575,7 @@ const Dashboard = () => {
                   Vous n&apos;avez pas encore passé de commande.
                 </p>
                 <Link
-                  to="/boutique"
+                  to="/recherche"
                   style={{
                     display: 'inline-block',
                     padding: '1.4rem 4rem',

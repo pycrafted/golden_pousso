@@ -334,7 +334,7 @@ const SuiviCommandePage = () => {
           {/* ── Actions ── */}
           <div style={{ display: 'flex', gap: '1.6rem', flexWrap: 'wrap', marginTop: '4rem' }}>
             <Link
-              to="/boutique"
+              to="/recherche"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.8rem',
                 padding: '1.4rem 3.5rem',

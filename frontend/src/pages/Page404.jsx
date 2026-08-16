@@ -14,8 +14,6 @@ const C = {
 
 const LINKS = [
   { to: '/',          label: 'Accueil' },
-  { to: '/boutique',  label: 'Boutique' },
-  { to: '/collections', label: 'Collections' },
   { to: '/contact',   label: 'Contact' },
 ];
 
@@ -63,13 +61,13 @@ const Page404 = () => (
         color: C.muted, lineHeight: 1.8,
         maxWidth: '44rem', marginBottom: '5rem',
       }}>
-        La page que vous cherchez n'existe pas ou a été déplacée. Explorez nos collections ou retournez à l'accueil.
+        La page que vous cherchez n'existe pas ou a été déplacée. Explorez notre boutique ou retournez à l'accueil.
       </p>
 
       {/* CTA principal */}
       <div style={{ display: 'flex', gap: '1.6rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '6rem' }}>
         <Link
-          to="/boutique"
+          to="/recherche"
           style={{
             display: 'inline-flex', alignItems: 'center',
             padding: '1.6rem 5rem',

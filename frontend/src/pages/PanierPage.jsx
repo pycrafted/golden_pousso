@@ -62,7 +62,7 @@ const PanierPage = () => {
             Découvrez nos créations et ajoutez vos pièces préférées.
           </p>
           <Link
-            to="/boutique"
+            to="/recherche"
             style={{
               display: 'inline-flex', alignItems: 'center',
               padding: '1.6rem 5rem',
@@ -277,7 +277,7 @@ const PanierPage = () => {
               {/* Lien continuer ses achats */}
               <div style={{ marginTop: '3rem' }}>
                 <Link
-                  to="/boutique"
+                  to="/recherche"
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '0.8rem',
                     fontSize: '1.2rem', fontFamily: 'Inter, sans-serif',

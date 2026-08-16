@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 
 const FALLBACK = [
-  { num: '01', title: 'Boubous & Bazin',      subtitle: 'Tenues de cérémonie',    href: '/boutique?category=boubous', slug: 'boubous' },
-  { num: '02', title: 'Robes & Ensembles',    subtitle: 'Prêt-à-porter femme',    href: '/boutique?category=robes',   slug: 'robes'   },
-  { num: '03', title: 'Bijoux & Accessoires', subtitle: 'Finitions artisanales',  href: '/boutique?category=bijoux',  slug: 'bijoux'  },
-  { num: '04', title: 'Sur Mesure',           subtitle: 'Votre vision, nos mains', href: '/contact',                  slug: null      },
+  { num: '01', title: 'Boubous & Bazin',      subtitle: 'Tenues de cérémonie',    href: '/categorie/boubous', slug: 'boubous' },
+  { num: '02', title: 'Chaussures',           subtitle: 'Cuir et savoir-faire',   href: '/categorie/chaussures', slug: 'chaussures' },
+  { num: '03', title: 'Bijoux & Accessoires', subtitle: 'Finitions artisanales',  href: '/categorie/bijoux',  slug: 'bijoux'  },
+  { num: '04', title: 'Sur Mesure',           subtitle: 'Votre vision, nos mains', href: '/contact',          slug: null      },
 ];
 
 const CategoryCard = ({ item, index, onSelect, isActive }) => {
@@ -113,7 +113,7 @@ const CategoryTeaser = ({ onSelect, activeSlug }) => {
             num:      FALLBACK[i].num,
             title:    cat.name,
             subtitle: FALLBACK[i].subtitle,
-            href:     `/boutique?category=${cat.slug}`,
+            href:     `/categorie/${cat.slug}`,
             slug:     cat.slug,
           }))
         );

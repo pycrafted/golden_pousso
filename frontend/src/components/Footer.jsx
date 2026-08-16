@@ -149,8 +149,7 @@ const Footer = () => (
         <ColHeading>Liens Utiles</ColHeading>
         <nav style={{ display: 'flex', flexDirection: 'column' }}>
           <FooterLink to="/">Accueil</FooterLink>
-          <FooterLink to="/boutique">Boutique</FooterLink>
-          <FooterLink to="/collections">Collections</FooterLink>
+          <FooterLink to="/recherche">Boutique</FooterLink>
           <FooterLink to="/mon-compte">Mon Compte</FooterLink>
           <FooterLink to="/commande/suivi">Suivi de commande</FooterLink>
           <FooterLink to="/contact">Service Client</FooterLink>

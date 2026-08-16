@@ -38,7 +38,7 @@ const Hero = () => {
 
   if (mobile) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#1A1208' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#000000' }}>
         <div style={{ position: 'relative', height: '40vh', overflow: 'hidden', flexShrink: 0 }}>
           <img
             src={heroImage}
@@ -51,7 +51,7 @@ const Hero = () => {
           />
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'linear-gradient(to bottom, transparent 50%, #1A1208 100%)',
+            background: 'linear-gradient(to bottom, transparent 50%, #000000 100%)',
           }} />
         </div>
 
@@ -101,7 +101,7 @@ const Hero = () => {
             opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(14px)',
             transition: 'opacity 0.7s ease 0.55s, transform 0.7s ease 0.55s',
           }}>
-            <button onClick={() => navigate('/boutique')}
+            <button onClick={() => navigate('/recherche')}
               style={{ padding: '1.4rem 3.5rem', background: primaryHovered ? '#C2662D' : '#B8960A', color: primaryHovered ? '#FAF6EE' : '#1A1208', border: 'none', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.25s', fontFamily: 'Inter, sans-serif' }}
               onMouseEnter={() => setPrimaryHovered(true)} onMouseLeave={() => setPrimaryHovered(false)}
             >
@@ -120,7 +120,7 @@ const Hero = () => {
       {/* Left panel */}
       <div style={{
         width: '55%',
-        background: '#1A1208',
+        background: '#000000',
         padding: '6rem',
         display: 'flex', flexDirection: 'column',
         justifyContent: 'center', alignItems: 'flex-start',
@@ -166,7 +166,7 @@ const Hero = () => {
           opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(14px)',
           transition: 'opacity 0.7s ease 0.6s, transform 0.7s ease 0.6s',
         }}>
-          <button onClick={() => navigate('/boutique')}
+          <button onClick={() => navigate('/recherche')}
             style={{ padding: '1.4rem 3.5rem', background: primaryHovered ? '#C2662D' : '#B8960A', color: primaryHovered ? '#FAF6EE' : '#1A1208', border: 'none', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.25s', fontFamily: 'Inter, sans-serif' }}
             onMouseEnter={() => setPrimaryHovered(true)} onMouseLeave={() => setPrimaryHovered(false)}
           >
@@ -188,7 +188,7 @@ const Hero = () => {
         />
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(to right, #1A1208 0%, transparent 25%)',
+          background: 'linear-gradient(to right, #000000 0%, transparent 25%)',
           pointerEvents: 'none',
         }} />
       </div>
