@@ -2,27 +2,27 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../store/cartStore';
 import useSettingsStore, { formatPrice, CURRENCIES, LANGUAGES } from '../store/settingsStore';
+import useFavorisStore from '../store/favorisStore';
 import useAuthStore from '../store/authStore';
-import SearchOverlay from './SearchOverlay';
 import CldImg from './CldImg';
 import apiClient from '../api/client';
 import { COLORS } from '../theme';
 
 const C = {
   dark: COLORS.ink,
-  dark2: '#0D0D0D',
-  gold: COLORS.gold,
-  goldDim: COLORS.gold,
+  dark2: '#0F1320',
+  gold: COLORS.goldOnDark,
+  goldDim: COLORS.goldOnDark,
   terracotta: COLORS.terracotta,
   cream: COLORS.cream,
   muted: COLORS.mutedOnDark,
-  cardBg: '#1A1A1A',
+  cardBg: '#161B2D',
 };
 
 const inputStyle = {
   width: '100%', padding: '1.1rem 0', background: 'transparent',
-  border: 'none', borderBottom: '1px solid #333', color: '#FAF6EE',
-  fontFamily: 'Inter, sans-serif', fontSize: '1.3rem',
+  border: 'none', borderBottom: '1px solid rgba(255,255,255,0.16)', color: '#FAF6EE',
+  fontFamily: 'var(--font-body)', fontSize: '1.3rem',
   outline: 'none', boxSizing: 'border-box',
 };
 
@@ -79,22 +79,22 @@ const ProfileDropdown = () => {
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 1.2rem)', right: 0,
-          width: '32rem', background: '#111', border: '1px solid #222',
+          width: '32rem', background: '#161B2D', border: '1px solid rgba(255,255,255,0.10)',
           borderRadius: '4px', padding: '2.4rem',
           boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
           zIndex: 200,
         }}>
           {isAuthenticated ? (
             <>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '0.6rem' }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '1.1rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '0.6rem' }}>
                 Connecté en tant que
               </p>
-              <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.5rem', color: C.gold, marginBottom: '2rem' }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: C.gold, marginBottom: '2rem' }}>
                 {user?.first_name || user?.phone || 'Mon compte'}
               </p>
               <button
                 onClick={() => { logout(); navigate('/'); setOpen(false); }}
-                style={{ width: '100%', padding: '1.1rem', background: 'transparent', border: '1px solid #333', color: '#888', fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'border-color 0.2s, color 0.2s' }}
+                style={{ width: '100%', padding: '1.1rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.16)', color: '#888', fontFamily: 'var(--font-body)', fontSize: '1.2rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', transition: 'border-color 0.2s, color 0.2s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#C2662D'; e.currentTarget.style.color = '#C2662D'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.color = '#888'; }}
               >
@@ -104,7 +104,7 @@ const ProfileDropdown = () => {
           ) : (
             <>
               {/* Toggle connexion / inscription */}
-              <div style={{ display: 'flex', marginBottom: '2.4rem', borderBottom: '1px solid #222' }}>
+              <div style={{ display: 'flex', marginBottom: '2.4rem', borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
                 {['login', 'register'].map((m) => (
                   <button
                     key={m}
@@ -113,7 +113,7 @@ const ProfileDropdown = () => {
                       flex: 1, padding: '1rem', background: 'none', border: 'none',
                       borderBottom: mode === m ? `2px solid ${C.gold}` : '2px solid transparent',
                       color: mode === m ? '#FAF6EE' : '#666',
-                      fontFamily: 'Inter, sans-serif', fontSize: '1.2rem',
+                      fontFamily: 'var(--font-body)', fontSize: '1.2rem',
                       fontWeight: mode === m ? 600 : 400,
                       letterSpacing: '0.1em', textTransform: 'uppercase',
                       cursor: 'pointer', transition: 'color 0.2s',
@@ -135,11 +135,11 @@ const ProfileDropdown = () => {
                 <input type="tel" placeholder="Téléphone" value={form.phone} onChange={set('phone')} required style={{ ...inputStyle, marginBottom: '1.4rem' }} />
                 <input type="password" placeholder="Mot de passe" value={form.password} onChange={set('password')} required style={{ ...inputStyle, marginBottom: '0.8rem' }} />
 
-                {error && <p style={{ color: '#C2662D', fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', marginTop: '0.8rem' }}>{error}</p>}
+                {error && <p style={{ color: '#C2662D', fontFamily: 'var(--font-body)', fontSize: '1.1rem', marginTop: '0.8rem' }}>{error}</p>}
 
                 <button
                   type="submit" disabled={loading}
-                  style={{ width: '100%', padding: '1.2rem', marginTop: '1.6rem', background: C.gold, border: 'none', color: '#1A1208', fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
+                  style={{ width: '100%', padding: '1.2rem', marginTop: '1.6rem', background: C.gold, border: 'none', color: '#12141C', fontFamily: 'var(--font-body)', fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
                 >
                   {loading ? '…' : mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
                 </button>
@@ -155,9 +155,7 @@ const ProfileDropdown = () => {
 const Navbar = () => {
   const [navOpen, setNavOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [sticky, setSticky] = useState(false);
-  const cartRef = useRef(null);
   const navigate = useNavigate();
 
   const items = useCartStore((s) => s.items);
@@ -172,6 +170,9 @@ const Navbar = () => {
   const setLanguage = useSettingsStore((s) => s.setLanguage);
 
   const { isAuthenticated, user, logout } = useAuthStore();
+  // Un nombre et non le tableau : un sélecteur qui renvoie le tableau ferait
+  // re-rendre la barre entière à chaque écriture du magasin.
+  const nbFavoris = useFavorisStore((s) => s.items.length);
 
   const [categories, setCategories] = useState([]);
   useEffect(() => {
@@ -180,21 +181,36 @@ const Navbar = () => {
       .catch(() => {});
   }, []);
 
-  // Sticky on scroll
+  /* `sticky` ne décide plus de la POSITION — le conteneur colle en
+     permanence. Il ne reste qu'un état d'apparence : le filet et le flou
+     n'apparaissent qu'une fois la page en mouvement, pour détacher la barre
+     du contenu qui passe dessous. Le seuil descend à 1 px : à 80, l'habillage
+     arrivait longtemps après que la barre ait commencé à recouvrir. */
   useEffect(() => {
-    const onScroll = () => setSticky(window.scrollY > 80);
+    const onScroll = () => setSticky(window.scrollY > 0);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close cart on outside click
+  /* Fermeture du tiroir panier — à la touche Échap seulement.
+     ---------------------------------------------------------------------
+     Il y avait ici un écouteur `mousedown` sur tout le document qui fermait
+     le tiroir dès qu'un clic tombait hors de `cartRef`. Or `cartRef` est posé
+     sur l'ICÔNE du panier, pas sur le tiroir : tout clic DANS le tiroir —
+     changer une quantité, retirer un article — comptait donc comme un clic
+     extérieur et le refermait aussitôt.
+
+     Le clic extérieur n'a pas besoin de cet écouteur : le tiroir a déjà un
+     voile en plein écran, posé dessous, dont le `onClick` ferme. C'est le
+     mécanisme juste, et il ne peut pas se tromper de cible.
+
+     Reste le clavier, que le voile ne sert pas — d'où Échap. */
   useEffect(() => {
-    const handler = (e) => {
-      if (cartRef.current && !cartRef.current.contains(e.target)) setCartOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+    if (!cartOpen) return undefined;
+    const auClavier = (e) => { if (e.key === 'Escape') setCartOpen(false); };
+    document.addEventListener('keydown', auClavier);
+    return () => document.removeEventListener('keydown', auClavier);
+  }, [cartOpen]);
 
   // Lock body scroll when mobile menu open
   useEffect(() => {
@@ -202,25 +218,61 @@ const Navbar = () => {
     return () => { document.body.style.overflow = ''; };
   }, [navOpen]);
 
+  // « Accueil » n'est plus dans la liste : c'est le nom de la maison, à
+  // gauche, qui ramène à la page d'accueil — la convention que tout visiteur
+  // connaît déjà. Une entrée de menu en plus disait la même chose deux fois.
+  /* « Boutique » ouvre la liste, avant les rayons : c'est l'entrée qui les
+     contient tous, elle passe donc avant ceux qu'elle regroupe. Elle est
+     écrite en dur et non tirée de l'API — ce n'est pas une catégorie, c'est
+     une page.
+
+     La normalisation de casse ci-dessous ne s'applique qu'aux rayons : leurs
+     noms viennent de la base et arrivent dans une casse quelconque
+     (« Boubou Africain », « SACS »). « Boutique » est déjà écrit comme il
+     doit s'afficher, le faire passer par la moulinette ne changerait rien
+     mais ferait croire qu'il en a besoin. */
   const navLinks = [
-    { to: '/', label: 'Accueil' },
-    ...categories.map((cat) => ({ to: `/categorie/${cat.slug}`, label: cat.name })),
-    { to: '/a-propos', label: 'À propos' },
-    { to: '/contact', label: 'Contact' },
-  ].map(({ to, label }) => ({ to, label: label.charAt(0).toUpperCase() + label.slice(1).toLowerCase() }));
+    { to: '/boutique', label: 'Boutique' },
+    ...categories.map((cat) => ({
+      to: `/categorie/${cat.slug}`,
+      label: cat.name.charAt(0).toUpperCase() + cat.name.slice(1).toLowerCase(),
+    })),
+  ];
 
   return (
-    <div style={{ position: 'relative', zIndex: 1000 }}>
+    /* C'est ce CONTENEUR qui colle, et non le <nav> qu'il enveloppe : un
+       élément `sticky` ne colle que dans les limites de son parent, et le
+       <nav> n'aurait eu pour piste que la hauteur de ce div — il se serait
+       décollé aussitôt. Les tiroirs (panier, menu mobile) sont en `position:
+       fixed` et `sticky` ne crée pas de bloc conteneur pour eux : ils
+       continuent de se caler sur la fenêtre.
+
+       `top: var(--bande-h)` : la barre se pose sous la bande de coordonnées,
+       qui reste visible en permanence et publie sa hauteur (voir
+       `BandeCoordonnees`). Repli 0px si la bande n'est pas montée. */
+    <div style={{
+      position: 'sticky',
+      top: 'var(--bande-h, 0px)',
+      zIndex: 1000,
+    }}>
       {/* Main navbar */}
       <nav style={{
-        background: '#000000',
+        background: 'var(--surface-chrome)',
+        /* Le filet doré qui sépare la barre de la bande de coordonnées. Posé
+           sur le bord HAUT de la navbar et non sur le bord bas de la bande :
+           la navbar chevauche la bande d'une fraction de pixel (voir
+           l'arrondi de `--bande-h` dans `BandeCoordonnees`) et recouvrirait
+           un filet posé de l'autre côté. */
+        borderTop: '1px solid var(--line-dark-accent)',
         backdropFilter: sticky ? 'blur(16px)' : 'none',
         borderBottom: sticky ? '1px solid rgba(255,255,255,0.06)' : 'none',
         padding: '1.4rem 0',
-        position: sticky ? 'fixed' : 'relative',
-        top: 0,
-        left: 0,
-        right: 0,
+        /* Plus de bascule `fixed` au défilement : c'est le conteneur qui
+           colle. La barre passait de `relative` à `fixed` au-delà de 80 px,
+           et pendant ces 80 px elle remontait avec la page pendant que la
+           bande de coordonnées, elle, restait collée — un écart s'ouvrait
+           entre les deux, puis se refermait d'un coup. */
+        position: 'relative',
         zIndex: 1000,
         transition: 'all 0.4s',
       }}>
@@ -236,10 +288,26 @@ const Navbar = () => {
           className="nav-inner"
         >
 
-          {/* Nom — colonne gauche */}
-          <div className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: '0', minWidth: 0 }}>
+          {/* Nom — colonne gauche, et retour à l'accueil.
+
+              Le nom était un simple span : la barre ne ramenait donc à
+              l'accueil que par son entrée « Accueil ». C'est maintenant lui
+              le chemin du retour, sur toutes les pages puisque la barre y est
+              partout.
+
+              Un Link et non un div cliquable : le navigateur donne alors
+              gratuitement l'ouverture dans un nouvel onglet, le survol qui
+              montre l'adresse, la tabulation et l'annonce au lecteur d'écran.
+              L'aria-label ajoute la destination au nom visible, sinon le lien
+              s'annonce « Golden Pousso » sans dire où il mène. */}
+          <Link
+            to="/"
+            aria-label="Golden Pousso — retour à l'accueil"
+            className="nav-logo"
+            style={{ display: 'flex', alignItems: 'center', gap: '0', minWidth: 0, textDecoration: 'none' }}
+          >
             <span className="nav-logo-text" style={{
-              fontFamily: 'Syne, sans-serif',
+              fontFamily: 'var(--font-display)',
               fontSize: '2rem',
               color: C.gold,
               letterSpacing: '0.04em',
@@ -247,7 +315,7 @@ const Navbar = () => {
             }}>
               Golden Pousso
             </span>
-          </div>
+          </Link>
 
           {/* Desktop nav links (colonne centrale, rétrécit sans jamais chevaucher logo/icônes) */}
           <div style={{
@@ -267,16 +335,57 @@ const Navbar = () => {
 
           {/* Icônes — colonne droite */}
           <div className="nav-icons" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
-            <IconBtn onClick={() => setSearchOpen(true)} title="Rechercher">
-              <i className="bx bx-search" style={{ fontSize: '2.2rem' }}></i>
-            </IconBtn>
+            {/* Le cœur n'apparaît qu'à partir d'un favori. Il ne mène qu'à sa
+                propre liste : tant qu'elle est vide, il n'ouvre sur rien, et
+                une icône qui ne conduit qu'à un message « aucune pièce mise en
+                favoris » occupe la barre sans rien offrir. Le geste d'AJOUT,
+                lui, reste sur les cartes produit — c'est là qu'on met de côté,
+                pas ici.
+
+                Corollaire : le badge n'a plus de cas à zéro à traiter, mais la
+                condition reste, elle protège d'un compteur vide si la
+                condition du dessus venait à bouger.
+
+                Le badge reprend celui du panier, à dessein : deux compteurs de
+                formes différentes dans la même barre se liraient comme deux
+                mécanismes sans rapport. */}
+            {nbFavoris > 0 && (
+            <div style={{ position: 'relative' }}>
+              <IconBtn onClick={() => navigate('/favoris')} title="Mes favoris">
+                <i className="bx bx-heart" style={{ fontSize: '2.2rem' }}></i>
+                {nbFavoris > 0 && (
+                  <span style={{
+                    position: 'absolute', top: '0.4rem', right: '0.4rem',
+                    minWidth: '1.7rem', height: '1.7rem', padding: '0 0.4rem',
+                    display: 'grid', placeItems: 'center',
+                    borderRadius: 'var(--r-pill)',
+                    background: C.gold, color: COLORS.ink,
+                    fontSize: '1rem', fontWeight: 700,
+                    fontFamily: 'var(--font-body)',
+                  }}>
+                    {nbFavoris}
+                  </span>
+                )}
+              </IconBtn>
+            </div>
+            )}
+            {/* L'historique des commandes n'a de sens qu'avec un compte : la
+                page lit /orders/mes-commandes/, qui exige d'être connecté. Un
+                visiteur anonyme n'y trouverait qu'une invitation à se
+                connecter — autant ne pas lui montrer la porte. Celui qui a
+                commandé SANS compte passe par /commande/suivi. */}
+            {isAuthenticated && (
+              <IconBtn onClick={() => navigate('/commandes')} title="Historique des commandes">
+                <i className="bx bx-receipt" style={{ fontSize: '2.2rem' }}></i>
+              </IconBtn>
+            )}
             {isAuthenticated && user?.is_staff && (
               <IconBtn onClick={() => navigate('/gestion')} title="Espace Gestion">
                 <i className="bx bx-cog" style={{ fontSize: '2.2rem' }}></i>
               </IconBtn>
             )}
             <ProfileDropdown />
-            <div ref={cartRef} style={{ position: 'relative' }}>
+            <div style={{ position: 'relative' }}>
               <IconBtn onClick={() => setCartOpen((o) => !o)} title="Panier">
                 <i className="bx bx-cart" style={{ fontSize: '2.2rem' }}></i>
                 {totalItems > 0 && (
@@ -285,7 +394,7 @@ const Navbar = () => {
                     background: C.gold, color: C.dark, borderRadius: '50%',
                     width: '1.8rem', height: '1.8rem', fontSize: '0.95rem',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 700, border: 'none', lineHeight: 1, fontFamily: 'Inter, sans-serif',
+                    fontWeight: 700, border: 'none', lineHeight: 1, fontFamily: 'var(--font-body)',
                   }}>
                     {totalItems > 9 ? '9+' : totalItems}
                   </span>
@@ -320,11 +429,6 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Spacer when sticky to avoid content jump */}
-      {sticky && (
-        <div style={{ height: `${!sticky ? 0 : 7.2}rem` }} aria-hidden="true" />
-      )}
-
       {/* ── Cart drawer (slide from right) ── */}
       <>
         {/* Overlay */}
@@ -348,7 +452,7 @@ const Navbar = () => {
           top: 0, right: 0, bottom: 0,
           width: '44rem',
           maxWidth: '100vw',
-          background: '#1A1208',
+          background: '#161B2D',
           zIndex: 1200,
           transform: cartOpen ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -368,7 +472,7 @@ const Navbar = () => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
               <h2 style={{
-                fontFamily: 'Syne, sans-serif',
+                fontFamily: 'var(--font-display)',
                 fontSize: '1.9rem',
                 color: C.gold,
                 letterSpacing: '0.04em',
@@ -378,11 +482,11 @@ const Navbar = () => {
               </h2>
               {totalItems > 0 && (
                 <span style={{
-                  background: 'rgba(184,150,10,0.12)',
-                  border: '1px solid rgba(184,150,10,0.25)',
+                  background: 'rgba(198,164,61,0.12)',
+                  border: '1px solid rgba(198,164,61,0.25)',
                   color: C.gold,
                   fontSize: '1.1rem',
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'var(--font-body)',
                   letterSpacing: '0.08em',
                   padding: '0.25rem 0.9rem',
                   borderRadius: '999px',
@@ -399,7 +503,7 @@ const Navbar = () => {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: 'none',
                 border: '1px solid #2A2A2A',
-                borderRadius: '2px',
+                borderRadius: 'var(--r-pill)',
                 color: C.muted,
                 cursor: 'pointer',
                 fontSize: '1.8rem',
@@ -417,14 +521,14 @@ const Navbar = () => {
             {items.length === 0 ? (
               /* Panier vide */
               <div style={{ padding: '7rem 3rem', textAlign: 'center' }}>
-                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="rgba(184,150,10,0.2)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto 2.5rem' }}>
+                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="rgba(198,164,61,0.2)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto 2.5rem' }}>
                   <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
                 </svg>
-                <p style={{ fontSize: '1.4rem', color: C.muted, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', marginBottom: '3rem' }}>
+                <p style={{ fontSize: '1.4rem', color: C.muted, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'var(--font-body)', marginBottom: '3rem' }}>
                   Votre panier est vide
                 </p>
                 <button
-                  onClick={() => { setCartOpen(false); navigate('/recherche'); }}
+                  onClick={() => { setCartOpen(false); navigate('/boutique'); }}
                   style={{
                     padding: '1.3rem 3.5rem',
                     background: C.gold,
@@ -435,8 +539,8 @@ const Navbar = () => {
                     letterSpacing: '0.15em',
                     textTransform: 'uppercase',
                     cursor: 'pointer',
-                    fontFamily: 'Inter, sans-serif',
-                    borderRadius: '2px',
+                    fontFamily: 'var(--font-body)',
+                    borderRadius: 'var(--r-pill)',
                     transition: 'background 0.25s, color 0.25s',
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = C.terracotta; e.currentTarget.style.color = C.cream; }}
@@ -467,7 +571,7 @@ const Navbar = () => {
               padding: '2.4rem',
               borderTop: '1px solid #2A2A2A',
               flexShrink: 0,
-              background: '#1A1208',
+              background: '#161B2D',
             }}>
               {/* Sous-total */}
               <div style={{
@@ -476,17 +580,24 @@ const Navbar = () => {
                 paddingBottom: '2.4rem',
                 borderBottom: '1px solid #2A2A2A',
               }}>
-                <span style={{ fontSize: '1.2rem', color: C.muted, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
+                <span style={{ fontSize: '1.2rem', color: C.muted, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: 'var(--font-body)' }}>
                   Sous-total
                 </span>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: '2rem', color: C.gold, fontFamily: 'Syne, sans-serif', fontWeight: 400, lineHeight: 1.2 }}>
+                  <p style={{ fontSize: '2rem', color: C.gold, fontFamily: 'var(--font-display)', fontWeight: 400, lineHeight: 1.2 }}>
                     {formatPrice(totalPrice, currency)}
                   </p>
                 </div>
               </div>
 
-              {/* CTAs */}
+              {/* Une seule sortie. « Voir le panier » menait à /panier, page
+                  supprimée : le tiroir EST le panier, il montre les articles,
+                  les quantités et le sous-total. Une page de plus pour redire
+                  la même chose n'ajoutait qu'une étape avant de payer.
+
+                  La ligne « Paiement sécurisé · Wave · Orange Money » est
+                  partie avec. ⚠ Les moyens de paiement ne sont donc plus
+                  annoncés nulle part avant l'écran de commande. */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <button
                   onClick={() => { setCartOpen(false); navigate('/commande'); }}
@@ -500,8 +611,8 @@ const Navbar = () => {
                     letterSpacing: '0.2em',
                     textTransform: 'uppercase',
                     cursor: 'pointer',
-                    fontFamily: 'Inter, sans-serif',
-                    borderRadius: '2px',
+                    fontFamily: 'var(--font-body)',
+                    borderRadius: 'var(--r-pill)',
                     transition: 'background 0.25s, color 0.25s',
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = C.terracotta; e.currentTarget.style.color = C.cream; }}
@@ -509,40 +620,8 @@ const Navbar = () => {
                 >
                   Procéder au paiement
                 </button>
-                <button
-                  onClick={() => { setCartOpen(false); navigate('/panier'); }}
-                  style={{
-                    padding: '1.5rem',
-                    background: 'transparent',
-                    color: C.cream,
-                    border: '1px solid #2A2A2A',
-                    fontSize: '1.2rem',
-                    fontWeight: 500,
-                    letterSpacing: '0.15em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer',
-                    fontFamily: 'Inter, sans-serif',
-                    borderRadius: '2px',
-                    transition: 'border-color 0.25s, color 0.25s',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2A2A2A'; e.currentTarget.style.color = C.cream; }}
-                >
-                  Voir le panier
-                </button>
               </div>
 
-              {/* Badge sécurité */}
-              <p style={{
-                marginTop: '2rem',
-                fontSize: '1.1rem',
-                color: '#444',
-                textAlign: 'center',
-                letterSpacing: '0.1em',
-                fontFamily: 'Inter, sans-serif',
-              }}>
-                🔒 Paiement sécurisé · Wave · Orange Money
-              </p>
             </div>
           )}
         </div>
@@ -608,7 +687,7 @@ const Navbar = () => {
                     display: 'block',
                     padding: '2.2rem 0',
                     fontSize: '2.8rem',
-                    fontFamily: 'Syne, sans-serif',
+                    fontFamily: 'var(--font-display)',
                     color: C.cream,
                     textDecoration: 'none',
                     transition: 'color 0.2s',
@@ -631,7 +710,7 @@ const Navbar = () => {
                   display: 'flex', alignItems: 'center', gap: '0.8rem',
                   background: 'none', border: '1px solid rgba(255,255,255,0.15)',
                   color: C.cream, padding: '1.2rem 2rem', cursor: 'pointer',
-                  fontSize: '1.4rem', fontFamily: 'Inter, sans-serif',
+                  fontSize: '1.4rem', fontFamily: 'var(--font-body)',
                   transition: 'border-color 0.2s, color 0.2s',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
@@ -641,22 +720,23 @@ const Navbar = () => {
                 Connexion
               </button>
 
-              {/* Recherche mobile */}
-              <button
-                onClick={() => { setNavOpen(false); setSearchOpen(true); }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.8rem',
-                  background: 'none', border: '1px solid rgba(255,255,255,0.15)',
-                  color: C.cream, padding: '1.2rem 2rem', cursor: 'pointer',
-                  fontSize: '1.4rem', fontFamily: 'Inter, sans-serif',
-                  transition: 'border-color 0.2s, color 0.2s',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = C.cream; }}
-              >
-                <i className="bx bx-search" style={{ fontSize: '1.8rem' }}></i>
-                Rechercher
-              </button>
+              {isAuthenticated && (
+                <button
+                  onClick={() => { setNavOpen(false); navigate('/commandes'); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.8rem',
+                    background: 'none', border: '1px solid rgba(255,255,255,0.15)',
+                    color: C.cream, padding: '1.2rem 2rem', cursor: 'pointer',
+                    fontSize: '1.4rem', fontFamily: 'var(--font-body)',
+                    transition: 'border-color 0.2s, color 0.2s',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = C.cream; }}
+                >
+                  <i className="bx bx-receipt" style={{ fontSize: '1.8rem' }}></i>
+                  Mes commandes
+                </button>
+              )}
 
               {isAuthenticated && user?.is_staff && (
                 <button
@@ -665,7 +745,7 @@ const Navbar = () => {
                     display: 'flex', alignItems: 'center', gap: '0.8rem',
                     background: 'none', border: `1px solid ${C.gold}`,
                     color: C.gold, padding: '1.2rem 2rem', cursor: 'pointer',
-                    fontSize: '1.4rem', fontFamily: 'Inter, sans-serif',
+                    fontSize: '1.4rem', fontFamily: 'var(--font-body)',
                   }}
                 >
                   <i className="bx bx-cog" style={{ fontSize: '1.8rem' }}></i>
@@ -675,7 +755,7 @@ const Navbar = () => {
             </div>
 
 
-            <p style={{ fontSize: '1.2rem', color: '#444', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
+            <p style={{ fontSize: '1.2rem', color: '#444', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'var(--font-body)' }}>
               Made in Dakar · Savoir-faire Africain
             </p>
           </div>
@@ -703,8 +783,6 @@ const Navbar = () => {
         }
       `}</style>
 
-      {/* ── Search overlay ── */}
-      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 };
@@ -716,7 +794,7 @@ const mobileSelectStyle = {
   border: '1px solid rgba(255,255,255,0.12)',
   color: 'rgba(250,246,238,0.6)',
   fontSize: '1.3rem',
-  fontFamily: 'Inter, sans-serif',
+  fontFamily: 'var(--font-body)',
   textTransform: 'uppercase',
   letterSpacing: '0.15em',
   cursor: 'pointer',
@@ -747,7 +825,7 @@ const NavDropdown = ({ value, options, onChange }) => {
           display: 'flex', alignItems: 'center', gap: '0.5rem',
           background: 'none', border: 'none', cursor: 'pointer',
           color: open ? 'rgba(250,246,238,0.9)' : 'rgba(250,246,238,0.6)',
-          fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
+          fontSize: '1.1rem', fontFamily: 'var(--font-body)',
           textTransform: 'uppercase', letterSpacing: '0.15em',
           padding: '0.6rem 0.8rem',
           transition: 'color 0.2s',
@@ -769,12 +847,12 @@ const NavDropdown = ({ value, options, onChange }) => {
         <div style={{
           position: 'absolute', top: 'calc(100% + 0.6rem)', left: '50%',
           transform: 'translateX(-50%)',
-          background: '#0D0D0D',
+          background: '#0F1320',
           border: '1px solid rgba(255,255,255,0.08)',
           boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
           minWidth: '9rem',
           zIndex: 2000,
-          animation: 'dropIn 0.15s ease both',
+          animation: 'dropIn 0.15s ease backwards',
         }}>
           {options.map((opt) => (
             <button
@@ -783,16 +861,16 @@ const NavDropdown = ({ value, options, onChange }) => {
               style={{
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '1rem 1.6rem',
-                background: opt.value === value ? 'rgba(184,150,10,0.08)' : 'none',
+                background: opt.value === value ? 'rgba(198,164,61,0.08)' : 'none',
                 border: 'none', cursor: 'pointer',
-                fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
+                fontSize: '1.1rem', fontFamily: 'var(--font-body)',
                 textTransform: 'uppercase', letterSpacing: '0.15em',
-                color: opt.value === value ? '#B8960A' : 'rgba(250,246,238,0.6)',
+                color: opt.value === value ? '#C6A43D' : 'rgba(250,246,238,0.6)',
                 transition: 'background 0.15s, color 0.15s',
                 whiteSpace: 'nowrap',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,150,10,0.12)'; e.currentTarget.style.color = 'rgba(250,246,238,0.9)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = opt.value === value ? 'rgba(184,150,10,0.08)' : 'none'; e.currentTarget.style.color = opt.value === value ? '#B8960A' : 'rgba(250,246,238,0.6)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(198,164,61,0.12)'; e.currentTarget.style.color = 'rgba(250,246,238,0.9)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = opt.value === value ? 'rgba(198,164,61,0.08)' : 'none'; e.currentTarget.style.color = opt.value === value ? '#C6A43D' : 'rgba(250,246,238,0.6)'; }}
             >
               {opt.label}
             </button>
@@ -816,10 +894,10 @@ const NavLink = ({ to, label }) => {
         fontSize: '1.4rem',
         fontWeight: 500,
         letterSpacing: '0.02em',
-        color: hovered ? '#B8960A' : 'rgba(250,246,238,0.85)',
+        color: hovered ? '#C6A43D' : 'rgba(250,246,238,0.85)',
         textDecoration: 'none',
         transition: 'color 0.2s',
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'var(--font-body)',
         whiteSpace: 'nowrap',
         flexShrink: 0,
       }}
@@ -854,7 +932,7 @@ const CartItem = ({ item, onUpdate, onRemove, C }) => {
         flexShrink: 0,
         width: '7.5rem',
         aspectRatio: '3/4',
-        background: '#1A1A1A',
+        background: '#161B2D',
         overflow: 'hidden',
         borderRadius: '2px',
       }}>
@@ -883,7 +961,7 @@ const CartItem = ({ item, onUpdate, onRemove, C }) => {
               fontSize: '1.35rem',
               fontWeight: 500,
               color: C.cream,
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'var(--font-body)',
               lineHeight: 1.4,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -898,10 +976,10 @@ const CartItem = ({ item, onUpdate, onRemove, C }) => {
                 fontSize: '1.1rem',
                 color: C.muted,
                 border: '1px solid #2A2A2A',
-                borderRadius: '2px',
+                borderRadius: 'var(--r-pill)',
                 padding: '0.15rem 0.6rem',
                 letterSpacing: '0.08em',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'var(--font-body)',
               }}>
                 {variantLabel}
               </span>
@@ -931,7 +1009,7 @@ const CartItem = ({ item, onUpdate, onRemove, C }) => {
 
         {/* Ligne prix + contrôles quantité */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <p style={{ fontSize: '1.3rem', color: C.gold, fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>
+          <p style={{ fontSize: '1.3rem', color: C.gold, fontFamily: 'var(--font-body)', fontWeight: 600 }}>
             {new Intl.NumberFormat('fr-FR').format(item.price)} FCFA
           </p>
 
@@ -945,14 +1023,14 @@ const CartItem = ({ item, onUpdate, onRemove, C }) => {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: 'none',
                 border: '1px solid #2A2A2A',
-                borderRadius: '2px',
+                borderRadius: 'var(--r-pill)',
                 color: C.cream,
                 cursor: 'pointer',
                 fontSize: '1.6rem',
                 lineHeight: 1,
                 transition: 'background 0.2s, border-color 0.2s, color 0.2s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = '#1A1208'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = '#12141C'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = '#2A2A2A'; e.currentTarget.style.color = C.cream; }}
             >
               −
@@ -963,7 +1041,7 @@ const CartItem = ({ item, onUpdate, onRemove, C }) => {
               fontSize: '1.4rem',
               fontWeight: 600,
               color: C.cream,
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'var(--font-body)',
               fontVariantNumeric: 'tabular-nums',
             }}>
               {item.quantity}
@@ -976,14 +1054,14 @@ const CartItem = ({ item, onUpdate, onRemove, C }) => {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: 'none',
                 border: '1px solid #2A2A2A',
-                borderRadius: '2px',
+                borderRadius: 'var(--r-pill)',
                 color: C.cream,
                 cursor: 'pointer',
                 fontSize: '1.6rem',
                 lineHeight: 1,
                 transition: 'background 0.2s, border-color 0.2s, color 0.2s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = '#1A1208'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = '#12141C'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = '#2A2A2A'; e.currentTarget.style.color = C.cream; }}
             >
               +
@@ -1007,7 +1085,7 @@ const IconBtn = ({ onClick, title, children }) => {
         position: 'relative',
         background: hovered ? 'rgba(255,255,255,0.07)' : 'none',
         border: 'none',
-        color: hovered ? '#B8960A' : 'rgba(250,246,238,0.85)',
+        color: hovered ? '#C6A43D' : 'rgba(250,246,238,0.85)',
         cursor: 'pointer',
         padding: '0.7rem',
         display: 'flex',

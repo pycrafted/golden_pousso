@@ -1,21 +1,47 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 import CldImg from './CldImg';
+import useTexteSection from '../hooks/useTexteSection';
 
 const SPEED = 1.0;
 const GAP_REM = 2.4;
-const COLS = 4;
-const CONTAINER_MAX_REM = 120;
-const CONTAINER_PAD_REM = 3;
+
+/* ── Taille des cartes ───────────────────────────────────────────────────────
+ * ↓ C'EST ICI QUE ÇA SE RÈGLE. Baisser un nombre = cartes plus grandes.
+ *
+ * Le rail n'est dans aucun `.container` : il occupe toute la largeur de la
+ * fenêtre. L'ancien calcul divisait pourtant un conteneur figé de 1200 px par
+ * 4 colonnes, alors que les cartes s'étalaient sur tout l'écran — on en voyait
+ * donc 5 à 7, toutes petites, et le défaut s'aggravait à mesure que l'écran
+ * s'élargissait.
+ *
+ * On part maintenant du nombre de cartes que l'on veut VOIR. Les valeurs sont
+ * fractionnaires à dessein : la carte suivante dépasse du bord, ce qui dit à
+ * l'œil que le rail continue. Un compte entier laisse croire que tout est vu.
+ */
+const CARTES_VISIBLES = [
+  { jusqua:  480, nb: 1.6 },
+  { jusqua:  768, nb: 2.4 },
+  { jusqua: 1100, nb: 3.4 },
+  { jusqua: 1600, nb: 4.4 },
+  { jusqua: Infinity, nb: 5.5 },
+];
+
+/* Plafond. Sans lui, un très grand écran donnerait une carte occupant la
+   hauteur de la fenêtre. Au-delà, c'est le nombre de cartes visibles qui
+   augmente, pas leur taille. */
+const CARTE_MAX_PX = 360;
 
 const getCardWidth = () => {
   const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-  const cols = window.innerWidth <= 640 ? 2 : COLS;
   const gap = GAP_REM * rem;
-  const containerW = Math.min(window.innerWidth, CONTAINER_MAX_REM * rem) - 2 * CONTAINER_PAD_REM * rem;
-  return (containerW - (cols - 1) * gap) / cols;
+  const largeur = window.innerWidth;
+  const { nb } = CARTES_VISIBLES.find((p) => largeur <= p.jusqua);
+  // La gouttière est retirée après le partage : chaque carte cède la moitié
+  // d'un espacement à sa gauche et à sa droite.
+  return Math.min(largeur / nb - gap, CARTE_MAX_PX);
 };
 
 const useInView = () => {
@@ -36,7 +62,7 @@ const useInView = () => {
 
 const ProductsCarousel = ({ categorySlug }) => {
   const currency  = useSettingsStore((s) => s.currency);
-  const navigate = useNavigate();
+  const textes = useTexteSection('accueil-creations', { titre: 'En vitrine' });
 
   const [carouselRef, carouselVisible] = useInView();
 
@@ -72,7 +98,10 @@ const ProductsCarousel = ({ categorySlug }) => {
     apiClient.get('/products/', { params })
       .then((res) => {
         const data = res.data.results ?? res.data;
+        /* Le rail repart du début : garder la position d'avant ferait
+           apparaître la nouvelle série au milieu, voire au-delà de sa fin. */
         posRef.current = 0;
+        if (trackRef.current) trackRef.current.style.transform = 'translateX(0)';
         setProducts(categorySlug ? data : data.slice(0, 8));
       })
       .catch(() => {});
@@ -107,92 +136,93 @@ const ProductsCarousel = ({ categorySlug }) => {
     momentumRef.current = direction * (cardW + gap) * 0.18;
   }, [calcCardW]);
 
-  /* ── Carte produit ─────────────────────────────────────── */
+  /* ── Carte produit ───────────────────────────────────────────────────────
+     Traitement repris des tuiles « Nos pièces, filmées » : le nom et le prix
+     ne sont plus posés SOUS l'image mais DANS un panneau vitré à son pied.
+     La carte gagne toute la hauteur pour la pièce, et le bloc d'information
+     tient dans un objet dessiné au lieu de flotter dans le blanc.
+
+     Le flou d'arrière-plan n'est pas décoratif : un aplat fixe devient
+     illisible dès qu'une photo est claire en bas, ce qui arrive tout le temps
+     sur des tissus écrus. Le voile en dégradé garantit le contraste, le flou
+     garantit la lisibilité quel que soit le motif derrière.
+
+     La vignette montre `secondary_image` — la deuxième photo de la pièce.
+     Dans la source elle montrait le produit parce que le média derrière était
+     une vidéo ; ici le média est déjà la photo principale, donc y remettre la
+     même image ne dirait rien. Repli sur la principale si la pièce n'a qu'une
+     seule photo. */
   const renderCard = (p, key) => {
+    const vignette = p.secondary_image || p.primary_image;
+
     return (
-      <div
+      <Link
         key={key}
-        onClick={() => navigate(`/produit/${p.slug}`)}
-        style={{ flexShrink: 0, width: `${cardWidth}px`, cursor: 'pointer' }}
+        to={`/produit/${p.slug}`}
+        className="np-carte"
+        style={{ width: `${cardWidth}px` }}
       >
-      <div style={{ aspectRatio: '3 / 4', position: 'relative', overflow: 'hidden' }}>
-        {/* Image */}
-        {p.primary_image ? (
-          <CldImg
-            src={p.primary_image}
-            alt={p.name}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            widths={[300, 600]}
-            style={{
-              position: 'absolute', inset: 0,
-              width: '100%', height: '100%',
-              objectFit: 'cover', objectPosition: 'center top',
-            }}
-          />
-        ) : (
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: '#1A1208',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <span style={{ color: '#7A6A50', fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Photo bientôt
+        <div className="np-media">
+          {p.primary_image ? (
+            <CldImg
+              src={p.primary_image}
+              alt={p.name}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              widths={[300, 600]}
+              style={{
+                position: 'absolute', inset: 0,
+                width: '100%', height: '100%',
+                objectFit: 'cover', objectPosition: 'center top',
+              }}
+            />
+          ) : (
+            <div className="np-vide">
+              <span>Photo bientôt</span>
+            </div>
+          )}
+
+          {/* Pas de voile sur la photo : le panneau ci-dessous porte son propre
+              fond et son propre flou, il n'a besoin d'aucun assombrissement de
+              l'image pour rester lisible. Un dégradé posé ici ternissait le
+              bas de chaque pièce. */}
+
+          {/* Panneau présentationnel : c'est la carte entière qui est le lien,
+              pas ce bloc. Un lien dans un lien casse la navigation clavier. */}
+          <div className="np-panneau">
+            {vignette && (
+              <span className="np-vignette">
+                <img src={vignette} alt="" loading="lazy" />
+              </span>
+            )}
+            <span className="np-texte">
+              <span className="np-nom">{p.name}</span>
+              <span className="np-prix">{formatPrice(p.price, currency)}</span>
+            </span>
+            <span className="np-fleche" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
+                   strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h13.5" />
+                <path d="m13 6.5 5.5 5.5-5.5 5.5" />
+              </svg>
             </span>
           </div>
-        )}
-
-
-      </div>
-      <div style={{ padding: '1.2rem 0.4rem 0' }}>
-        <h3 style={{
-          fontFamily:   'Syne, sans-serif',
-          fontSize:     '1.4rem',
-          color:        '#1A1208',
-          lineHeight:   1.3,
-          marginBottom: '0.4rem',
-          whiteSpace:   'nowrap',
-          overflow:     'hidden',
-          textOverflow: 'ellipsis',
-        }}>
-          {p.name}
-        </h3>
-        <p style={{
-          fontFamily: 'Inter, sans-serif',
-          fontSize:   '1.3rem',
-          color:      '#B8960A',
-          fontWeight: 500,
-        }}>
-          {formatPrice(p.price, currency)}
-        </p>
-      </div>
-      </div>
+        </div>
+      </Link>
     );
   };
 
   return (
     <section
       id="nos-produits"
-      style={{ background: '#FAF6EE', paddingTop: '4rem', overflow: 'hidden' }}
+      style={{ background: 'var(--surface)', overflow: 'hidden' }}
     >
 
-      {/* Titre */}
-      <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-        <p style={{
-          display: 'inline-block',
-          fontSize: '1rem', fontFamily: 'Inter, sans-serif',
-          textTransform: 'uppercase', letterSpacing: '0.4em',
-          color: '#FAF6EE', background: '#B8960A',
-          padding: '0.6rem 2rem', marginBottom: '1.6rem',
-        }}>
-          Boutique
-        </p>
-        <h2 style={{
-          fontFamily: 'Syne, sans-serif',
-          fontSize: 'clamp(2.8rem, 4vw, 4.2rem)',
-          color: '#1A1208', letterSpacing: '-0.01em', lineHeight: 1.1,
-        }}>
-          Nos Produits
-        </h2>
+      {/* Titre seul, sans sur-titre : « Boutique » au-dessus de « Nos Produits »
+          disait deux fois la même chose. Le filet doré remplace le sur-titre
+          disparu — il pose la section sans rien répéter. */}
+      <div style={{ textAlign: 'center', marginBottom: 'var(--s-7)' }}>
+        <h2>{textes.titre}</h2>
+        <span className="filet-titre" aria-hidden="true" />
       </div>
 
       {/* Carousel auto-scroll */}
@@ -208,17 +238,17 @@ const ProductsCarousel = ({ categorySlug }) => {
           style={{
             position: 'absolute', left: '1.6rem', top: '50%', transform: 'translateY(-50%)',
             zIndex: 10, width: '4.4rem', height: '4.4rem',
-            background: '#FAF6EE', border: '1px solid #E0D0B8', borderRadius: '50%',
+            background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer',
             opacity: carouselHovered ? 1 : 0,
             pointerEvents: carouselHovered ? 'auto' : 'none',
             transition: 'opacity 0.2s, background 0.2s, border-color 0.2s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#B8960A'; e.currentTarget.style.borderColor = '#B8960A'; e.currentTarget.querySelector('svg').style.stroke = '#FAF6EE'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#FAF6EE'; e.currentTarget.style.borderColor = '#E0D0B8'; e.currentTarget.querySelector('svg').style.stroke = '#1A1208'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--gp-brass-400)'; e.currentTarget.style.borderColor = 'var(--gp-brass-400)'; e.currentTarget.querySelector('svg').style.stroke = 'var(--gp-indigo-900)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.querySelector('svg').style.stroke = 'var(--text)'; }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A1208" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'stroke 0.2s' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'stroke 0.2s' }}>
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
@@ -230,22 +260,27 @@ const ProductsCarousel = ({ categorySlug }) => {
           style={{
             position: 'absolute', right: '1.6rem', top: '50%', transform: 'translateY(-50%)',
             zIndex: 10, width: '4.4rem', height: '4.4rem',
-            background: '#FAF6EE', border: '1px solid #E0D0B8', borderRadius: '50%',
+            background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer',
             opacity: carouselHovered ? 1 : 0,
             pointerEvents: carouselHovered ? 'auto' : 'none',
             transition: 'opacity 0.2s, background 0.2s, border-color 0.2s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#B8960A'; e.currentTarget.style.borderColor = '#B8960A'; e.currentTarget.querySelector('svg').style.stroke = '#FAF6EE'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#FAF6EE'; e.currentTarget.style.borderColor = '#E0D0B8'; e.currentTarget.querySelector('svg').style.stroke = '#1A1208'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--gp-brass-400)'; e.currentTarget.style.borderColor = 'var(--gp-brass-400)'; e.currentTarget.querySelector('svg').style.stroke = 'var(--gp-indigo-900)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.querySelector('svg').style.stroke = 'var(--text)'; }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A1208" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'stroke 0.2s' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'stroke 0.2s' }}>
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>
 
         <div ref={carouselRef} style={{ overflow: 'hidden' }}>
+          {/* Sans ce mot, le rail se vide sans rien dire et la section a
+              l'air cassée. */}
+          {products.length === 0 && (
+            <p className="ev-rien">Aucune pièce à afficher pour le moment.</p>
+          )}
           {products.length > 0 && (
             <div
               ref={trackRef}
@@ -260,6 +295,123 @@ const ProductsCarousel = ({ categorySlug }) => {
           )}
         </div>
       </div>
+
+      {/* Valeurs en pixels et non en rem : elles viennent d'une source calée
+          sur une racine à 16 px, alors que ce site est à 62,5 %. En rem, le
+          panneau et la vignette seraient déformés. */}
+      <style>{`
+        .ev-rien {
+          text-align: center;
+          color: var(--text-muted);
+          padding: var(--s-6) var(--page-pad);
+        }
+
+        .np-carte {
+          flex-shrink: 0;
+          display: block;
+          color: inherit;
+        }
+
+        .np-media {
+          position: relative;
+          aspect-ratio: 3 / 4;
+          overflow: hidden;
+          border-radius: 24px;
+          background: var(--surface-sunk);
+        }
+        .np-media img { transition: transform 1200ms var(--ease); }
+        .np-carte:hover .np-media img { transform: scale(1.05); }
+
+        .np-vide {
+          position: absolute;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          background: var(--gp-indigo-900);
+        }
+        .np-vide span {
+          font-size: var(--t-eyebrow);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: var(--text-on-dark-muted);
+        }
+
+        .np-panneau {
+          position: absolute;
+          left: 12px;
+          right: 12px;
+          bottom: 12px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px;
+          border-radius: 16px;
+          border: 1px solid rgba(250,246,238,0.15);
+          background: rgba(15,19,32,0.45);
+          backdrop-filter: blur(12px);
+          color: var(--gp-ecru-50);
+          transition: background var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);
+        }
+        .np-carte:hover .np-panneau {
+          border-color: rgba(250,246,238,0.4);
+          background: rgba(15,19,32,0.65);
+        }
+
+        .np-vignette {
+          position: relative;
+          width: 36px;
+          height: 44px;
+          flex-shrink: 0;
+          overflow: hidden;
+          border-radius: 8px;
+          background: var(--surface-sunk);
+        }
+        .np-vignette img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .np-texte { min-width: 0; flex: 1; }
+        .np-nom {
+          display: block;
+          font-family: var(--font-body);
+          font-size: 12.5px;
+          font-weight: 600;
+          line-height: 1.375;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .np-prix {
+          display: block;
+          font-family: var(--font-body);
+          font-size: 12.5px;
+          font-weight: 800;
+          font-variant-numeric: tabular-nums;
+          color: var(--gp-brass-400);
+        }
+
+        .np-fleche {
+          display: grid;
+          place-items: center;
+          flex-shrink: 0;
+          opacity: 0;
+          transform: translateX(-4px);
+          transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease);
+        }
+        .np-fleche svg { width: 16px; height: 16px; }
+        .np-carte:hover .np-fleche { opacity: 1; transform: translateX(0); }
+
+        /* Au doigt il n'y a pas de survol : la flèche resterait invisible et
+           le panneau à son opacité la plus basse. */
+        @media (hover: none) {
+          .np-fleche { opacity: 1; transform: translateX(0); }
+          .np-panneau { background: rgba(15,19,32,0.62); }
+        }
+      `}</style>
     </section>
   );
 };

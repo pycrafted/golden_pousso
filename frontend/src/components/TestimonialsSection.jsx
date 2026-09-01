@@ -24,7 +24,7 @@ const useInView = () => {
 };
 
 const Stars = ({ value }) => (
-  <span style={{ color: '#B8960A', fontSize: '1.4rem', letterSpacing: '0.15em' }}>
+  <span style={{ color: 'var(--text-accent)', fontSize: '1.4rem', letterSpacing: '0.15em' }}>
     {'★'.repeat(value)}{'☆'.repeat(5 - value)}
   </span>
 );
@@ -41,29 +41,19 @@ const TestimonialsSection = () => {
   if (!loaded || reviews.length === 0) return null;
 
   return (
-    <section style={{ padding: '8rem 0', background: '#FAF6EE' }}>
+    <section style={{ background: 'var(--surface)' }}>
       <div className="container">
         <div ref={ref} style={{
           marginBottom: '5rem', textAlign: 'center',
           opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(20px)',
           transition: 'opacity 0.8s ease, transform 0.8s ease',
         }}>
-          <p style={{
-            display: 'inline-block',
-            fontSize: '1rem', fontFamily: 'Inter, sans-serif',
-            textTransform: 'uppercase', letterSpacing: '0.4em',
-            color: '#FAF6EE', background: '#B8960A',
-            padding: '0.6rem 2rem', marginBottom: '1.6rem',
-          }}>
-            Avis Clients
-          </p>
-          <h2 style={{
-            fontFamily: 'Syne, sans-serif',
-            fontSize: 'clamp(2.8rem, 4vw, 4.2rem)',
-            color: '#1A1208', letterSpacing: '-0.01em', lineHeight: 1.1,
-          }}>
-            Elles Nous Font Confiance
-          </h2>
+          {/* Titre seul, souligné du filet doré — le même traitement que
+              « Nos créations », « Catégories » et « Promotion ». Le sur-titre
+              « Avis Clients » a été retiré : il annonçait ce que le titre
+              disait déjà. */}
+          <h2>Elles Nous Font Confiance</h2>
+          <span className="filet-titre" aria-hidden="true" />
         </div>
 
         <div className="testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2.4rem' }}>
@@ -71,8 +61,10 @@ const TestimonialsSection = () => {
             <div
               key={r.id}
               style={{
-                background: '#fff', padding: '3.2rem 2.8rem', borderRadius: '2px',
-                border: '1px solid #EDE5D6',
+                background: 'var(--surface-gold)', padding: '3.2rem 2.8rem', borderRadius: 'var(--r-3)',
+                // Filet doré plutôt qu'un gris : l'or est structurel dans
+                // ce système, il encadre au lieu de remplir.
+                border: '1px solid var(--line-accent)',
                 opacity: visible ? 1 : 0,
                 transform: visible ? 'translateY(0)' : 'translateY(20px)',
                 transition: `opacity 0.5s ease ${0.1 * i + 0.2}s, transform 0.5s ease ${0.1 * i + 0.2}s`,
@@ -80,15 +72,15 @@ const TestimonialsSection = () => {
             >
               <Stars value={r.rating} />
               <p style={{
-                fontFamily: 'Syne, sans-serif', fontSize: '1.5rem', color: '#1A1208',
+                fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: 'var(--text)',
                 lineHeight: 1.6, margin: '1.6rem 0 2.4rem',
               }}>
                 « {r.comment.length > 160 ? r.comment.slice(0, 160) + '…' : r.comment} »
               </p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.3rem', fontWeight: 600, color: '#1A1208' }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '1.3rem', fontWeight: 600, color: 'var(--text-accent)' }}>
                 {r.customer_name}
               </p>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.15rem', color: '#7A6A50', marginTop: '0.2rem' }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '1.15rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                 à propos de {r.product_name}
               </p>
             </div>

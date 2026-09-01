@@ -1,20 +1,242 @@
 @charset "UTF-8";
-/* ========== Google Fonts =========== */
-@import url("https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
-/* ========== CSS Variables — design tokens (cf. src/theme.js) =========== */
+/* ═══════════════════════════════════════════════════════════════════════════
+   GOLDEN POUSSO — SYSTÈME DE DESIGN « OR & INDIGO »
+   ---------------------------------------------------------------------------
+   Direction : indigo profond (la teinture ouest-africaine) contre écru de
+   coton non teint, l'or en laiton STRUCTUREL — filets, encadrements, bordures
+   — jamais en aplat décoratif. Les surfaces gardent l'arête franche ; les
+   actions sont en pilule (voir la section RAYONS).
+
+   Les polices sont chargées dans index.html (preconnect + un seul <link>).
+   Ne PAS remettre d'@import ici : il crée une cascade bloquante qui coûte un
+   aller-retour réseau complet avant le premier pixel — inacceptable en 3G.
+
+   Contrastes : chaque paire texte/fond ci-dessous est mesurée (WCAG 2.1).
+   Toute nouvelle couleur doit être mesurée avant d'entrer dans ce fichier.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --gold: #B8960A;
-  --terracotta: #C2662D;
-  --cream: #FAF6EE;
-  --ink: #1A1208;
-  --muted: #7A6A50;
-  --muted-on-dark: rgba(250, 246, 238, 0.6);
-  --radius: 2px;
-  --font-display: "Syne", sans-serif;
-  --font-body: "Inter", sans-serif;
+  /* ─── PALETTE BRUTE ──────────────────────────────────────────────────────
+     Ne jamais utiliser directement dans un composant : passer par les tokens
+     sémantiques plus bas. Ces valeurs sont le vocabulaire, pas la grammaire. */
+
+  /* Indigo — le fond sombre. Pas du noir : du bleu-nuit teinté. */
+  --gp-indigo-900: #0F1320;   /* fond le plus profond (hero, footer) */
+  --gp-indigo-800: #161B2D;   /* surface élevée sur fond sombre */
+  --gp-indigo-700: #202742;   /* bordure / hover sur fond sombre */
+
+  /* Écru — le coton non teint. Le fond dominant. */
+  --gp-ecru-50:  #FAF6EE;     /* fond de page */
+  --gp-ecru-100: #F2EBDD;     /* surface creusée, placeholder image */
+  --gp-ecru-200: #E3D9C6;     /* filet sur fond clair */
+
+  /* Laiton — l'accent. Deux valeurs, deux fonds : ce n'est PAS un caprice.
+     Le laiton clair sur écru tombe à 2,2:1 — illisible. Chaque ton a son
+     fond, et un seul. */
+  /* Teinte de surface, jamais de texte. Volontairement très pâle : sur un ton
+     plus soutenu, le laiton-700 tombe sous 4,5:1 et ne peut plus servir de
+     texte par-dessus. */
+  --gp-brass-50:  #FAF4E6;    /* surface — laiton-700 y tient 4,67:1, l'encre 16,76:1 */
+  --gp-brass-400: #C6A43D;    /* sur fond SOMBRE uniquement — 7,74:1 sur indigo-900 */
+  /* Même teinte que le 400, assombrie jusqu'au premier ton qui tienne AA
+     sur les deux fonds clairs. Plus clair, il échoue sur la carte dorée. */
+  --gp-brass-700: #836B26;    /* sur fond CLAIR uniquement — 4,76:1 sur écru-50 */
+
+  /* Terre cuite — accent secondaire : promo, solde, urgence douce. */
+  --gp-terra-500: #C2662D;    /* sur fond sombre — 4,61:1 sur indigo-900 */
+  --gp-terra-700: #9A4E1C;    /* sur fond clair — 5,60:1 sur écru-50 */
+
+  /* Neutres */
+  --gp-ink:   #12141C;        /* quasi-noir indigo — 17,05:1 sur écru-50 */
+  --gp-slate: #5E6172;        /* texte secondaire clair — 5,68:1 sur écru-50 */
+
+  /* États */
+  --gp-success:  #1E7A46;     /* 4,96:1 sur écru-50 */
+  --gp-danger:   #B3261E;     /* 6,06:1 sur écru-50 */
+  --gp-whatsapp: #25D366;     /* couleur de marque — fond uniquement, texte ink */
+
+
+  /* ─── TOKENS SÉMANTIQUES ─────────────────────────────────────────────────
+     C'est ce qu'un composant consomme. Le nom dit le RÔLE, pas la couleur :
+     on peut redéfinir la teinte sans toucher un seul composant. */
+
+  /* Surfaces */
+  --surface:        var(--gp-ecru-50);
+  --surface-sunk:   var(--gp-ecru-100);
+  --surface-gold:   var(--gp-brass-50);   /* carte mise en avant, sur fond clair */
+  --surface-dark:   var(--gp-indigo-900);
+  --surface-dark-2: var(--gp-indigo-800);
+  /* Le chrome du site — bande de coordonnées, barre de navigation, pied de
+     page, et le fond du hero. Un cran plus clair que `--surface-dark`, qui ne
+     sert plus qu'aux sections sombres du corps de page.
+     Ratios mesurés sur ce fond (WCAG 2.1, seuil AA 4,5:1) :
+       écru #FAF6EE          15,85:1  ✅ AAA
+       laiton-400 #C6A43D     7,14:1  ✅ AAA
+       texte atténué (62 %)   6,79:1  ✅ AAA */
+  --surface-chrome: #161B2D;
+
+  /* Texte sur fond clair */
+  --text:        var(--gp-ink);
+  --text-muted:  var(--gp-slate);
+  --text-accent: var(--gp-brass-700);
+  --text-promo:  var(--gp-terra-700);
+
+  /* Texte sur fond sombre */
+  --text-on-dark:        var(--gp-ecru-50);
+  --text-on-dark-muted:  rgba(250, 246, 238, 0.62);  /* 7,10:1 sur indigo-900 */
+  --text-on-dark-accent: var(--gp-brass-400);
+
+  /* Filets — l'or est structurel : c'est ici qu'il vit, pas en aplat. */
+  --line:             var(--gp-ecru-200);
+  --line-accent:      rgba(131, 107, 38, 0.32);   /* filet or sur fond clair */
+  --line-dark:        rgba(255, 255, 255, 0.10);
+  --line-dark-accent: rgba(198, 164, 61, 0.28);   /* filet or sur fond sombre */
+
+  /* Actions */
+  --action-fill:       var(--gp-ink);
+  --action-fill-text:  var(--gp-ecru-50);
+  --action-fill-hover: var(--gp-indigo-700);
+  --action-accent:       var(--gp-brass-400);
+  --action-accent-text:  var(--gp-indigo-900);   /* 7,78:1 */
+  --action-accent-hover: var(--gp-brass-700);
+
+
+  /* ─── TYPOGRAPHIE ────────────────────────────────────────────────────────
+     UNE SEULE FAMILLE : Fraunces, partout, à la demande. Titres, prix,
+     formulaires, tunnel d'achat, mentions légales — tout est écrit dans la
+     fonte des grands titres.
+
+     Le site en portait deux : Fraunces pour la marque, Inter pour
+     l'information. Les trois rôles ci-dessous restent déclarés séparément et
+     pointent tous vers la même fonte — un seul endroit à toucher si une
+     seconde famille revient un jour, sans avoir à repasser sur les 235
+     déclarations qui les lisent.
+
+     Fraunces remplace Syne. Syne a été dessinée en 2017 pour le centre d'art
+     Synesthésie, sur un brief explicite de forme « étrange » : c'est une typo
+     d'institution culturelle, elle ne dit rien du vêtement ni de la main.
+     Fraunces est un serif « old style » dont la caractéristique est
+     l'irrégularité maîtrisée — l'équivalent typographique de « cousu main ».
+
+     ⚠ Ce que ce choix coûte, à surveiller : Fraunces est un serif de
+     titrage. Sous 13 px — mentions, étiquettes de formulaire, en-têtes de
+     tableau — ses empattements se brouillent plus vite qu'un sans serif. Et
+     ses chiffres ne sont pas tabulaires par défaut : les colonnes de prix et
+     de totaux portent donc `font-variant-numeric: tabular-nums`, à conserver
+     partout où des nombres s'alignent verticalement. */
+  --font-display:   "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body:      var(--font-display);
+  --font-editorial: var(--font-display);
+
+  /* Échelle fluide. html = 62.5% donc 1rem = 10px : l'échelle historique du
+     projet est conservée, sinon les 1 268 styles inline existants sautent. */
+  --t-display: clamp(4.8rem, 8vw, 9.6rem);
+  --t-h1:      clamp(3.6rem, 5vw, 5.6rem);
+  --t-h2:      clamp(2.8rem, 4vw, 4.2rem);
+  --t-h3:      clamp(2.0rem, 2.4vw, 2.6rem);
+  --t-lead:    1.8rem;
+  --t-body:    1.5rem;
+  --t-sm:      1.35rem;
+  --t-xs:      1.2rem;
+  --t-eyebrow: 1.1rem;
+
+  --ls-display: -0.02em;
+  --ls-tight:   -0.01em;
+  --ls-eyebrow:  0.28em;
+  --ls-button:   0.16em;
+
+  --lh-tight: 1.05;
+  --lh-head:  1.15;
+  --lh-body:  1.65;
+
+
+  /* ─── ESPACEMENT ─────────────────────────────────────────────────────────
+     Base 8px. Une seule échelle : pas de 1.7rem sorti de nulle part. */
+  --s-1:  0.4rem;
+  --s-2:  0.8rem;
+  --s-3:  1.2rem;
+  --s-4:  1.6rem;
+  --s-5:  2.4rem;
+  --s-6:  3.2rem;
+  --s-7:  4.8rem;
+  --s-8:  6.4rem;
+  --s-9:  9.6rem;
+  --s-10: 12.8rem;
+
+  /* Écart entre deux sections. Une seule valeur pour tout le site : 64 px en
+     petit écran, 80 px au-delà — l'écart qui séparait « Nos Produits » de
+     « En mouvement », pris comme référence.
+     Voir la règle `section` plus bas : cet espace se pose UNIQUEMENT en haut,
+     jamais en bas, sinon deux sections voisines l'additionnent. */
+  --section-y: clamp(6.4rem, 6vw, 8rem);
+
+
+  /* ─── RAYONS ─────────────────────────────────────────────────────────────
+     Le rayon suit le rôle, pas une règle unique.
+
+     Les GRANDES SURFACES — média produit, cartes, tuiles — sont arrondies à
+     2,4 rem. C'est la valeur des tuiles transférées (24 px) : la reprendre
+     ici évite que la moitié de la page soit à angles francs et l'autre non.
+
+     Les ACTIONS sont en pilule. Un bouton doit se lire comme un objet qu'on
+     presse, distinct de la matière autour ; l'arrondi complet le détache de
+     la grille sans l'alourdir.
+
+     `--r-0` ne sert plus qu'aux aplats qui touchent les bords de l'écran —
+     un rayon y créerait une encoche contre le bord de la fenêtre. */
+  --r-0:    0;        /* aplats pleine largeur, séparateurs */
+  --r-1:    2px;      /* champs de saisie */
+  --r-2:    4px;      /* badges */
+  --r-3:    2.4rem;   /* grandes surfaces : média, cartes, tuiles */
+  --r-pill: 999px;    /* boutons, chips, pastilles */
+
+  /* Alias de compatibilité — l'ancien vocabulaire continue de résoudre, mais
+     vers les nouvelles valeurs. Ils permettent aux composants non encore
+     migrés de suivre la refonte sans être touchés. À retirer une fois la
+     migration terminée. */
+  /* Le squelette de chargement doit avoir le rayon de la carte qu'il
+     remplace, sinon le passage de l'un à l'autre fait un à-coup visible. */
+  --r-surface: var(--r-3);
+  --r-action:  var(--r-pill);  /* alias historique — rôle « bouton » */
+  --r-mark:    var(--r-2);
+  --r-micro:   var(--r-1);
+  --radius:    var(--r-1);
+
+  /* Anciens noms de couleurs — même rôle, nouvelles teintes. */
+  --gold:          var(--gp-brass-400);
+  --gold-on-light: var(--gp-brass-700);
+  --terracotta:    var(--gp-terra-500);
+  --cream:         var(--gp-ecru-50);
+  --ink:           var(--gp-ink);
+  --muted:         var(--gp-slate);
+  --muted-on-dark: var(--text-on-dark-muted);
+
+
+  /* ─── ÉLÉVATION ──────────────────────────────────────────────────────────
+     Presque aucune ombre : sur un site de couture, la profondeur se fait au
+     filet, pas au flou. Réservé aux calques qui flottent réellement. */
+  --shadow-overlay: 0 1.6rem 4.8rem -1.6rem rgba(15, 19, 32, 0.32);
+  --shadow-lift:    0 0.8rem 2.4rem -1.2rem rgba(15, 19, 32, 0.24);
+
+
+  /* ─── MOUVEMENT ──────────────────────────────────────────────────────────
+     Une seule courbe pour tout le site. L'easeOutQuint donne la décélération
+     lente qui fait « cher » ; le linear et l'ease par défaut font « cheap ». */
+  --ease:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.64, 0, 0.78, 0);
+  --dur-1: 160ms;
+  --dur-2: 280ms;
+  --dur-3: 520ms;
+
+
+  /* ─── LAYOUT ─────────────────────────────────────────────────────────────*/
+  --page-max: 132rem;
+  --page-pad: clamp(2rem, 5vw, 6rem);
 }
+
+
+/* ═══════════════ RESET & BASE ═══════════════════════════════════════════ */
 
 *,
 *::after,
@@ -29,42 +251,73 @@
 html {
   font-size: 62.5%;
   box-sizing: border-box;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   font-family: var(--font-body);
   font-size: 1.6rem;
   font-weight: 400;
-  color: var(--ink);
-  background-color: var(--cream);
+  line-height: var(--lh-body);
+  color: var(--text);
+  background-color: var(--surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1,
-h2,
-h3,
-h4 {
+h1, h2, h3, h4 {
   font-family: var(--font-display);
-  color: var(--ink);
-  line-height: 1.2;
+  color: var(--text);
+  line-height: var(--lh-head);
   font-weight: 600;
+  letter-spacing: var(--ls-tight);
+  text-wrap: balance;
+  /* Axe `opsz` : la lettre se redessine selon la taille de rendu — déliés
+     plus fins et chasse plus serrée en grand, tracé plus robuste en petit.
+     C'est la valeur par défaut des navigateurs, on l'écrit pour que le choix
+     soit explicite et ne saute pas à la première remise à plat. */
+  font-optical-sizing: auto;
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
-}
+/* Axe WONK — substitue les formes volontairement irrégulières : inclinaison
+   des h/n/m, terminaisons en goutte des b/d/k/l. Réservé aux grands titres,
+   à partir de ~40 px : en dessous, l'irrégularité ne se lit plus comme un
+   parti pris, elle se lit comme un défaut de rendu.
+   `font-variation-settings` ne mentionne que WONK : les axes non cités
+   restent pilotés par `font-weight` et `font-optical-sizing`. */
+.wonk { font-variation-settings: "WONK" 1; }
 
-li {
-  list-style-type: none;
-}
+h1 { font-size: var(--t-h1); line-height: var(--lh-tight); letter-spacing: var(--ls-display); }
+h2 { font-size: var(--t-h2); }
+h3 { font-size: var(--t-h3); }
 
+a  { text-decoration: none; color: inherit; }
+li { list-style-type: none; }
+p  { line-height: var(--lh-body); }
+
+/* ── Rythme vertical à sens unique ──────────────────────────────────────────
+   Chaque section porte son espace EN HAUT et rien en bas. L'écart entre deux
+   sections voisines vaut donc toujours exactement `--section-y`, jamais le
+   double.
+
+   Avec un espace des deux côtés — ce qui était le cas — deux sections
+   standard s'additionnaient à 192 px pendant que d'autres, ayant remis leur
+   padding à zéro d'un côté, tombaient à 48 px. C'est ce qui faisait varier
+   les écarts de la page d'accueil de 48 à 192 px.
+
+   Corollaire : une section ne doit PLUS jamais redéfinir son padding
+   vertical. Pour décaler un contenu à l'intérieur d'une section, utiliser une
+   marge sur le contenu, pas un padding sur la section. */
 section {
-  padding: 5rem 0 5rem;
+  padding-top: var(--section-y);
+  padding-bottom: 0;
   overflow: hidden;
 }
 
-p {
-  line-height: 1.6;
+/* La dernière section d'une page retrouve un espace en bas : sans lui, son
+   contenu viendrait toucher le pied de page. */
+main > section:last-of-type {
+  padding-bottom: var(--section-y);
 }
 
 img {
@@ -72,24 +325,577 @@ img {
   height: auto;
 }
 
-/* ========== Layout utilities =========== */
+/* Le focus clavier doit rester visible partout — le reset ci-dessus a mis
+   outline: none sur tout, ce qui rend le site inutilisable au clavier sans
+   cette règle. Le :focus-visible ne s'affiche pas à la souris. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--gp-brass-700);
+  outline-offset: 3px;
+  border-radius: var(--r-1);
+}
+
+.on-dark :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline-color: var(--gp-brass-400);
+}
+
+
+/* ═══════════════ LAYOUT ═════════════════════════════════════════════════ */
+
 .container {
-  max-width: 120rem;
-  padding: 0 3rem;
+  max-width: var(--page-max);
+  padding: 0 var(--page-pad);
   margin: auto;
 }
 
-@media (min-width: 1600px) {
-  .container {
-    max-width: 160rem;
-  }
-}
-@media (max-width: 567px) {
-  .container {
-    padding: 0 1rem;
-  }
-}
 .d-flex {
   display: flex;
   align-items: center;
+}
+
+/* ── Pages de catalogue — un seul cadre pour toutes ─────────────────────────
+   Rayon (`/categorie/:slug`) et favoris (`/favoris`) montrent la même chose :
+   une liste de pièces, dans la même carte, sous un titre centré. Elles se
+   dessinaient pourtant chacune à sa façon — grille à quatre paliers ici, à
+   trois là ; en-tête en `--t-h2` ici, `<h1>` par défaut là ; état vide en
+   message centré ici, en carte dorée là. La même absence de pièces ne se
+   lisait pas pareil selon la page où l'on tombait.
+
+   Les classes vivent donc ICI et non dans un <style> de page : deux copies
+   d'une grille divergent au premier réglage. Toute nouvelle surface qui liste
+   des pièces reprend ce cadre.
+
+   La page porte son fond en propre : `--surface` sur toute la hauteur, même
+   quand la liste est vide et ne remplit pas l'écran. Sans le `min-height`,
+   l'état vide laisse voir le fond du document sous le pied de page. */
+.catalogue-page {
+  background: var(--surface);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* L'en-tête est un <section> : il prend son espace du haut de la règle
+   générale (`--section-y`) et n'en pose aucun en bas — l'écart avec le corps
+   est porté par la marge du titre. C'est le rythme vertical à sens unique. */
+.catalogue-entete {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding-left: var(--page-pad);
+  padding-right: var(--page-pad);
+  text-align: center;
+}
+
+/* Le titre de page emprunte la taille du h2 : c'est celle des en-têtes de
+   section de l'accueil, et les deux surfaces se lisent alors comme une seule
+   maison. Il reste un <h1> — c'est le titre de la page.
+
+   Pas de `.wonk` : l'axe WONK de Fraunces ne se lit comme un parti pris qu'au
+   delà de 40 px, et `--t-h2` descend à 28 px en petit écran. */
+.catalogue-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--t-h2);
+  font-weight: 600;
+  letter-spacing: var(--ls-tight);
+  line-height: var(--lh-head);
+  color: var(--text);
+}
+
+.catalogue-entete .filet-titre { margin-inline: auto; }
+
+.catalogue-corps {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: var(--s-7) var(--page-pad) var(--s-10);
+}
+
+/* Quatre colonnes en desktop : c'est la largeur pour laquelle les photos de
+   la carte sont déjà découpées (sizes="… 25vw"). */
+.catalogue-grille {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-5) var(--s-4);
+}
+@media (max-width: 1280px) { .catalogue-grille { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 900px)  { .catalogue-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px)  { .catalogue-grille { grid-template-columns: minmax(0, 1fr); } }
+
+/* ── L'état vide ────────────────────────────────────────────────────────────
+   Ni une erreur, ni un cul-de-sac : un constat et une porte. Les trois
+   éléments sont obligatoires ensemble — sans l'action, l'utilisateur n'a que
+   le bouton « retour » du navigateur pour sortir, et c'est exactement ce que
+   faisait la page favoris. */
+.catalogue-vide {
+  padding: var(--s-10) var(--page-pad);
+  text-align: center;
+}
+/* Les trois morceaux sont facultatifs sauf le constat : la page favoris n'a
+   que le constat et l'action, la page rayon que le constat seul. Aucun ne
+   porte donc d'espace en dessous — c'est le SUIVANT qui prend le sien, par
+   règle de voisinage. Un `margin-bottom` sur le titre creuserait un blanc
+   sous le dernier élément dès qu'il est seul. */
+.catalogue-vide-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--t-h3);
+  font-weight: 600;
+  color: var(--text);
+}
+.catalogue-vide-texte {
+  margin: 0 auto;
+  max-width: 46rem;
+  font-size: var(--t-body);
+  color: var(--text-muted);
+}
+.catalogue-vide-titre + .catalogue-vide-texte  { margin-top: var(--s-3); }
+.catalogue-vide-titre + .catalogue-vide-action { margin-top: var(--s-6); }
+.catalogue-vide-texte + .catalogue-vide-action { margin-top: var(--s-7); }
+
+/* L'action est un lien souligné et non un bouton plein : la page est vide,
+   proposer un bouton d'action principale sur du vide en fait la seule chose
+   à cliquer de l'écran, ce qui pèse plus lourd que le constat. */
+.catalogue-vide-action {
+  display: inline-block;
+  padding: 0 0 0.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--text-accent);
+  background: none;
+  font-family: var(--font-body);
+  font-size: var(--t-eyebrow);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-accent);
+  cursor: pointer;
+}
+
+
+/* Renverse la polarité : tout ce qui est dedans lit ses couleurs « fond
+   sombre ». Évite de repasser 30 couleurs à la main par section sombre. */
+.on-dark {
+  background: var(--surface-dark);
+  color: var(--text-on-dark);
+  --text: var(--text-on-dark);
+  --text-muted: var(--text-on-dark-muted);
+  --text-accent: var(--text-on-dark-accent);
+  --line: var(--line-dark);
+  --line-accent: var(--line-dark-accent);
+  --surface: var(--surface-dark);
+  --surface-sunk: var(--surface-dark-2);
+}
+
+.on-dark h1,
+.on-dark h2,
+.on-dark h3,
+.on-dark h4 { color: var(--text-on-dark); }
+
+
+/* ═══════════════ PRIMITIVES TYPOGRAPHIQUES ══════════════════════════════ */
+
+/* Le sur-titre. Remplace les ~40 <p> inline en uppercase/letterspacing
+   recopiés d'une section à l'autre. */
+.eyebrow {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: var(--t-eyebrow);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-eyebrow);
+  line-height: 1;
+  color: var(--text-accent);
+}
+
+/* Variante encadrée — l'or en filet, pas en aplat. */
+.eyebrow--framed {
+  padding: var(--s-2) var(--s-4);
+  border: 1px solid var(--line-accent);
+}
+
+/* Le filet de section. L'unité structurelle de la direction Or & Indigo. */
+.rule {
+  width: 4rem;
+  height: 1px;
+  border: 0;
+  background: var(--gp-brass-400);
+  margin: var(--s-5) 0;
+}
+
+.rule--center { margin-inline: auto; }
+
+/* Filet de titre — le trait posé sous un titre de section.
+   Trois raisons de ne pas se contenter d'une ligne pleine :
+   — elle s'éteint aux deux bouts, donc elle souligne sans barrer ;
+   — le losange central reprend la ponctuation déjà employée dans le bandeau
+     défilant et les engagements de l'atelier, ce qui en fait un signe de la
+     maison plutôt qu'un ornement ;
+   — l'or reste structurel, en filet, jamais en aplat.
+   Purement décoratif : à poser sur un élément vide en aria-hidden.
+   Le trait passe par `--text-accent` et non par une teinte fixe : le laiton
+   clair disparaît sur l'écru, le laiton foncé disparaît sur l'indigo. Le token
+   choisit le bon ton selon le fond. */
+.filet-titre {
+  display: block;
+  width: min(24rem, 55%);
+  height: 1px;
+  margin: var(--s-4) auto 0;
+  position: relative;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--text-accent) 50%,
+    transparent
+  );
+}
+
+.filet-titre::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: var(--text-accent);
+}
+
+/* Voix éditoriale : chapô, citation, mot de la maison. */
+.editorial {
+  font-family: var(--font-editorial);
+  font-size: var(--t-h3);
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: var(--ls-tight);
+  text-wrap: balance;
+}
+
+.lead {
+  font-size: var(--t-lead);
+  line-height: var(--lh-body);
+  color: var(--text-muted);
+  max-width: 62ch;
+}
+
+/* Prix. Le token --text-accent vaut brass-700 sur clair (4,68:1) et
+   brass-400 sur sombre (7,78:1) : le prix reste lisible des deux côtés.
+   L'ancien #B8960A sur crème plafonnait à 2,63:1. */
+.price {
+  font-family: var(--font-body);
+  font-size: var(--t-body);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-accent);
+}
+
+.price--was {
+  color: var(--text-muted);
+  font-weight: 400;
+  text-decoration: line-through;
+  margin-right: var(--s-2);
+}
+
+
+/* ═══════════════ BOUTONS ════════════════════════════════════════════════ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  padding: 1.4rem var(--s-6);
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  font-family: var(--font-body);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: var(--ls-button);
+  text-transform: uppercase;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease),
+              color var(--dur-1) var(--ease),
+              border-color var(--dur-1) var(--ease);
+  /* Cible tactile confortable — l'essentiel du trafic est mobile. */
+  min-height: 4.8rem;
+}
+
+.btn[disabled],
+.btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Primaire : encre pleine. C'est l'action principale du site. */
+.btn--primary {
+  background: var(--action-fill);
+  color: var(--action-fill-text);
+}
+.btn--primary:hover:not([disabled]) { background: var(--action-fill-hover); }
+
+/* Accent laiton — pour l'action de marque (hero, CTA de conversion). */
+.btn--accent {
+  background: var(--action-accent);
+  color: var(--action-accent-text);
+}
+.btn--accent:hover:not([disabled]) {
+  background: var(--action-accent-hover);
+  color: var(--gp-ecru-50);
+}
+
+/* Fantôme : contour seul. Sur fond clair comme sombre grâce à currentColor. */
+.btn--ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--line-accent);
+}
+.btn--ghost:hover:not([disabled]) {
+  border-color: currentColor;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.btn--sm    { padding: 1rem var(--s-4); min-height: 4rem; font-size: 1.1rem; }
+.btn--block { width: 100%; }
+
+/* Lien souligné à l'ouverture — le soulignement se déplie, il n'apparaît pas.
+   Détail de finition qui sépare un site de maison d'un template. */
+.link-reveal {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 2px;
+}
+.link-reveal::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--dur-2) var(--ease);
+}
+.link-reveal:hover::after,
+.link-reveal:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+
+/* Carte produit — toute la surface est un lien.
+   Le nom se souligne au survol de la carte entière : le soulignement suivait
+   auparavant un lien propre au titre, supprimé depuis. */
+.pc-carte:hover .pc-nom {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+
+/* ═══════════════ SURFACES ═══════════════════════════════════════════════ */
+
+/* Le cadre. Filet, pas d'ombre : la profondeur se fait à la ligne. */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+}
+
+/* Conteneur de média produit. Le fond écru creusé évite le flash blanc
+   pendant le chargement — visible sur connexion lente. */
+.media {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-sunk);
+  border-radius: var(--r-3);
+}
+
+.media--portrait { aspect-ratio: 3 / 4; }
+.media--square   { aspect-ratio: 1 / 1; }
+
+.media > img,
+.media > video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Badge posé dans un coin de média (Nouveau, Rupture, -20%). */
+/* Badges de carte produit — « Nouveauté », « −X % », « Épuisé ».
+   Ils sont TOUJOURS posés sur une photo, jamais sur un aplat maîtrisé. D'où
+   deux exigences que n'a pas un badge d'interface ordinaire :
+
+   — le fond doit être opaque et sombre. Une pastille translucide disparaît sur
+     un tissu clair, une pastille claire disparaît sur une dentelle écrue ;
+   — il faut un liseré. Sans lui, un badge terracotta posé sur une photo de
+     bijoux dorés se fond dans son propre fond : c'était exactement le cas du
+     « −17 % ». Le filet écru à 22 % le détache de n'importe quelle image sans
+     ajouter de matière visible.
+
+   `tabular-nums` parce que Fraunces ne l'est pas par défaut : sans lui, deux
+   remises voisines (−17 %, −11 %) n'ont pas la même largeur et la colonne de
+   badges tremble d'une carte à l'autre. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem var(--s-3);
+  border-radius: var(--r-2);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  line-height: 1;
+  box-shadow: 0 0 0 1px rgba(250, 246, 238, 0.22),
+              0 0.4rem 1.2rem -0.4rem rgba(15, 19, 32, 0.55);
+}
+
+.badge--new   { background: var(--gp-brass-400); color: var(--gp-indigo-900); }
+.badge--out   { background: var(--gp-indigo-900); color: var(--gp-ecru-50); }
+
+/* La remise est le seul badge qui porte un chiffre, et c'est celui qui doit
+   s'imposer : plus grand, plus lourd, moins interlettré — un nombre n'a pas
+   besoin de l'espacement qui aère un mot en capitales.
+
+   Le fond passe de terracotta-500 à terracotta-700. Ce n'est pas un choix de
+   goût : l'écru sur terracotta-500 ne tenait que 3,72:1, sous le seuil AA de
+   4,5:1 pour un texte de cette taille. Sur terracotta-700 il tient 5,60:1, et
+   le ton plus profond tranche en prime sur les photos claires et dorées où
+   l'ancien se noyait. */
+.badge--promo {
+  background: var(--gp-terra-700);   /* écru-50 : 5,60:1 ✅ */
+  color: var(--gp-ecru-50);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.6rem 1.1rem;
+}
+
+
+/* ═══════════════ ANIMATIONS ═════════════════════════════════════════════
+   Définies ici plutôt que réinjectées par chaque page via une balise <style>.
+   Elles étaient dupliquées dans quatre fichiers avec des valeurs divergentes
+   — le même produit n'apparaissait pas de la même façon selon la page. */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.7; }
+}
+
+/* ── Révélation au défilement ──────────────────────────────────────────────
+   État de départ posé en CSS plutôt qu'en style inline : sans ça, le contenu
+   s'affiche en clair une fraction de seconde avant que React ne monte
+   l'observateur, et toute la page « saute ». */
+/* `backwards` et NON `both`.
+   `both` retient l'état final de l'animation : `transform: translateY(0)`,
+   `filter: blur(0)`, `scale(1)` restent appliqués pour toujours. Or un
+   `transform` ou un `filter` actif force le navigateur à garder l'élément sur
+   sa propre couche GPU, où l'image est rastérisée une fois puis réutilisée —
+   d'où des photos qui pixelisent par moments et pas à d'autres, selon la
+   pression mémoire et le nombre de couches.
+
+   `backwards` applique l'état de départ avant que l'animation commence, ce
+   dont on a besoin, mais ne retient rien après : l'état d'arrivée est de
+   toute façon l'état naturel de l'élément. La couche est libérée, l'image
+   redevient nette. */
+.reveal        { opacity: 0; }
+.reveal-up     { animation: fadeUp var(--dur-3) var(--ease) backwards; }
+.reveal-blur   { animation: revealBlur 640ms var(--ease) backwards; }
+.reveal-scale  { animation: revealScale 640ms var(--ease) backwards; }
+
+@keyframes revealBlur {
+  from { opacity: 0; filter: blur(10px); transform: translateY(14px); }
+  to   { opacity: 1; filter: blur(0);    transform: translateY(0); }
+}
+
+@keyframes revealScale {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Cascade : chaque enfant direct entre après le précédent. `--step` est posé
+   par le composant Reveal, `--i` par l'index de l'enfant. */
+.reveal-stagger > * {
+  animation: fadeUp var(--dur-3) var(--ease) backwards;
+  animation-delay: calc(var(--i, 0) * var(--step, 80ms));
+}
+
+/* ── Bandeau défilant ──────────────────────────────────────────────────────
+   Deux copies de la liste défilent côte à côte et la piste recule d'exactement
+   la moitié de sa largeur : au moment où la première copie sort, la seconde
+   occupe déjà sa place et la boucle est invisible. */
+/* ═══════════════ CHAMPS ═════════════════════════════════════════════════ */
+
+.field {
+  width: 100%;
+  padding: 1.3rem var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  font-family: var(--font-body);
+  font-size: var(--t-body);
+  color: var(--text);
+  min-height: 4.8rem;
+  transition: border-color var(--dur-1) var(--ease);
+}
+
+.field::placeholder { color: var(--text-muted); }
+.field:hover { border-color: var(--line-accent); }
+.field:focus { border-color: var(--gp-brass-700); }
+
+.field[aria-invalid="true"] { border-color: var(--gp-danger); }
+
+.label {
+  display: block;
+  margin-bottom: var(--s-2);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+
+/* ═══════════════ ACCESSIBILITÉ & MOUVEMENT ══════════════════════════════ */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Respecte le réglage système. Sans ça, les ~60 transitions du site
+   déclenchent des nausées chez les personnes sensibles au mouvement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* ═══════════════ RESPONSIVE ═════════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  .btn { width: 100%; }
+  .btn--auto { width: auto; }
+  .rule { margin: var(--s-4) 0; }
 }

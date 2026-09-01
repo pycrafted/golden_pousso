@@ -13,7 +13,6 @@ def api_root(request):
         'version': 'v1',
         'endpoints': {
             'categories': '/api/v1/categories/',
-            'collections': '/api/v1/collections/',
             'products': '/api/v1/products/',
         }
     })

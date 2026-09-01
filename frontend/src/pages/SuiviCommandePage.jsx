@@ -88,10 +88,10 @@ const SuiviCommandePage = () => {
         <div style={{ background: '#1A1208', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem' }}>
           <div style={{ maxWidth: '52rem', width: '100%' }}>
             <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
-              <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: '#B8960A', marginBottom: '1.6rem' }}>
+              <p style={{ fontSize: '1.1rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.3em', color: '#B8960A', marginBottom: '1.6rem' }}>
                 Golden Pousso
               </p>
-              <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(3rem, 5vw, 4.8rem)', color: '#FAF6EE', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3rem, 5vw, 4.8rem)', color: '#FAF6EE', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
                 Suivi de commande
               </h1>
             </div>
@@ -102,7 +102,7 @@ const SuiviCommandePage = () => {
                 { label: 'Téléphone ou email', placeholder: '+221 77 000 00 00 ou vous@exemple.com', value: searchContact, setter: setSearchContact },
               ].map(({ label, placeholder, value, setter }) => (
                 <div key={label}>
-                  <label style={{ display: 'block', fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(250,246,238,0.6)', marginBottom: '1.2rem' }}>
+                  <label style={{ display: 'block', fontSize: '1.1rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(250,246,238,0.6)', marginBottom: '1.2rem' }}>
                     {label}
                   </label>
                   <input
@@ -110,7 +110,7 @@ const SuiviCommandePage = () => {
                     onChange={(e) => setter(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
                     placeholder={placeholder}
-                    style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid #2A2A2A', padding: '1.2rem 0', fontSize: '1.5rem', fontFamily: 'Inter, sans-serif', color: '#FAF6EE', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.3s' }}
+                    style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid #2A2A2A', padding: '1.2rem 0', fontSize: '1.5rem', fontFamily: 'var(--font-body)', color: '#FAF6EE', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.3s' }}
                     onFocus={(e) => { e.currentTarget.style.borderColor = '#B8960A'; }}
                     onBlur={(e) => { e.currentTarget.style.borderColor = '#2A2A2A'; }}
                   />
@@ -118,11 +118,11 @@ const SuiviCommandePage = () => {
               ))}
               <button
                 onClick={handleSearch}
-                style={{ alignSelf: 'flex-end', padding: '1.4rem 4rem', background: '#B8960A', color: '#1A1208', border: 'none', cursor: 'pointer', fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em' }}
+                style={{ alignSelf: 'flex-end', padding: '1.4rem 4rem', background: '#B8960A', color: '#1A1208', border: 'none', cursor: 'pointer', fontSize: '1.1rem', fontFamily: 'var(--font-body)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em' }}
               >
                 Rechercher →
               </button>
-              <p style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: '#444', lineHeight: 1.6 }}>
+              <p style={{ fontSize: '1.2rem', fontFamily: 'var(--font-body)', color: '#444', lineHeight: 1.6 }}>
                 Le numéro de commande vous a été communiqué à la confirmation de votre commande.
               </p>
             </div>
@@ -143,11 +143,11 @@ const SuiviCommandePage = () => {
     <div style={{ background: '#1A1208', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem', textAlign: 'center' }}>
       <div>
         <p style={{ fontSize: '4rem', marginBottom: '2rem' }}>🔒</p>
-        <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.8rem', color: '#FAF6EE', marginBottom: '1.2rem' }}>Accès restreint</h2>
-        <p style={{ fontSize: '1.4rem', fontFamily: 'Inter, sans-serif', color: 'rgba(250,246,238,0.6)', marginBottom: '3rem', maxWidth: '42rem', margin: '0 auto 3rem' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.8rem', color: '#FAF6EE', marginBottom: '1.2rem' }}>Accès restreint</h2>
+        <p style={{ fontSize: '1.4rem', fontFamily: 'var(--font-body)', color: 'rgba(250,246,238,0.6)', marginBottom: '3rem', maxWidth: '42rem', margin: '0 auto 3rem' }}>
           Veuillez indiquer l'email ou le téléphone utilisé lors de la commande pour y accéder.
         </p>
-        <Link to="/commande/suivi" style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#B8960A', textDecoration: 'none', borderBottom: '1px solid #B8960A', paddingBottom: '0.3rem' }}>
+        <Link to="/commande/suivi" style={{ fontSize: '1.1rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#B8960A', textDecoration: 'none', borderBottom: '1px solid #B8960A', paddingBottom: '0.3rem' }}>
           ← Nouvelle recherche
         </Link>
       </div>
@@ -158,11 +158,11 @@ const SuiviCommandePage = () => {
     <div style={{ background: '#1A1208', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem', textAlign: 'center' }}>
       <div>
         <p style={{ fontSize: '4rem', marginBottom: '2rem' }}>✕</p>
-        <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.8rem', color: '#FAF6EE', marginBottom: '1.2rem' }}>Commande introuvable</h2>
-        <p style={{ fontSize: '1.4rem', fontFamily: 'Inter, sans-serif', color: 'rgba(250,246,238,0.6)', marginBottom: '3rem' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.8rem', color: '#FAF6EE', marginBottom: '1.2rem' }}>Commande introuvable</h2>
+        <p style={{ fontSize: '1.4rem', fontFamily: 'var(--font-body)', color: 'rgba(250,246,238,0.6)', marginBottom: '3rem' }}>
           Vérifiez le numéro de commande et réessayez.
         </p>
-        <Link to="/commande/suivi" style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#B8960A', textDecoration: 'none', borderBottom: '1px solid #B8960A', paddingBottom: '0.3rem' }}>
+        <Link to="/commande/suivi" style={{ fontSize: '1.1rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#B8960A', textDecoration: 'none', borderBottom: '1px solid #B8960A', paddingBottom: '0.3rem' }}>
           ← Nouvelle recherche
         </Link>
       </div>
@@ -183,16 +183,16 @@ const SuiviCommandePage = () => {
           <div style={{ marginBottom: '6rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginBottom: '2rem' }}>
               <div style={{ width: '4.8rem', height: '1px', background: '#B8960A' }} />
-              <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: '#B8960A' }}>
+              <p style={{ fontSize: '1.1rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.3em', color: '#B8960A' }}>
                 Suivi de commande
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '2rem' }}>
               <div>
-                <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.8rem, 4vw, 4rem)', color: '#FAF6EE', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: '1rem' }}>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.8rem, 4vw, 4rem)', color: '#FAF6EE', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: '1rem' }}>
                   #{order.order_number}
                 </h1>
-                <p style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: 'rgba(250,246,238,0.6)' }}>
+                <p style={{ fontSize: '1.3rem', fontFamily: 'var(--font-body)', color: 'rgba(250,246,238,0.6)' }}>
                   Passée le {new Date(order.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
               </div>
@@ -201,7 +201,7 @@ const SuiviCommandePage = () => {
                 padding: '0.8rem 2rem',
                 border: `1px solid ${statusColor}40`,
                 background: `${statusColor}12`,
-                fontSize: '1.2rem', fontFamily: 'Inter, sans-serif',
+                fontSize: '1.2rem', fontFamily: 'var(--font-body)',
                 textTransform: 'uppercase', letterSpacing: '0.2em',
                 color: statusColor,
               }}>
@@ -253,7 +253,7 @@ const SuiviCommandePage = () => {
                         )}
                       </div>
                       <p style={{
-                        fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
+                        fontSize: '1.1rem', fontFamily: 'var(--font-body)',
                         textTransform: 'uppercase', letterSpacing: '0.1em',
                         color: done ? '#FAF6EE' : '#444',
                         textAlign: 'center', lineHeight: 1.3,
@@ -272,7 +272,7 @@ const SuiviCommandePage = () => {
 
             {/* Articles */}
             <div style={{ gridColumn: '1 / -1', background: '#111', border: '1px solid #2A2A2A', padding: '3rem' }}>
-              <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.8rem', color: '#B8960A', marginBottom: '2.5rem', letterSpacing: '0.02em' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', color: '#B8960A', marginBottom: '2.5rem', letterSpacing: '0.02em' }}>
                 Articles commandés
               </h3>
               {order.items.map((item, i) => (
@@ -282,14 +282,14 @@ const SuiviCommandePage = () => {
                   borderBottom: i < order.items.length - 1 ? '1px solid #2A2A2A' : 'none',
                 }}>
                   <div>
-                    <p style={{ fontSize: '1.4rem', fontFamily: 'Inter, sans-serif', color: '#FAF6EE', marginBottom: '0.3rem' }}>
+                    <p style={{ fontSize: '1.4rem', fontFamily: 'var(--font-body)', color: '#FAF6EE', marginBottom: '0.3rem' }}>
                       {item.product_name}
                     </p>
-                    <p style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: 'rgba(250,246,238,0.6)' }}>
+                    <p style={{ fontSize: '1.2rem', fontFamily: 'var(--font-body)', color: 'rgba(250,246,238,0.6)' }}>
                       Qté : {item.quantity} · {formatFCFA(item.product_price)} / unité
                     </p>
                   </div>
-                  <p style={{ fontSize: '1.4rem', fontFamily: 'Inter, sans-serif', color: '#B8960A', fontWeight: 600, whiteSpace: 'nowrap', marginLeft: '2rem' }}>
+                  <p style={{ fontSize: '1.4rem', fontFamily: 'var(--font-body)', color: '#B8960A', fontWeight: 600, whiteSpace: 'nowrap', marginLeft: '2rem' }}>
                     {formatFCFA(item.line_total)}
                   </p>
                 </div>
@@ -298,7 +298,7 @@ const SuiviCommandePage = () => {
 
             {/* Livraison */}
             <div style={{ background: '#111', border: '1px solid #2A2A2A', padding: '3rem' }}>
-              <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.8rem', color: '#B8960A', marginBottom: '2.5rem', letterSpacing: '0.02em' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', color: '#B8960A', marginBottom: '2.5rem', letterSpacing: '0.02em' }}>
                 Livraison
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
@@ -312,7 +312,7 @@ const SuiviCommandePage = () => {
 
             {/* Paiement + total */}
             <div style={{ background: '#111', border: '1px solid #2A2A2A', padding: '3rem' }}>
-              <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.8rem', color: '#B8960A', marginBottom: '2.5rem', letterSpacing: '0.02em' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', color: '#B8960A', marginBottom: '2.5rem', letterSpacing: '0.02em' }}>
                 Paiement
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
@@ -323,8 +323,8 @@ const SuiviCommandePage = () => {
                   <div style={{ marginTop: '0.8rem' }} />
                   <Row label="Livraison" value={order.delivery_fee === 0 ? 'Gratuit' : formatFCFA(order.delivery_fee)} />
                   <div style={{ marginTop: '1.6rem', paddingTop: '1.6rem', borderTop: '1px solid #2A2A2A', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(250,246,238,0.6)' }}>Total</span>
-                    <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.2rem', color: '#B8960A' }}>{formatFCFA(order.total)}</span>
+                    <span style={{ fontSize: '1.3rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(250,246,238,0.6)' }}>Total</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', color: '#B8960A' }}>{formatFCFA(order.total)}</span>
                   </div>
                 </div>
               </div>
@@ -334,12 +334,12 @@ const SuiviCommandePage = () => {
           {/* ── Actions ── */}
           <div style={{ display: 'flex', gap: '1.6rem', flexWrap: 'wrap', marginTop: '4rem' }}>
             <Link
-              to="/recherche"
+              to="/boutique"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.8rem',
                 padding: '1.4rem 3.5rem',
                 background: '#B8960A', color: '#1A1208',
-                fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
+                fontSize: '1.1rem', fontFamily: 'var(--font-body)',
                 textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 600,
                 textDecoration: 'none', transition: 'background 0.2s, color 0.2s',
               }}
@@ -355,7 +355,7 @@ const SuiviCommandePage = () => {
                 padding: '1.4rem 3.5rem',
                 background: 'transparent', color: 'rgba(250,246,238,0.6)',
                 border: '1px solid #2A2A2A',
-                fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
+                fontSize: '1.1rem', fontFamily: 'var(--font-body)',
                 textTransform: 'uppercase', letterSpacing: '0.2em',
                 textDecoration: 'none', transition: 'border-color 0.2s, color 0.2s',
               }}
@@ -377,10 +377,10 @@ const SuiviCommandePage = () => {
 
 const Row = ({ label, value, valueColor }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1.6rem' }}>
-    <span style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(250,246,238,0.6)', flexShrink: 0 }}>
+    <span style={{ fontSize: '1.2rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(250,246,238,0.6)', flexShrink: 0 }}>
       {label}
     </span>
-    <span style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: valueColor || '#FAF6EE', textAlign: 'right' }}>
+    <span style={{ fontSize: '1.3rem', fontFamily: 'var(--font-body)', color: valueColor || '#FAF6EE', textAlign: 'right' }}>
       {value}
     </span>
   </div>

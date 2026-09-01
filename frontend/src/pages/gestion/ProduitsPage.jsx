@@ -7,8 +7,83 @@ import { PageHeader, GestionButton, GestionInput, GestionTextarea, GestionSelect
 const formatFCFA = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' FCFA';
 
 const emptyForm = {
-  name: '', category: '', collection: '', description: '',
+  name: '', category: '', description: '',
   price: '', old_price: '', stock: 0, is_active: true, is_featured: false, is_new: false,
+};
+
+/* ── Vidéo d'un produit existant — prioritaire sur les photos ── */
+const ProductVideoPanel = ({ product, onChanged }) => {
+  const [videoUrl, setVideoUrl] = useState(product.video ?? null);
+  const [uploading, setUploading] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+
+  useEffect(() => { setVideoUrl(product.video ?? null); }, [product.video]);
+
+  const upload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Vidéo trop lourde (50 Mo maximum) — raccourcissez-la ou compressez-la.');
+      return;
+    }
+    setUploading(true);
+    const fd = new FormData();
+    fd.append('video', file);
+    try {
+      const res = await apiClient.patch(`/gestion/products/${product.id}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setVideoUrl(res.data.video ?? null);
+      toast.success('Vidéo ajoutée — elle remplace la photo sur la carte du produit');
+      onChanged?.();
+    } catch (err) {
+      toast.error(err.response?.data?.video?.[0] || "Erreur lors de l'envoi — le fichier est peut-être trop volumineux.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const remove = async () => {
+    await apiClient.patch(`/gestion/products/${product.id}/`, { video: null });
+    setVideoUrl(null);
+    setConfirmRemove(false);
+    toast.success('Vidéo retirée — la photo principale reprend sa place');
+    onChanged?.();
+  };
+
+  return (
+    <Panel style={{ gridColumn: '1 / -1' }}>
+      <p style={{ fontFamily: FONT_BODY, fontSize: '1.3rem', fontWeight: 600, marginBottom: '0.6rem', color: COLORS.ink }}>Vidéo du produit (optionnel)</p>
+      <p style={{ fontFamily: FONT_BODY, fontSize: '1.2rem', color: COLORS.mutedOnLight, marginBottom: '1.6rem' }}>
+        Si vous ajoutez une vidéo, c'est elle — et elle seule — qui s'affiche sur la carte du produit, à la place de la photo.
+        Vos photos restent visibles sur la fiche du produit. Retirez la vidéo pour revenir à la photo.
+        Format vertical court et MP4 recommandés (50 Mo maximum).
+      </p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '2rem', flexWrap: 'wrap' }}>
+        {videoUrl && (
+          <div>
+            <video src={videoUrl} controls muted playsInline preload="metadata"
+              style={{ width: '14rem', aspectRatio: '3/4', objectFit: 'cover', borderRadius: RADIUS, background: '#1A1208', display: 'block' }} />
+            <button onClick={() => setConfirmRemove(true)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b', fontFamily: FONT_BODY, fontSize: '1.2rem', padding: '0.6rem 0' }}>
+              ✕ Retirer la vidéo
+            </button>
+          </div>
+        )}
+        <div>
+          <input type="file" accept="video/*" onChange={upload} disabled={uploading} style={{ fontFamily: FONT_BODY, fontSize: '1.2rem' }} />
+          {uploading && <p style={{ fontFamily: FONT_BODY, fontSize: '1.2rem', color: COLORS.mutedOnLight, marginTop: '0.8rem' }}>Envoi en cours…</p>}
+        </div>
+      </div>
+      {confirmRemove && (
+        <ConfirmDialog
+          title="Retirer la vidéo ?"
+          description="La carte du produit réaffichera sa photo principale. Vous pourrez toujours renvoyer une vidéo plus tard."
+          onConfirm={remove}
+          onCancel={() => setConfirmRemove(false)}
+        />
+      )}
+    </Panel>
+  );
 };
 
 /* ── Images & variantes d'un produit existant ── */
@@ -135,6 +210,8 @@ const ProductAssets = ({ product, onChanged }) => {
           <GestionButton variant="outline" onClick={addVariant}>Ajouter</GestionButton>
         </div>
       </Panel>
+
+      <ProductVideoPanel product={product} onChanged={onChanged} />
     </div>
     {confirmTarget && <ConfirmDialog {...confirmTarget} onCancel={() => setConfirmTarget(null)} />}
     </>
@@ -142,9 +219,9 @@ const ProductAssets = ({ product, onChanged }) => {
 };
 
 /* ── Formulaire produit (création / édition) ── */
-const ProductForm = ({ product, categories, collections, onClose, onSaved }) => {
+const ProductForm = ({ product, categories, onClose, onSaved }) => {
   const [form, setForm] = useState(product ? {
-    name: product.name, category: product.category, collection: product.collection ?? '',
+    name: product.name, category: product.category,
     description: product.description, price: product.price, old_price: product.old_price ?? '',
     stock: product.stock, is_active: product.is_active, is_featured: product.is_featured, is_new: product.is_new,
   } : emptyForm);
@@ -155,7 +232,7 @@ const ProductForm = ({ product, categories, collections, onClose, onSaved }) => 
     e.preventDefault();
     if (!form.name || !form.category || !form.price) { toast.error('Nom, catégorie et prix sont requis'); return; }
     setSaving(true);
-    const payload = { ...form, collection: form.collection || null, old_price: form.old_price || null };
+    const payload = { ...form, old_price: form.old_price || null };
     try {
       let res;
       if (product) {
@@ -186,20 +263,12 @@ const ProductForm = ({ product, categories, collections, onClose, onSaved }) => 
           <Field label="Nom *">
             <GestionInput value={form.name} onChange={(e) => set('name', e.target.value)} required />
           </Field>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.6rem' }}>
-            <Field label="Catégorie *">
-              <GestionSelect value={form.category} onChange={(e) => set('category', e.target.value)} required>
-                <option value="">— Choisir —</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </GestionSelect>
-            </Field>
-            <Field label="Collection">
-              <GestionSelect value={form.collection} onChange={(e) => set('collection', e.target.value)}>
-                <option value="">— Aucune —</option>
-                {collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </GestionSelect>
-            </Field>
-          </div>
+          <Field label="Catégorie *">
+            <GestionSelect value={form.category} onChange={(e) => set('category', e.target.value)} required>
+              <option value="">— Choisir —</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </GestionSelect>
+          </Field>
           <Field label="Description">
             <GestionTextarea rows={4} value={form.description} onChange={(e) => set('description', e.target.value)} />
           </Field>
@@ -235,7 +304,6 @@ const ProductForm = ({ product, categories, collections, onClose, onSaved }) => 
 const ProduitsPage = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [collections, setCollections] = useState([]);
   const [editing, setEditing] = useState(undefined); // undefined = fermé, null = création, obj = édition
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -247,7 +315,6 @@ const ProduitsPage = () => {
   useEffect(() => {
     load();
     apiClient.get('/categories/').then((r) => setCategories(r.data.results ?? r.data));
-    apiClient.get('/collections/').then((r) => setCollections(r.data.results ?? r.data));
   }, [load]);
 
   const handleDelete = (product) => {
@@ -312,7 +379,6 @@ const ProduitsPage = () => {
         <ProductForm
           product={editing}
           categories={categories}
-          collections={collections}
           onClose={() => { setEditing(undefined); load(); }}
           onSaved={handleSaved}
         />

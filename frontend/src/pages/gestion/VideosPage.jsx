@@ -4,10 +4,13 @@ import apiClient from '../../api/client';
 import { COLORS, RADIUS, FONT_BODY } from '../../theme';
 import { PageHeader, HelpBox, GestionButton, GestionInput, Field, Badge, GestionTable, Td, EmptyState, ConfirmDialog } from './ui';
 
-const VideoForm = ({ video, onClose, onSaved }) => {
+const VideoForm = ({ video, produits, onClose, onSaved }) => {
   const [file, setFile] = useState(null);
+  const [poster, setPoster] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(video?.video ?? null);
-  const [form, setForm] = useState(video ? { title: video.title, order: video.order, is_active: video.is_active } : { title: '', order: 0, is_active: true });
+  const [form, setForm] = useState(video
+    ? { title: video.title, order: video.order, is_active: video.is_active, product: video.product ?? '' }
+    : { title: '', order: 0, is_active: true, product: '' });
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -28,6 +31,10 @@ const VideoForm = ({ video, onClose, onSaved }) => {
       fd.append('order', form.order);
       fd.append('is_active', form.is_active);
       if (file) fd.append('video', file);
+      if (poster) fd.append('poster', poster);
+      // Chaîne vide = « aucune pièce » : le champ est facultatif côté
+      // modèle, il faut donc envoyer un vide explicite pour le détacher.
+      fd.append('product', form.product || '');
       const res = video
         ? await apiClient.patch(`/gestion/videos/${video.id}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
         : await apiClient.post('/gestion/videos/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -60,6 +67,32 @@ const VideoForm = ({ video, onClose, onSaved }) => {
             </div>
           )}
 
+          <Field label="Affiche (optionnel)">
+            <input type="file" accept="image/*" onChange={(e) => setPoster(e.target.files?.[0] ?? null)} style={{ fontFamily: FONT_BODY, fontSize: '1.2rem' }} />
+            <p style={{ fontFamily: FONT_BODY, fontSize: '1.15rem', color: COLORS.mutedOnLight, marginTop: '0.6rem' }}>
+              Image fixe montrée avant que la vidéo ne démarre. Sans elle, la tuile reste vide le temps du chargement.
+            </p>
+            {video?.poster && !poster && (
+              <img src={video.poster} alt="" style={{ width: '10rem', aspectRatio: '3/4', objectFit: 'cover', borderRadius: RADIUS, marginTop: '1rem', display: 'block' }} />
+            )}
+          </Field>
+
+          <Field label="Pièce présentée (optionnel)">
+            <select
+              value={form.product}
+              onChange={(e) => set('product', e.target.value)}
+              style={{ width: '100%', padding: '1.1rem 1.4rem', fontFamily: FONT_BODY, fontSize: '1.3rem', border: `1px solid ${COLORS.line}`, borderRadius: RADIUS, background: '#fff', color: COLORS.ink }}
+            >
+              <option value="">Aucune</option>
+              {produits.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <p style={{ fontFamily: FONT_BODY, fontSize: '1.15rem', color: COLORS.mutedOnLight, marginTop: '0.6rem' }}>
+              Fait apparaître une carte cliquable — photo, nom, prix — au bas de la vidéo sur la page d’accueil.
+            </p>
+          </Field>
+
           <Field label="Repère interne (optionnel, non affiché sur le site)">
             <GestionInput value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Ex. Défilé Korité — mars 2026" />
           </Field>
@@ -79,6 +112,7 @@ const VideoForm = ({ video, onClose, onSaved }) => {
 
 const VideosPage = () => {
   const [videos, setVideos] = useState([]);
+  const [produits, setProduits] = useState([]);
   const [editing, setEditing] = useState(undefined);
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -88,6 +122,14 @@ const VideosPage = () => {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Le sélecteur de pièce a besoin du catalogue. Chargé une seule fois
+  // pour la page, pas à chaque ouverture du panneau.
+  useEffect(() => {
+    apiClient.get('/gestion/products/?page_size=500')
+      .then((r) => setProduits(r.data.results ?? r.data))
+      .catch(() => {});
+  }, []);
 
   const handleDelete = (video) => {
     setConfirmDelete({
@@ -145,7 +187,7 @@ const VideosPage = () => {
 
       {confirmDelete && <ConfirmDialog {...confirmDelete} onCancel={() => setConfirmDelete(null)} />}
       {editing !== undefined && (
-        <VideoForm video={editing} onClose={() => { setEditing(undefined); load(); }} onSaved={(saved) => { setEditing(saved); load(); }} />
+        <VideoForm produits={produits} video={editing} onClose={() => { setEditing(undefined); load(); }} onSaved={(saved) => { setEditing(saved); load(); }} />
       )}
     </>
   );

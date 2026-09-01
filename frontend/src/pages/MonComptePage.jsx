@@ -1,830 +1,669 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import SEOHead from '../components/SEOHead';
-import apiClient from '../api/client';
-import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
-const C = {
-  bg:        '#FAF6EE',
-  panel:     '#F0E8D8',
-  border:    '#E0D0B8',
-  borderMid: '#CEC0A0',
-  gold:      '#B8960A',
-  terra:     '#C2662D',
-  cream:     '#1A1208',
-  muted:     '#7A6A50',
-};
+/**
+ * Mon compte — connexion, profil, mot de passe.
+ * ===========================================================================
+ * Réécriture complète. La page précédente avait sa propre palette écrite en
+ * hexadécimal (`C.bg`, `C.gold`, `C.panel`…), ses propres champs dessinés à la
+ * main, ses propres onglets, et 832 lignes de styles en ligne. Elle ne lisait
+ * aucun token du système : posée à côté de la page d'accueil ou d'une fiche
+ * produit, elle avait l'air d'un autre site.
+ *
+ * Ici, rien n'est dessiné en propre. La page emprunte ce qui existe :
+ *
+ *   .catalogue-page / -entete / -titre   le cadre des pages de catalogue,
+ *                                        déjà partagé par /boutique, les
+ *                                        rayons et les favoris
+ *   .filet-titre                         le filet doré sous le titre
+ *   .eyebrow                             les intitulés de bloc
+ *   .field                               les champs de saisie
+ *   .btn --accent / --ghost / --auto     les actions
+ *
+ * Le seul CSS local est celui de la mise en page — une colonne, des blocs
+ * séparés d'un filet — et de l'avatar. Tout le reste vient des tokens.
+ *
+ * ── Ce qui a été retiré ─────────────────────────────────────────────────────
+ * ⚠ L'onglet « Mes commandes » n'est plus ici. Il listait les commandes du
+ * client depuis /orders/mes-commandes/, avec leur statut, leur détail
+ * dépliable et leurs six couleurs d'état. Il doit devenir une page à lui.
+ *
+ * ⚠ Et RIEN ne le remplace ici : le bloc qui annonçait la page à venir a été
+ * retiré à son tour. Un client connecté n'a donc, depuis cette page, aucun
+ * moyen de retrouver ses commandes — ni liste, ni renvoi vers le suivi public
+ * (/commande/suivi), qui existe toujours mais réclame un numéro de commande.
+ *
+ * ── Ce qui a été fusionné ───────────────────────────────────────────────────
+ * L'onglet « Mes adresses » ne portait qu'un seul champ, `default_address`. Il
+ * a rejoint le bloc Profil : un onglet pour une ligne de texte demandait un
+ * clic pour rien.
+ */
 
-
-const STATUS = {
-  pending:    { label: 'En attente',      color: '#E8A000' },
-  confirmed:  { label: 'Confirmée',       color: '#3B82F6' },
-  processing: { label: 'En préparation',  color: '#8B5CF6' },
-  shipped:    { label: 'Expédiée',        color: '#06B6D4' },
-  delivered:  { label: 'Livrée',          color: '#22C55E' },
-  cancelled:  { label: 'Annulée',         color: '#EF4444' },
-};
-
-/* ── Shared input style ── */
-const mkInp = (focused, field) => ({
-  width: '100%',
-  padding: '1.3rem 0',
-  background: 'transparent',
-  border: 'none',
-  borderBottom: `1px solid ${focused === field ? C.gold : C.borderMid}`,
-  color: C.cream,
-  fontSize: '1.4rem',
-  fontFamily: 'Inter, sans-serif',
-  outline: 'none',
-  boxSizing: 'border-box',
-  transition: 'border-color 0.25s',
-  borderRadius: 0,
-});
-
-const FieldLabel = ({ children }) => (
-  <label style={{
-    display: 'block',
-    fontSize: '1rem', fontFamily: 'Inter, sans-serif',
-    textTransform: 'uppercase', letterSpacing: '0.2em',
-    color: C.muted, marginBottom: '0.6rem',
-  }}>
-    {children}
-  </label>
-);
-
-/* ══════════════════════════════════════
-   AUTH FORM
-══════════════════════════════════════ */
-const AuthForm = () => {
-  const [tab, setTab] = useState('login');
-  const [loading, setLoading] = useState(false);
-  const [focused, setFocused] = useState(null);
-  const tabRefs = useRef({});
-  const [underline, setUnderline] = useState({ left: 0, width: 0 });
-
+/* ══════════════════════════════════════════════════════════════════════════
+   CONNEXION / INSCRIPTION
+   ══════════════════════════════════════════════════════════════════════════ */
+const FormulaireAuth = () => {
+  const [mode, setMode] = useState('connexion');
+  const [chargement, setChargement] = useState(false);
   const { login, register } = useAuthStore();
-  const [loginData, setLoginData] = useState({ phone: '', password: '' });
-  const [registerData, setRegisterData] = useState({ first_name: '', last_name: '', phone: '', password: '' });
 
-  useEffect(() => {
-    const el = tabRefs.current[tab];
-    if (el) setUnderline({ left: el.offsetLeft, width: el.offsetWidth });
-  }, [tab]);
+  const [connexion, setConnexion] = useState({ phone: '', password: '' });
+  const [inscription, setInscription] = useState({
+    first_name: '', last_name: '', phone: '', password: '',
+  });
 
-  const handleLogin = async (e) => {
+  const seConnecter = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setChargement(true);
     try {
-      await login(loginData.phone, loginData.password);
-      toast.success('Connexion réussie !');
+      await login(connexion.phone, connexion.password);
+      toast.success('Connexion réussie.');
     } catch {
       toast.error('Numéro de téléphone ou mot de passe incorrect.');
-    } finally { setLoading(false); }
+    } finally { setChargement(false); }
   };
 
-  const handleRegister = async (e) => {
+  const sInscrire = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setChargement(true);
     try {
-      await register(registerData);
-      toast.success('Compte créé avec succès !');
+      await register(inscription);
+      toast.success('Compte créé.');
     } catch (err) {
       toast.error(err.response?.data?.phone?.[0] || 'Erreur lors de la création du compte.');
-    } finally { setLoading(false); }
+    } finally { setChargement(false); }
   };
 
-  const inp = (f) => mkInp(focused, f);
+  const enConnexion = mode === 'connexion';
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10rem 2rem' }}>
-
-      {/* Gold ornament */}
-      <div className="auth-fade-1" style={{ textAlign: 'center', marginBottom: '5rem' }}>
-        <span style={{ fontSize: '1.4rem', color: C.gold, letterSpacing: '0.5em', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>✦ ✦ ✦</span>
-        <div style={{ marginTop: '1.6rem' }}>
-          <Link to="/" style={{ textDecoration: 'none' }}>
-            <span style={{
-              fontFamily: 'Syne, sans-serif',
-              fontSize: '2.8rem',
-              letterSpacing: '0.04em',
-              background: 'linear-gradient(90deg, #B8960A, #F0D060, #B8960A)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>
-              Golden Pousso
-            </span>
-          </Link>
-        </div>
-        <p style={{ marginTop: '0.8rem', fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', color: C.muted, letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-          Atelier · Pikine, Dakar
-        </p>
+    <div className="compte-colonne compte-colonne--etroite">
+      {/* Deux boutons et non des onglets soulignés : le système a déjà des
+          actions en pastille, il n'avait pas besoin d'un sixième motif. */}
+      <div className="compte-bascule" role="tablist">
+        {[['connexion', 'Se connecter'], ['inscription', 'Créer un compte']].map(([cle, label]) => (
+          <button
+            key={cle}
+            type="button"
+            role="tab"
+            aria-selected={mode === cle}
+            onClick={() => setMode(cle)}
+            className={`btn btn--auto ${mode === cle ? 'btn--accent' : 'btn--ghost'}`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* Card */}
-      <div className="auth-fade-2" style={{
-        width: '100%', maxWidth: '50rem',
-        background: C.panel,
-        border: `1px solid ${C.border}`,
-        padding: '5rem',
-        position: 'relative',
-      }}>
-        {/* Gold top bar */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(to right, ${C.gold}, ${C.terra}, transparent)` }} />
-
-        {/* Tabs */}
-        <div style={{ position: 'relative', marginBottom: '5rem', borderBottom: `1px solid ${C.border}` }}>
-          <div style={{ display: 'flex' }}>
-            {[['login', 'Se connecter'], ['register', 'Créer un compte']].map(([key, label]) => (
-              <button
-                key={key}
-                ref={(el) => tabRefs.current[key] = el}
-                onClick={() => setTab(key)}
-                style={{
-                  flex: 1, padding: '0 0 1.8rem',
-                  background: 'none', border: 'none',
-                  fontSize: '1.3rem', fontFamily: 'Inter, sans-serif',
-                  fontWeight: tab === key ? 600 : 400,
-                  letterSpacing: '0.08em', textTransform: 'uppercase',
-                  color: tab === key ? C.cream : C.muted,
-                  cursor: 'pointer', transition: 'color 0.25s',
-                }}
-              >{label}</button>
-            ))}
+      {enConnexion ? (
+        <form onSubmit={seConnecter} className="compte-champs">
+          <label className="compte-champ">
+            <span className="eyebrow">Téléphone</span>
+            <input
+              className="field" type="tel" autoComplete="tel" required
+              value={connexion.phone}
+              onChange={(e) => setConnexion((d) => ({ ...d, phone: e.target.value }))}
+            />
+          </label>
+          <label className="compte-champ">
+            <span className="eyebrow">Mot de passe</span>
+            <input
+              className="field" type="password" autoComplete="current-password" required
+              value={connexion.password}
+              onChange={(e) => setConnexion((d) => ({ ...d, password: e.target.value }))}
+            />
+          </label>
+          <button type="submit" className="btn btn--accent" disabled={chargement}>
+            {chargement ? 'Connexion…' : 'Se connecter'}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={sInscrire} className="compte-champs">
+          <div className="compte-duo">
+            <label className="compte-champ">
+              <span className="eyebrow">Prénom</span>
+              <input
+                className="field" required autoComplete="given-name"
+                value={inscription.first_name}
+                onChange={(e) => setInscription((d) => ({ ...d, first_name: e.target.value }))}
+              />
+            </label>
+            <label className="compte-champ">
+              <span className="eyebrow">Nom</span>
+              <input
+                className="field" required autoComplete="family-name"
+                value={inscription.last_name}
+                onChange={(e) => setInscription((d) => ({ ...d, last_name: e.target.value }))}
+              />
+            </label>
           </div>
-          {/* Sliding underline */}
-          <div style={{
-            position: 'absolute', bottom: -1, height: '2px',
-            background: C.gold,
-            left: underline.left, width: underline.width,
-            transition: 'left 0.3s ease, width 0.3s ease',
-          }} />
-        </div>
-
-        {/* Login form */}
-        {tab === 'login' && (
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '3.5rem' }}>
-            <div>
-              <FieldLabel>Numéro de téléphone</FieldLabel>
-              <input
-                type="tel" value={loginData.phone}
-                onChange={(e) => setLoginData({ ...loginData, phone: e.target.value })}
-                placeholder="+221 77 000 00 00"
-                style={inp('login-phone')}
-                onFocus={() => setFocused('login-phone')}
-                onBlur={() => setFocused(null)}
-                required
-              />
-            </div>
-            <div>
-              <FieldLabel>Mot de passe</FieldLabel>
-              <input
-                type="password" value={loginData.password}
-                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                placeholder="••••••••"
-                style={inp('login-pw')}
-                onFocus={() => setFocused('login-pw')}
-                onBlur={() => setFocused(null)}
-                required
-              />
-            </div>
-            <button
-              type="submit" disabled={loading}
-              style={{
-                marginTop: '1rem',
-                padding: '1.7rem',
-                background: loading ? C.borderMid : C.gold,
-                color: loading ? C.muted : '#FAF6EE',
-                border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-                fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
-                fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
-                transition: 'background 0.25s, color 0.25s',
-              }}
-              onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; } }}
-              onMouseLeave={(e) => { if (!loading) { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#FAF6EE'; } }}
-            >
-              {loading ? 'Connexion…' : 'Se connecter →'}
-            </button>
-            <p style={{ textAlign: 'center', fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: C.muted }}>
-              Pas encore de compte ?{' '}
-              <button type="button" onClick={() => setTab('register')}
-                style={{ background: 'none', border: 'none', color: C.gold, cursor: 'pointer', fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', borderBottom: `1px solid ${C.gold}`, paddingBottom: '0.1rem' }}>
-                Créer un compte
-              </button>
-            </p>
-          </form>
-        )}
-
-        {/* Register form */}
-        {tab === 'register' && (
-          <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '3.5rem' }}>
-            <div className="auth-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 3rem' }}>
-              <div>
-                <FieldLabel>Prénom</FieldLabel>
-                <input
-                  value={registerData.first_name}
-                  onChange={(e) => setRegisterData({ ...registerData, first_name: e.target.value })}
-                  placeholder="Votre prénom"
-                  style={inp('reg-fn')}
-                  onFocus={() => setFocused('reg-fn')}
-                  onBlur={() => setFocused(null)}
-                  required
-                />
-              </div>
-              <div>
-                <FieldLabel>Nom</FieldLabel>
-                <input
-                  value={registerData.last_name}
-                  onChange={(e) => setRegisterData({ ...registerData, last_name: e.target.value })}
-                  placeholder="Votre nom"
-                  style={inp('reg-ln')}
-                  onFocus={() => setFocused('reg-ln')}
-                  onBlur={() => setFocused(null)}
-                />
-              </div>
-            </div>
-            <div>
-              <FieldLabel>Numéro de téléphone</FieldLabel>
-              <input
-                type="tel" value={registerData.phone}
-                onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
-                placeholder="+221 77 000 00 00"
-                style={inp('reg-phone')}
-                onFocus={() => setFocused('reg-phone')}
-                onBlur={() => setFocused(null)}
-                required
-              />
-            </div>
-            <div>
-              <FieldLabel>Mot de passe</FieldLabel>
-              <input
-                type="password" value={registerData.password}
-                onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                placeholder="Minimum 6 caractères"
-                style={inp('reg-pw')}
-                onFocus={() => setFocused('reg-pw')}
-                onBlur={() => setFocused(null)}
-                required
-              />
-            </div>
-            <button
-              type="submit" disabled={loading}
-              style={{
-                marginTop: '1rem', padding: '1.7rem',
-                background: loading ? C.borderMid : C.gold,
-                color: loading ? C.muted : '#FAF6EE',
-                border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-                fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
-                fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
-                transition: 'background 0.25s, color 0.25s',
-              }}
-              onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; } }}
-              onMouseLeave={(e) => { if (!loading) { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#FAF6EE'; } }}
-            >
-              {loading ? 'Création…' : 'Créer mon compte →'}
-            </button>
-          </form>
-        )}
-      </div>
-
-      {/* Signature */}
-      <p className="auth-fade-3" style={{ marginTop: '4rem', fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', color: C.muted, letterSpacing: '0.2em', textTransform: 'uppercase', textAlign: 'center' }}>
-        Atelier · Pikine, Dakar
-      </p>
-
-      <style>{`
-        @keyframes auth-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
-        .auth-fade-1 { animation: auth-up 0.6s ease both; }
-        .auth-fade-2 { animation: auth-up 0.7s ease 0.1s both; }
-        .auth-fade-3 { animation: auth-up 0.6s ease 0.25s both; }
-        @media (max-width: 560px) {
-          .auth-row { grid-template-columns: 1fr !important; gap: 3.5rem 0 !important; }
-        }
-        input::placeholder { color: #9A8A70; font-family: Inter, sans-serif; }
-        input { color-scheme: light; }
-      `}</style>
+          <label className="compte-champ">
+            <span className="eyebrow">Téléphone</span>
+            <input
+              className="field" type="tel" required autoComplete="tel"
+              value={inscription.phone}
+              onChange={(e) => setInscription((d) => ({ ...d, phone: e.target.value }))}
+            />
+          </label>
+          <label className="compte-champ">
+            <span className="eyebrow">Mot de passe</span>
+            <input
+              className="field" type="password" required autoComplete="new-password"
+              value={inscription.password}
+              onChange={(e) => setInscription((d) => ({ ...d, password: e.target.value }))}
+            />
+          </label>
+          <button type="submit" className="btn btn--accent" disabled={chargement}>
+            {chargement ? 'Création…' : 'Créer mon compte'}
+          </button>
+        </form>
+      )}
     </div>
   );
 };
 
-/* ══════════════════════════════════════
-   DASHBOARD
-══════════════════════════════════════ */
-const Dashboard = () => {
+/* ══════════════════════════════════════════════════════════════════════════
+   LE COMPTE
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Les lignes modifiables du profil, dans l'ordre d'affichage. Le mot de passe
+   et la photo n'y sont pas : ils ne se modifient pas de la même façon — l'un
+   demande trois champs et un autre appel d'API, l'autre ouvre un sélecteur de
+   fichier. */
+const CHAMPS = [
+  { cle: 'phone',           label: 'Téléphone',            autoComplete: 'tel', type: 'tel' },
+  { cle: 'default_address', label: 'Adresse de livraison', autoComplete: 'street-address' },
+];
+
+/* Le crayon. Un bouton et non une icône décorative : il ouvre l'édition d'une
+   ligne, il doit donc être atteignable au clavier et porter un nom — « ✎ »
+   seul ne dit rien à un lecteur d'écran. */
+const BoutonCrayon = ({ quoi, onClick }) => (
+  <button
+    type="button"
+    className="compte-crayon"
+    onClick={onClick}
+    aria-label={`Modifier ${quoi}`}
+    title={`Modifier ${quoi}`}
+  >
+    <i className="bx bx-pencil" aria-hidden="true" />
+  </button>
+);
+
+const Compte = () => {
   const { user, logout, updateProfile, changePassword } = useAuthStore();
-  const currency = useSettingsStore((s) => s.currency);
-  const navigate = useNavigate();
-  const [tab, setTab] = useState('profil');
-  const [orders, setOrders] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
-  const [profileData, setProfileData] = useState({
+
+  /* Une seule ligne s'ouvre à la fois : deux formulaires ouverts côte à côte
+     donnent deux boutons « Enregistrer » et on ne sait plus lequel enregistre
+     quoi. `null` = tout est en lecture. */
+  const [edite, setEdite] = useState(null);
+  const [occupe, setOccupe] = useState(false);
+
+  const valeursProfil = () => ({
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
     phone: user?.phone || '',
     default_address: user?.default_address || '',
   });
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [expandedOrder, setExpandedOrder] = useState(null);
-  const [focused, setFocused] = useState(null);
-  const [avatarPreview, setAvatarPreview] = useState(user?.avatar_url || null);
-  const [avatarFile, setAvatarFile] = useState(null);
-  const avatarInputRef = useRef(null);
+  const [profil, setProfil] = useState(valeursProfil);
 
-  // Sécurité
-  const [pwData, setPwData] = useState({ current_password: '', new_password: '', confirm_password: '' });
-  const [savingPw, setSavingPw] = useState(false);
+  const [apercuAvatar, setApercuAvatar] = useState(user?.avatar_url || null);
+  const [fichierAvatar, setFichierAvatar] = useState(null);
+  const champFichier = useRef(null);
 
-  useEffect(() => {
-    if (tab === 'commandes') {
-      setLoadingOrders(true);
-      apiClient.get('/orders/mes-commandes/')
-        .then((r) => setOrders(r.data))
-        .catch(() => {})
-        .finally(() => setLoadingOrders(false));
-    }
-  }, [tab]);
+  const [motDePasse, setMotDePasse] = useState({
+    current_password: '', new_password: '', confirm_password: '',
+  });
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
+  /* Annuler doit rendre la valeur d'AVANT, pas celle qu'on vient de taper :
+     on repart de `user`, la seule source qui n'a pas été touchée. */
+  const annuler = () => {
+    setProfil(valeursProfil());
+    setMotDePasse({ current_password: '', new_password: '', confirm_password: '' });
+    setFichierAvatar(null);
+    setApercuAvatar(user?.avatar_url || null);
+    setEdite(null);
   };
 
-  const handleSaveProfile = async (e) => {
+  /* Tous les champs partent à chaque enregistrement, même ceux qu'on n'a pas
+     ouverts : l'API attend le profil entier, et n'envoyer que la ligne éditée
+     viderait les autres. */
+  const enregistrerProfil = async (e) => {
     e.preventDefault();
-    setSavingProfile(true);
+    setOccupe(true);
     try {
       const fd = new FormData();
-      Object.entries(profileData).forEach(([k, v]) => fd.append(k, v));
-      if (avatarFile) fd.append('avatar', avatarFile);
+      Object.entries(profil).forEach(([k, v]) => fd.append(k, v));
+      if (fichierAvatar) fd.append('avatar', fichierAvatar);
       await updateProfile(fd);
-      setAvatarFile(null);
-      toast.success('Profil mis à jour !');
+      setFichierAvatar(null);
+      setEdite(null);
+      toast.success('Profil mis à jour.');
     } catch {
       toast.error('Erreur lors de la mise à jour.');
-    } finally { setSavingProfile(false); }
+    } finally { setOccupe(false); }
   };
 
-  const handleChangePassword = async (e) => {
+  const enregistrerMotDePasse = async (e) => {
     e.preventDefault();
-    if (pwData.new_password !== pwData.confirm_password) {
-      toast.error('Les mots de passe ne correspondent pas.'); return;
+    if (motDePasse.new_password !== motDePasse.confirm_password) {
+      toast.error('Les deux mots de passe ne correspondent pas.');
+      return;
     }
-    setSavingPw(true);
+    setOccupe(true);
     try {
-      await changePassword(pwData.current_password, pwData.new_password);
-      toast.success('Mot de passe modifié !');
-      setPwData({ current_password: '', new_password: '', confirm_password: '' });
+      await changePassword(motDePasse.current_password, motDePasse.new_password);
+      setMotDePasse({ current_password: '', new_password: '', confirm_password: '' });
+      setEdite(null);
+      toast.success('Mot de passe modifié.');
     } catch (err) {
-      const msg = err.response?.data?.current_password?.[0] || err.response?.data?.detail || 'Erreur.';
-      toast.error(msg);
-    } finally { setSavingPw(false); }
+      toast.error(err.response?.data?.current_password?.[0]
+        || err.response?.data?.detail
+        || 'Erreur lors du changement de mot de passe.');
+    } finally { setOccupe(false); }
   };
 
-  const inp = (f) => mkInp(focused, f);
+  const choisirAvatar = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFichierAvatar(f);
+    setApercuAvatar(URL.createObjectURL(f));
+    setEdite('avatar');
+  };
 
-  const initials = [user?.first_name, user?.last_name]
-    .filter(Boolean).map((s) => s[0].toUpperCase()).join('') || (user?.email?.[0]?.toUpperCase() ?? '?');
+  const initiales = [user?.first_name, user?.last_name]
+    .filter(Boolean).map((s) => s[0].toUpperCase()).join('') || '?';
 
-  const NAV_TABS = [
-    { key: 'profil',    label: 'Mon Profil' },
-    { key: 'commandes', label: 'Mes Commandes' },
-    { key: 'adresses',  label: 'Mes Adresses' },
-    { key: 'securite',  label: 'Sécurité' },
-  ];
+  /* Une fonction qui rend du JSX, PAS un composant defini dans le rendu :
+     un composant declare ici change d'identite a chaque rendu, React le
+     demonte et le remonte, et le champ voisin perdrait le focus a chaque
+     frappe. */
+  const actions = (valider) => (
+    <div className="compte-actions">
+      <button type="button" className="btn btn--accent btn--auto" disabled={occupe} onClick={valider}>
+        {occupe ? 'Enregistrement…' : 'Enregistrer'}
+      </button>
+      <button type="button" className="compte-annuler" onClick={annuler}>Annuler</button>
+    </div>
+  );
+
+  /* Entree valide, Echap annule : sans formulaire, il faut les cabler a la
+     main. C'est ce qu'un visiteur essaie d'abord dans un champ ouvert. */
+  const auClavier = (valider) => (ev) => {
+    if (ev.key === 'Enter') { ev.preventDefault(); valider(ev); }
+    if (ev.key === 'Escape') { ev.preventDefault(); annuler(); }
+  };
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', color: C.cream }}>
+    /* `.card` donne le filet et le rayon --r-3 ; `.on-dark` bascule d'un coup
+       les tokens de texte, de filet et de surface pour un fond sombre — sans
+       elle, il aurait fallu repasser une à une la couleur des libellés, des
+       valeurs, des séparateurs et des champs. `.compte-carte` ajoute le
+       remplissage et l'indigo exact. */
+    <div className="compte-colonne card compte-carte on-dark">
 
-      {/* ── Page header ── */}
-      <div style={{ padding: '0 4rem' }}>
-        <div style={{ maxWidth: '140rem', margin: '0 auto', paddingTop: '12rem', paddingBottom: '4rem' }} />
+      {/* ── L'avatar, et par où sortir ──
+          Le nom et le téléphone ont été retirés : ils sont écrits juste en
+          dessous, dans les lignes « Prénom », « Nom » et « Téléphone ». Les
+          répéter ici les affichait deux fois à trois centimètres d'écart. */}
+      <div className="compte-tete">
+        <span className="compte-avatar" aria-hidden="true">
+          {apercuAvatar ? <img src={apercuAvatar} alt="" /> : initiales}
+        </span>
+        <BoutonCrayon quoi="la photo" onClick={() => champFichier.current?.click()} />
+        <input ref={champFichier} type="file" accept="image/*" onChange={choisirAvatar} hidden />
 
-        {/* Tab nav */}
-        <div className="db-tabs" style={{ maxWidth: '140rem', margin: '0 auto', display: 'flex', gap: '0', justifyContent: 'center' }}>
-          {NAV_TABS.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              style={{
-                padding: '1.5rem 3rem 1.5rem 0',
-                background: 'none', border: 'none',
-                borderBottom: tab === key ? `2px solid ${C.gold}` : '2px solid transparent',
-                color: tab === key ? C.cream : C.muted,
-                fontSize: '1.3rem', fontFamily: 'Inter, sans-serif',
-                fontWeight: tab === key ? 600 : 400,
-                letterSpacing: '0.08em', textTransform: 'uppercase',
-                cursor: 'pointer', transition: 'color 0.25s, border-color 0.25s',
-                marginBottom: '-1px',
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <Link to="/commandes" className="btn btn--ghost btn--auto compte-sortie">
+          Mes commandes
+        </Link>
+        <button type="button" className="btn btn--ghost btn--auto" onClick={logout}>
+          Se déconnecter
+        </button>
       </div>
 
-      {/* ── Tab content ── */}
-      <div style={{ padding: '5rem 4rem 12rem', maxWidth: '90rem', margin: '0 auto' }}>
+      {/* La photo se valide ici, sous l'avatar qu'elle change — et non en pied
+          de liste, où l'on ne verrait pas ce qu'on enregistre. */}
+      {edite === 'avatar' && (
+        <div className="compte-actions compte-actions--photo">
+          <button type="button" className="btn btn--accent btn--auto" disabled={occupe}
+            onClick={enregistrerProfil}>
+            {occupe ? 'Enregistrement…' : 'Enregistrer la photo'}
+          </button>
+          <button type="button" className="compte-annuler" onClick={annuler}>Annuler</button>
+        </div>
+      )}
 
-        {/* ── Profil ── */}
-        {tab === 'profil' && (
-          <div className="db-a2" style={{ maxWidth: '72rem' }}>
-            <div style={{ marginBottom: '5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.6rem', marginBottom: '1.6rem' }}>
-                <div style={{ width: '4rem', height: '1px', background: C.gold }} />
-                <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>
-                  Profil
-                </p>
-              </div>
-              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '3.2rem', color: C.cream, lineHeight: 1.1 }}>
-                Mes informations
-              </h2>
-            </div>
+      {/* Plus de titre de bloc : il n'y a plus qu'un bloc, et « Mon compte »
+          au-dessus de « Mes informations » disait deux fois la même chose.
+          Les lignes remontent donc contre l'identité. */}
+      {/* Un <div> et non un <section>. La règle globale donne à toute section
+          64 à 80 px de padding en haut — le rythme vertical de la page — et
+          c'est ce qui creusait l'écart sous l'avatar. Un bloc à l'intérieur
+          d'une carte n'a pas à porter le rythme de la PAGE.
 
-            <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
+          Et depuis le retrait de son titre, ce n'était plus une section au
+          sens du balisage : une section sans en-tête n'apporte rien à la
+          structure du document. */}
+      <div className="compte-bloc">
+        <dl className="compte-lignes">
 
-              {/* Avatar upload */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '3rem', paddingBottom: '4rem', borderBottom: `1px solid ${C.border}` }}>
-                <div style={{
-                  width: '9rem', height: '9rem', borderRadius: '50%',
-                  background: 'rgba(184,150,10,0.07)',
-                  border: `1px solid rgba(184,150,10,0.2)`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  overflow: 'hidden', flexShrink: 0,
-                }}>
-                  {avatarPreview
-                    ? <img src={avatarPreview} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.8rem', color: C.gold }}>{initials}</span>
-                  }
+          {/* Prénom et nom tiennent une seule ligne : ce sont les deux
+              moitiés d'une même chose, et deux lignes pour deux mots courts
+              étiraient la liste sans rien apprendre de plus. */}
+          <div className="compte-ligne">
+            <dt className="eyebrow">Prénom et nom</dt>
+
+            {edite === 'identite' ? (
+              <dd className="compte-edition">
+                <div className="compte-duo">
+                  <input
+                    className="field" autoComplete="given-name" autoFocus
+                    placeholder="Prénom"
+                    value={profil.first_name}
+                    onChange={(ev) => setProfil((d) => ({ ...d, first_name: ev.target.value }))}
+                    onKeyDown={auClavier(enregistrerProfil)}
+                  />
+                  <input
+                    className="field" autoComplete="family-name"
+                    placeholder="Nom"
+                    value={profil.last_name}
+                    onChange={(ev) => setProfil((d) => ({ ...d, last_name: ev.target.value }))}
+                    onKeyDown={auClavier(enregistrerProfil)}
+                  />
                 </div>
-                <div>
-                  <p style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: C.cream, marginBottom: '0.8rem' }}>
-                    Photo de profil
-                  </p>
-                  <p style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: C.muted, marginBottom: '1.6rem' }}>
-                    JPG ou PNG · 5 Mo max
-                  </p>
-                  <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
-                  <button
-                    type="button"
-                    onClick={() => avatarInputRef.current?.click()}
-                    style={{
-                      padding: '0.9rem 2.4rem',
-                      background: 'none', border: `1px solid ${C.borderMid}`,
-                      color: C.muted, cursor: 'pointer',
-                      fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
-                      textTransform: 'uppercase', letterSpacing: '0.15em',
-                      transition: 'border-color 0.2s, color 0.2s',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.borderMid; e.currentTarget.style.color = C.muted; }}
-                  >
-                    {avatarFile ? '✓ Photo sélectionnée' : 'Changer la photo'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="db-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 5rem' }}>
-                <div>
-                  <FieldLabel>Prénom</FieldLabel>
-                  <input value={profileData.first_name}
-                    onChange={(e) => setProfileData({ ...profileData, first_name: e.target.value })}
-                    style={inp('pf-fn')} onFocus={() => setFocused('pf-fn')} onBlur={() => setFocused(null)} />
-                </div>
-                <div>
-                  <FieldLabel>Nom</FieldLabel>
-                  <input value={profileData.last_name}
-                    onChange={(e) => setProfileData({ ...profileData, last_name: e.target.value })}
-                    style={inp('pf-ln')} onFocus={() => setFocused('pf-ln')} onBlur={() => setFocused(null)} />
-                </div>
-              </div>
-
-              <div className="db-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 5rem' }}>
-                <div>
-                  <FieldLabel>Email</FieldLabel>
-                  <input value={user?.email || ''} disabled
-                    style={{ ...inp('pf-email'), color: C.muted, cursor: 'not-allowed' }} />
-                </div>
-                <div>
-                  <FieldLabel>Téléphone</FieldLabel>
-                  <input value={profileData.phone}
-                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                    placeholder="+221 77 000 00 00"
-                    style={inp('pf-phone')} onFocus={() => setFocused('pf-phone')} onBlur={() => setFocused(null)} />
-                </div>
-              </div>
-
-              <div style={{ paddingTop: '1rem' }}>
-                <button
-                  type="submit" disabled={savingProfile}
-                  style={{
-                    padding: '1.6rem 5rem',
-                    background: savingProfile ? C.borderMid : C.gold,
-                    color: savingProfile ? C.muted : '#FAF6EE',
-                    border: 'none', cursor: savingProfile ? 'not-allowed' : 'pointer',
-                    fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
-                    fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
-                    transition: 'background 0.25s, color 0.25s',
-                  }}
-                  onMouseEnter={(e) => { if (!savingProfile) { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; } }}
-                  onMouseLeave={(e) => { if (!savingProfile) { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#FAF6EE'; } }}
-                >
-                  {savingProfile ? 'Enregistrement…' : 'Sauvegarder'}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* ── Commandes ── */}
-        {tab === 'commandes' && (
-          <div className="db-a2">
-            <div style={{ marginBottom: '5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.6rem', marginBottom: '1.6rem' }}>
-                <div style={{ width: '4rem', height: '1px', background: C.gold }} />
-                <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>
-                  Historique
-                </p>
-              </div>
-              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '3.2rem', color: C.cream, lineHeight: 1.1 }}>
-                Mes commandes
-              </h2>
-            </div>
-
-            {loadingOrders ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {[1,2,3].map((i) => (
-                  <div key={i} style={{ height: '7rem', background: C.panel, border: `1px solid ${C.border}`, animation: 'db-shimmer 1.6s ease-in-out infinite' }} />
-                ))}
-              </div>
-            ) : orders.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '9rem 2rem', border: `1px solid ${C.border}` }}>
-                <div style={{ marginBottom: '2.5rem' }}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(184,150,10,0.2)" strokeWidth="1" style={{ display: 'block', margin: '0 auto' }}>
-                    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
-                  </svg>
-                </div>
-                <p style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.4rem', color: C.cream, marginBottom: '1rem' }}>
-                  Aucune commande
-                </p>
-                <p style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: C.muted, marginBottom: '3.5rem' }}>
-                  Vous n&apos;avez pas encore passé de commande.
-                </p>
-                <Link
-                  to="/recherche"
-                  style={{
-                    display: 'inline-block',
-                    padding: '1.4rem 4rem',
-                    background: C.gold, color: '#FAF6EE',
-                    textDecoration: 'none',
-                    fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
-                    fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
-                    transition: 'background 0.25s, color 0.25s',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#FAF6EE'; }}
-                >
-                  Explorer la boutique
-                </Link>
-              </div>
+                {actions(enregistrerProfil)}
+              </dd>
             ) : (
-              <div style={{ border: `1px solid ${C.border}`, overflow: 'hidden' }}>
-                {/* Header row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: '0 2rem', padding: '1.2rem 2.4rem', borderBottom: `1px solid ${C.border}`, background: '#E8DCC8' }}>
-                  {['Commande', 'Date', 'Statut', 'Total', ''].map((h, i) => (
-                    <span key={i} style={{ fontSize: '1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: C.muted }}>
-                      {h}
-                    </span>
-                  ))}
-                </div>
-                {orders.map((order) => {
-                  const st = STATUS[order.status] || { label: order.status, color: C.muted };
-                  const expanded = expandedOrder === order.order_number;
-                  return (
-                    <div key={order.order_number} style={{ borderBottom: `1px solid ${C.border}` }}>
-                      {/* Order row */}
-                      <div
-                        onClick={() => setExpandedOrder(expanded ? null : order.order_number)}
-                        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: '0 2rem', padding: '2rem 2.4rem', alignItems: 'center', cursor: 'pointer', transition: 'background 0.2s' }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <span style={{ fontSize: '1.35rem', fontFamily: 'Inter, sans-serif', fontWeight: 600, color: C.cream, letterSpacing: '0.04em' }}>
-                          #{order.order_number}
-                        </span>
-                        <span style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: C.muted }}>
-                          {new Date(order.created_at).toLocaleDateString('fr-FR')}
-                        </span>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
-                          fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
-                          color: st.color, letterSpacing: '0.08em',
-                        }}>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: st.color, flexShrink: 0 }} />
-                          {st.label}
-                        </span>
-                        <span style={{ fontSize: '1.35rem', fontFamily: 'Inter, sans-serif', fontWeight: 600, color: C.gold }}>
-                          {formatPrice(order.total)}
-                        </span>
-                        <svg
-                          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.5"
-                          style={{ transition: 'transform 0.25s ease', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}
-                        >
-                          <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                      </div>
-
-                      {/* Expanded detail */}
-                      {expanded && (
-                        <div style={{ padding: '0 2.4rem 2.4rem', borderTop: `1px solid ${C.border}` }}>
-                          <div style={{ paddingTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0' }}>
-                            {order.items.map((item, i) => (
-                              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 0', borderBottom: `1px solid ${C.border}` }}>
-                                <span style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: C.cream }}>
-                                  {item.product_name}
-                                  <span style={{ color: C.muted, marginLeft: '0.6rem' }}>× {item.quantity}</span>
-                                </span>
-                                <span style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: C.gold }}>
-                                  {formatPrice(item.line_total)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                          <div style={{ marginTop: '1.8rem', display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: C.muted }}>
-                              Livraison : <span style={{ color: C.cream }}>{formatPrice(order.delivery_fee)}</span>
-                            </span>
-                            <span style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: C.muted }}>
-                              Paiement : <span style={{ color: C.cream, textTransform: 'capitalize' }}>{order.payment_method}</span>
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <>
+                <dd className="compte-valeur">
+                  {[profil.first_name, profil.last_name].filter(Boolean).join(' ')
+                    || <span className="compte-vide">Non renseigné</span>}
+                </dd>
+                <BoutonCrayon quoi="le prénom et le nom" onClick={() => setEdite('identite')} />
+              </>
             )}
           </div>
-        )}
 
-        {/* ── Sécurité ── */}
-        {tab === 'securite' && (
-          <div className="db-a2" style={{ maxWidth: '60rem' }}>
-            <div style={{ marginBottom: '5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.6rem', marginBottom: '1.6rem' }}>
-                <div style={{ width: '4rem', height: '1px', background: C.gold }} />
-                <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>
-                  Sécurité
-                </p>
-              </div>
-              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '3.2rem', color: C.cream, lineHeight: 1.1 }}>
-                Changer le mot de passe
-              </h2>
+          {/* Les champs texte */}
+          {CHAMPS.map(({ cle, label, type, autoComplete }) => (
+            <div className="compte-ligne" key={cle}>
+              <dt className="eyebrow">{label}</dt>
+
+              {edite === cle ? (
+                <dd className="compte-edition">
+                  <input
+                    className="field"
+                    type={type || 'text'}
+                    autoComplete={autoComplete}
+                    autoFocus
+                    value={profil[cle]}
+                    onChange={(ev) => setProfil((d) => ({ ...d, [cle]: ev.target.value }))}
+                    onKeyDown={auClavier(enregistrerProfil)}
+                  />
+                  {actions(enregistrerProfil)}
+                </dd>
+              ) : (
+                <>
+                  <dd className="compte-valeur">
+                    {profil[cle] || <span className="compte-vide">Non renseigné</span>}
+                  </dd>
+                  <BoutonCrayon quoi={label.toLowerCase()} onClick={() => setEdite(cle)} />
+                </>
+              )}
             </div>
+          ))}
 
-            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
-              <div>
-                <FieldLabel>Mot de passe actuel</FieldLabel>
-                <input
-                  type="password" value={pwData.current_password}
-                  onChange={(e) => setPwData({ ...pwData, current_password: e.target.value })}
-                  placeholder="••••••••"
-                  style={inp('pw-cur')} onFocus={() => setFocused('pw-cur')} onBlur={() => setFocused(null)}
-                  required
-                />
-              </div>
-              <div>
-                <FieldLabel>Nouveau mot de passe</FieldLabel>
-                <input
-                  type="password" value={pwData.new_password}
-                  onChange={(e) => setPwData({ ...pwData, new_password: e.target.value })}
-                  placeholder="Minimum 6 caractères"
-                  style={inp('pw-new')} onFocus={() => setFocused('pw-new')} onBlur={() => setFocused(null)}
-                  required
-                />
-              </div>
-              <div>
-                <FieldLabel>Confirmer le nouveau mot de passe</FieldLabel>
-                <input
-                  type="password" value={pwData.confirm_password}
-                  onChange={(e) => setPwData({ ...pwData, confirm_password: e.target.value })}
-                  placeholder="••••••••"
-                  style={{
-                    ...inp('pw-confirm'),
-                    borderBottomColor: pwData.confirm_password && pwData.confirm_password !== pwData.new_password ? '#EF4444' : undefined,
-                  }}
-                  onFocus={() => setFocused('pw-confirm')} onBlur={() => setFocused(null)}
-                  required
-                />
-                {pwData.confirm_password && pwData.confirm_password !== pwData.new_password && (
-                  <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', color: '#EF4444', marginTop: '0.8rem' }}>
-                    Les mots de passe ne correspondent pas
-                  </p>
-                )}
-              </div>
-              <div>
-                <button
-                  type="submit" disabled={savingPw}
-                  style={{
-                    padding: '1.6rem 5rem',
-                    background: savingPw ? C.borderMid : C.gold,
-                    color: savingPw ? C.muted : '#FAF6EE',
-                    border: 'none', cursor: savingPw ? 'not-allowed' : 'pointer',
-                    fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
-                    fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
-                    transition: 'background 0.25s, color 0.25s',
-                  }}
-                  onMouseEnter={(e) => { if (!savingPw) { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; } }}
-                  onMouseLeave={(e) => { if (!savingPw) { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#FAF6EE'; } }}
-                >
-                  {savingPw ? 'Enregistrement…' : 'Modifier le mot de passe'}
-                </button>
-              </div>
-            </form>
+          {/* Mot de passe — même ligne, même crayon, autre formulaire */}
+          <div className="compte-ligne">
+            <dt className="eyebrow">Mot de passe</dt>
+
+            {edite === 'motdepasse' ? (
+              <dd className="compte-edition">
+                <input className="field" type="password" placeholder="Mot de passe actuel"
+                  autoComplete="current-password" autoFocus required
+                  value={motDePasse.current_password}
+                  onChange={(ev) => setMotDePasse((d) => ({ ...d, current_password: ev.target.value }))} />
+                <input className="field" type="password" placeholder="Nouveau mot de passe"
+                  autoComplete="new-password" required
+                  value={motDePasse.new_password}
+                  onChange={(ev) => setMotDePasse((d) => ({ ...d, new_password: ev.target.value }))} />
+                <input className="field" type="password" placeholder="Confirmer le nouveau"
+                  autoComplete="new-password" required
+                  value={motDePasse.confirm_password}
+                  onChange={(ev) => setMotDePasse((d) => ({ ...d, confirm_password: ev.target.value }))}
+                  onKeyDown={auClavier(enregistrerMotDePasse)} />
+                {actions(enregistrerMotDePasse)}
+              </dd>
+            ) : (
+              <>
+                <dd className="compte-valeur">••••••••</dd>
+                <BoutonCrayon quoi="le mot de passe" onClick={() => setEdite('motdepasse')} />
+              </>
+            )}
           </div>
-        )}
-
-        {/* ── Adresses ── */}
-        {tab === 'adresses' && (
-          <div className="db-a2" style={{ maxWidth: '60rem' }}>
-            <div style={{ marginBottom: '5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.6rem', marginBottom: '1.6rem' }}>
-                <div style={{ width: '4rem', height: '1px', background: C.gold }} />
-                <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>
-                  Livraison
-                </p>
-              </div>
-              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '3.2rem', color: C.cream, lineHeight: 1.1 }}>
-                Mes adresses
-              </h2>
-            </div>
-
-            <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
-              <div>
-                <FieldLabel>Adresse de livraison par défaut</FieldLabel>
-                <textarea
-                  value={profileData.default_address}
-                  onChange={(e) => setProfileData({ ...profileData, default_address: e.target.value })}
-                  rows={5}
-                  placeholder="Quartier, rue, numéro…&#10;Ville, Sénégal"
-                  style={{ ...inp('addr'), resize: 'none' }}
-                  onFocus={() => setFocused('addr')}
-                  onBlur={() => setFocused(null)}
-                />
-              </div>
-              <div>
-                <button
-                  type="submit" disabled={savingProfile}
-                  style={{
-                    padding: '1.6rem 5rem',
-                    background: savingProfile ? C.borderMid : C.gold,
-                    color: savingProfile ? C.muted : '#FAF6EE',
-                    border: 'none', cursor: savingProfile ? 'not-allowed' : 'pointer',
-                    fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
-                    fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
-                    transition: 'background 0.25s, color 0.25s',
-                  }}
-                  onMouseEnter={(e) => { if (!savingProfile) { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; } }}
-                  onMouseLeave={(e) => { if (!savingProfile) { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#FAF6EE'; } }}
-                >
-                  {savingProfile ? 'Enregistrement…' : 'Sauvegarder'}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
+        </dl>
       </div>
-
-      <style>{`
-        @keyframes db-up     { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes db-shimmer { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
-        .db-a1 { animation: db-up 0.6s ease both; }
-        .db-a2 { animation: db-up 0.6s ease 0.1s both; }
-        @media (max-width: 760px) {
-          .db-form-row { grid-template-columns: 1fr !important; gap: 4rem 0 !important; }
-          .db-tabs button { padding-right: 1.5rem !important; font-size: 1.1rem !important; }
-        }
-        input::placeholder, textarea::placeholder { color: #9A8A70; font-family: Inter, sans-serif; }
-        input, textarea { color-scheme: light; }
-      `}</style>
     </div>
   );
 };
 
-/* ══════════════════════════════════════
-   PAGE
-══════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════ */
 const MonComptePage = () => {
   const { isAuthenticated } = useAuthStore();
+
   return (
     <>
-      <SEOHead title="Mon Compte" url="/mon-compte" noindex />
-      {isAuthenticated ? <Dashboard /> : <AuthForm />}
+      <SEOHead title="Mon compte" url="/profil" noindex />
+
+      <div className="catalogue-page">
+        <section className="catalogue-entete">
+          <h1 className="catalogue-titre">
+            {isAuthenticated ? 'Mon compte' : 'Se connecter'}
+          </h1>
+          <span className="filet-titre" aria-hidden="true" />
+        </section>
+
+        <div className="catalogue-corps">
+          {isAuthenticated ? <Compte /> : <FormulaireAuth />}
+        </div>
+      </div>
+
+      <style>{`
+        /* Une colonne, centrée, bornée en largeur : un formulaire étalé sur
+           1400 px oblige l'œil à traverser l'écran entre l'intitulé et le
+           champ. */
+        .compte-colonne {
+          max-width: 68rem;
+          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          /* Aucun écart. Il servait à poser un titre de bloc qui n'existe
+             plus ; les lignes se rangent directement sous l'identité, dont le
+             filet du bas fait déjà la séparation. La première ligne apporte
+             sa propre respiration avec son padding. */
+          gap: 0;
+        }
+        .compte-colonne--etroite { max-width: 46rem; }
+
+        /* Le remplissage de la carte. En clamp : 24 px sur un téléphone, où
+           64 px de marge intérieure ne laisseraient plus de largeur aux
+           champs.
+
+           Le fond est celui du chrome du site — bande de coordonnées, barre de
+           navigation, pied de page, hero. La carte se pose donc sur l'écru de
+           la page comme un objet de la même famille que l'en-tête.
+
+           « .on-dark » aurait donné « --surface-dark » (#0F1320), un cran plus
+           sombre : on redéclare ici pour tenir le même indigo que le reste du
+           chrome. Ratios mesurés sur ce fond — écru 15,85:1, laiton 7,14:1,
+           texte atténué 6,79:1. */
+        .compte-carte {
+          padding: clamp(var(--s-5), 4vw, var(--s-8));
+          background: var(--surface-chrome);
+        }
+
+        /* ── L'identité en tête ── */
+        .compte-tete {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: var(--s-4);
+          padding-bottom: var(--s-3);
+          border-bottom: 1px solid var(--line);
+        }
+        /* Le crayon suit l'avatar, la déconnexion part au bord droit. */
+        .compte-tete .compte-sortie { margin-left: auto; }
+
+        .compte-avatar {
+          display: grid;
+          place-items: center;
+          width: 6.4rem;
+          height: 6.4rem;
+          flex-shrink: 0;
+          overflow: hidden;
+          border-radius: var(--r-pill);
+          border: 1px solid var(--line-accent);
+          /* « --surface-gold » est une carte CLAIRE : les initiales en laiton
+             s'y posaient à 2,22:1, illisibles. « --surface-sunk » suit la
+             bascule de « .on-dark » et devient l'indigo creusé. */
+          background: var(--surface-sunk);
+          color: var(--text-accent);
+          font-family: var(--font-display);
+          font-size: var(--t-h3);
+        }
+        .compte-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+
+
+        .compte-champs {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: var(--s-4);
+        }
+
+        /* ── Les lignes du compte ──
+           Une liste de definitions : intitule, valeur, crayon. Le <dl> dit ce
+           que la structure est vraiment — des paires libelle/valeur — la ou
+           une suite de <div> n'aurait rien dit.
+
+           Trois colonnes : l'intitule a largeur fixe pour que les valeurs
+           s'alignent, la valeur prend le reste, le crayon se retracte. */
+        .compte-lignes {
+          display: flex;
+          flex-direction: column;
+        }
+        .compte-ligne {
+          display: grid;
+          grid-template-columns: 18rem 1fr auto;
+          align-items: center;
+          gap: var(--s-4);
+          padding: var(--s-4) 0;
+          border-top: 1px solid var(--line);
+        }
+        /* La première ligne ne porte ni filet ni espace au-dessus : le filet
+           du bas de l'identité tient déjà le rôle, et son padding faisait
+           doublon avec celui de l'identité juste au-dessus. */
+        .compte-ligne:first-child { border-top: 0; padding-top: var(--s-2); }
+        .compte-ligne > dt { color: var(--text-muted); }
+        .compte-ligne > dd { margin: 0; }
+
+        .compte-valeur {
+          font-size: var(--t-body);
+          overflow-wrap: anywhere;
+          font-variant-numeric: tabular-nums;
+        }
+        .compte-vide { color: var(--text-muted); font-style: italic; }
+
+        /* En edition, la valeur et ses boutons prennent les deux colonnes
+           restantes : le crayon disparait, il n'a plus rien a ouvrir. */
+        .compte-edition {
+          grid-column: 2 / -1;
+          display: flex;
+          flex-direction: column;
+          gap: var(--s-3);
+        }
+
+        .compte-actions { display: flex; align-items: center; gap: var(--s-3); }
+        .compte-actions--photo { margin-top: var(--s-4); }
+
+        /* Annuler n'est pas un bouton dessine : dans une paire de decision, le
+           chemin de retour doit peser moins que celui qui engage. */
+        .compte-annuler {
+          border: 0;
+          background: none;
+          padding: var(--s-2);
+          font-family: var(--font-body);
+          font-size: var(--t-sm);
+          color: var(--text-muted);
+          cursor: pointer;
+        }
+        .compte-annuler:hover { color: var(--text); }
+
+        /* Le crayon. Assez grand pour etre vise au doigt — 44 px est le
+           minimum recommande pour une cible tactile — mais sans cadre : c'est
+           l'icone qui se colore au survol, pas un bouton de plus dans la
+           page. */
+        .compte-crayon {
+          display: grid;
+          place-items: center;
+          width: 4.4rem;
+          height: 4.4rem;
+          border: 0;
+          background: none;
+          border-radius: var(--r-pill);
+          color: var(--text-muted);
+          font-size: 2rem;
+          cursor: pointer;
+          transition: color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+        }
+        .compte-crayon:hover {
+          color: var(--text-accent);
+          background: var(--surface-sunk);
+        }
+
+        /* Sous 640 px, l'intitule passe au-dessus : a 18 rem de colonne, il ne
+           resterait rien pour la valeur sur un telephone. */
+        @media (max-width: 640px) {
+          .compte-ligne { grid-template-columns: 1fr auto; }
+          .compte-ligne > dt { grid-column: 1 / -1; margin-bottom: calc(var(--s-2) * -1); }
+          .compte-edition { grid-column: 1 / -1; }
+        }
+        .compte-champs > .btn { margin-top: var(--s-2); }
+
+        .compte-champ { display: block; width: 100%; }
+        .compte-champ .eyebrow {
+          display: block;
+          margin-bottom: var(--s-2);
+          color: var(--text-muted);
+        }
+
+        /* Deux champs par ligne au-delà de 560 px, empilés en dessous : côte à
+           côte sur un téléphone, prénom et nom tombent à 12 caractères de
+           large. */
+        .compte-duo {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: var(--s-4);
+          width: 100%;
+        }
+        @media (min-width: 560px) {
+          .compte-duo { grid-template-columns: 1fr 1fr; }
+        }
+
+        .compte-bascule {
+          display: flex;
+          flex-wrap: wrap;
+          gap: var(--s-3);
+          margin-bottom: var(--s-6);
+        }
+
+        .compte-avatar-ligne { display: flex; align-items: center; gap: var(--s-4); }
+
+      `}</style>
     </>
   );
 };

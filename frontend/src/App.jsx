@@ -11,19 +11,14 @@ const ScrollToTop = () => {
 };
 
 const HomePage = lazy(() => import('./pages/HomePage'));
-const PanierPage = lazy(() => import('./pages/PanierPage'));
+const FavorisPage = lazy(() => import('./pages/FavorisPage'));
 const CommandePage = lazy(() => import('./pages/CommandePage'));
 const SuiviCommandePage = lazy(() => import('./pages/SuiviCommandePage'));
 const CategoriePage = lazy(() => import('./pages/CategoriePage'));
-const RecherchePage = lazy(() => import('./pages/RecherchePage'));
+const BoutiquePage = lazy(() => import('./pages/BoutiquePage'));
+const MesCommandesPage = lazy(() => import('./pages/MesCommandesPage'));
 const ProfilPage = lazy(() => import('./pages/MonComptePage'));
 const ProduitPage = lazy(() => import('./pages/ProduitPage'));
-const CollectionDetailPage = lazy(() => import('./pages/CollectionDetailPage'));
-const ContactPage = lazy(() => import('./pages/ContactPage'));
-const AProposPage = lazy(() => import('./pages/AProposPage'));
-const GuideTaillesPage = lazy(() => import('./pages/GuideTaillesPage'));
-const LivraisonRetoursPage = lazy(() => import('./pages/LivraisonRetoursPage'));
-const FAQPage = lazy(() => import('./pages/FAQPage'));
 const MentionsLegalesPage = lazy(() => import('./pages/MentionsLegalesPage'));
 const Page404 = lazy(() => import('./pages/Page404'));
 
@@ -32,7 +27,6 @@ const GestionLayout = lazy(() => import('./pages/gestion/GestionLayout'));
 const GestionDashboardPage = lazy(() => import('./pages/gestion/DashboardPage'));
 const GestionProduitsPage = lazy(() => import('./pages/gestion/ProduitsPage'));
 const GestionCategoriesPage = lazy(() => import('./pages/gestion/CategoriesPage'));
-const GestionCollectionsPage = lazy(() => import('./pages/gestion/CollectionsPage'));
 const GestionCommandesPage = lazy(() => import('./pages/gestion/CommandesPage'));
 const GestionAvisPage = lazy(() => import('./pages/gestion/AvisPage'));
 const GestionMessagesPage = lazy(() => import('./pages/gestion/MessagesPage'));
@@ -56,21 +50,16 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
-            <Route path="/panier" element={<PanierPage />} />
+            <Route path="/favoris" element={<FavorisPage />} />
             <Route path="/produit/:slug" element={<ProduitPage />} />
             <Route path="/commande" element={<CommandePage />} />
             <Route path="/commande/suivi" element={<SuiviCommandePage />} />
             <Route path="/commande/suivi/:orderNumber" element={<SuiviCommandePage />} />
             <Route path="/profil" element={<ProfilPage />} />
             <Route path="/mon-compte" element={<ProfilPage />} />
-            <Route path="/collections/:slug" element={<CollectionDetailPage />} />
             <Route path="/categorie/:slug" element={<CategoriePage />} />
-            <Route path="/recherche" element={<RecherchePage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/a-propos" element={<AProposPage />} />
-            <Route path="/guide-tailles" element={<GuideTaillesPage />} />
-            <Route path="/livraison-retours" element={<LivraisonRetoursPage />} />
-            <Route path="/faq" element={<FAQPage />} />
+            <Route path="/boutique" element={<BoutiquePage />} />
+            <Route path="/commandes" element={<MesCommandesPage />} />
             <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
             <Route path="*" element={<Page404 />} />
           </Route>
@@ -79,7 +68,6 @@ function App() {
             <Route index element={<GestionDashboardPage />} />
             <Route path="produits" element={<GestionProduitsPage />} />
             <Route path="categories" element={<GestionCategoriesPage />} />
-            <Route path="collections" element={<GestionCollectionsPage />} />
             <Route path="commandes" element={<GestionCommandesPage />} />
             <Route path="avis" element={<GestionAvisPage />} />
             <Route path="messages" element={<GestionMessagesPage />} />

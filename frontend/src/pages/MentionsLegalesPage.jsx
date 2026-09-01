@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
+import { LIEN_WHATSAPP } from '../constants/contact';
 
 const C = {
   bg:        '#1A1208',
@@ -46,12 +47,12 @@ const LegalSection = ({ id, label, titre, children }) => {
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.6rem', marginBottom: '2.4rem' }}>
         <div style={{ width: '4rem', height: '1px', background: C.gold }} />
-        <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>
+        <p style={{ fontSize: '1.1rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>
           {label}
         </p>
       </div>
       <h2 style={{
-        fontFamily: 'Syne, sans-serif',
+        fontFamily: 'var(--font-display)',
         fontSize: 'clamp(2.2rem, 3vw, 3.2rem)',
         color: C.cream, marginBottom: '3.5rem', lineHeight: 1.1,
       }}>
@@ -66,21 +67,21 @@ const LegalSection = ({ id, label, titre, children }) => {
 
 /* ── Paragraphe légal ── */
 const P = ({ children, style }) => (
-  <p style={{ fontSize: '1.4rem', fontFamily: 'Inter, sans-serif', color: C.muted, lineHeight: 1.85, marginBottom: '1.8rem', ...style }}>
+  <p style={{ fontSize: '1.4rem', fontFamily: 'var(--font-body)', color: C.muted, lineHeight: 1.85, marginBottom: '1.8rem', ...style }}>
     {children}
   </p>
 );
 
 const H3 = ({ children }) => (
-  <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.8rem', color: C.cream, marginBottom: '1.2rem', marginTop: '3rem' }}>
+  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', color: C.cream, marginBottom: '1.2rem', marginTop: '3rem' }}>
     {children}
   </h3>
 );
 
 const Highlight = ({ label, value }) => (
   <div style={{ display: 'flex', gap: '1.2rem', padding: '1.4rem 0', borderBottom: `1px solid ${C.border}` }}>
-    <span style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: C.gold, minWidth: '18rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
-    <span style={{ fontSize: '1.35rem', fontFamily: 'Inter, sans-serif', color: C.muted }}>{value}</span>
+    <span style={{ fontSize: '1.3rem', fontFamily: 'var(--font-body)', color: C.gold, minWidth: '18rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
+    <span style={{ fontSize: '1.35rem', fontFamily: 'var(--font-body)', color: C.muted }}>{value}</span>
   </div>
 );
 
@@ -119,8 +120,8 @@ const MentionsLegalesPage = () => {
                 <li key={crumb.label} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                   {i > 0 && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(138,138,138,0.35)" strokeWidth="1.5"><polyline points="9 18 15 12 9 6"/></svg>}
                   {crumb.to
-                    ? <Link to={crumb.to} style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: C.muted, textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = C.cream} onMouseLeave={(e) => e.currentTarget.style.color = C.muted}>{crumb.label}</Link>
-                    : <span style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: C.gold }}>{crumb.label}</span>
+                    ? <Link to={crumb.to} style={{ fontSize: '1.1rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.2em', color: C.muted, textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = C.cream} onMouseLeave={(e) => e.currentTarget.style.color = C.muted}>{crumb.label}</Link>
+                    : <span style={{ fontSize: '1.1rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.2em', color: C.gold }}>{crumb.label}</span>
                   }
                 </li>
               ))}
@@ -130,12 +131,12 @@ const MentionsLegalesPage = () => {
           <div ref={heroRef} style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? 'translateY(0)' : 'translateY(24px)', transition: 'opacity 0.8s ease, transform 0.8s ease', marginBottom: '6rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.6rem', marginBottom: '3rem' }}>
               <div style={{ width: '4.8rem', height: '1px', background: C.gold }} />
-              <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>Informations légales</p>
+              <p style={{ fontSize: '1.1rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold }}>Informations légales</p>
             </div>
-            <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(3rem, 5vw, 5.5rem)', color: C.cream, letterSpacing: '0.02em', lineHeight: 1.05, textTransform: 'uppercase', marginBottom: '2.4rem' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3rem, 5vw, 5.5rem)', color: C.cream, letterSpacing: '0.02em', lineHeight: 1.05, textTransform: 'uppercase', marginBottom: '2.4rem' }}>
               Mentions légales & CGV
             </h1>
-            <p style={{ fontSize: '1.4rem', fontFamily: 'Inter, sans-serif', color: C.muted, lineHeight: 1.8, maxWidth: '60rem', marginBottom: '4rem' }}>
+            <p style={{ fontSize: '1.4rem', fontFamily: 'var(--font-body)', color: C.muted, lineHeight: 1.8, maxWidth: '60rem', marginBottom: '4rem' }}>
               Dernière mise à jour : avril 2025. Ces mentions régissent l'utilisation du site et les conditions de vente de Golden Pousso.
             </p>
 
@@ -150,7 +151,7 @@ const MentionsLegalesPage = () => {
                     background: 'transparent',
                     border: `1px solid ${C.borderMid}`,
                     color: C.muted,
-                    fontSize: '1.15rem', fontFamily: 'Inter, sans-serif',
+                    fontSize: '1.15rem', fontFamily: 'var(--font-body)',
                     letterSpacing: '0.1em', textTransform: 'uppercase',
                     cursor: 'pointer', transition: 'all 0.2s',
                   }}
@@ -209,12 +210,12 @@ const MentionsLegalesPage = () => {
 
             <H3>5. Livraison</H3>
             <P>
-              Les délais et frais de livraison sont consultables sur la page <Link to="/livraison-retours" style={{ color: C.gold, textDecoration: 'none' }}>Livraison & Retours</Link>. Golden Pousso ne saurait être tenu responsable des retards dus à des événements extérieurs (intempéries, grèves, force majeure).
+              Frais de livraison : 1 500 FCFA sur Dakar Centre, 1 000 FCFA sur Dakar Banlieue et Pikine, 3 000 FCFA sur Thiès et environs. Le retrait à l&apos;atelier (Pikine Tally Boumack) est gratuit. Délais indicatifs, en jours ouvrés à compter de la confirmation de commande : 24 h sur Dakar Centre, 24 à 48 h sur Dakar Banlieue et Pikine, 2 à 3 jours sur Thiès. Golden Pousso ne saurait être tenu responsable des retards dus à des événements extérieurs (intempéries, grèves, force majeure).
             </P>
 
             <H3>6. Droit de rétractation et retours</H3>
             <P>
-              Conformément à notre politique, les articles peuvent être retournés dans les 14 jours suivant la réception, en état d'origine. Les pièces sur-mesure, bijoux et accessoires personnalisés sont exclus du droit de retour. Voir notre page <Link to="/livraison-retours" style={{ color: C.gold, textDecoration: 'none' }}>Livraison & Retours</Link> pour la procédure complète.
+              Conformément à notre politique, les articles peuvent être retournés dans les 14 jours suivant la réception, en état d&apos;origine : non portés, non lavés, étiquettes attachées. Les pièces sur-mesure, bijoux et accessoires personnalisés sont exclus du droit de retour. Le retour s&apos;effectue après demande auprès du service client, en indiquant le numéro de commande ; les frais de retour sont à la charge du client. Le remboursement intervient sous 5 jours ouvrés après réception et vérification de l&apos;article.
             </P>
 
             <H3>7. Propriété intellectuelle</H3>
@@ -278,21 +279,23 @@ const MentionsLegalesPage = () => {
             flexWrap: 'wrap', gap: '2.4rem',
           }}>
             <div>
-              <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold, marginBottom: '0.8rem' }}>
+              <p style={{ fontSize: '1.1rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.3em', color: C.gold, marginBottom: '0.8rem' }}>
                 Une question d'ordre légal ?
               </p>
-              <p style={{ fontSize: '1.5rem', fontFamily: 'Inter, sans-serif', color: C.cream }}>
+              <p style={{ fontSize: '1.5rem', fontFamily: 'var(--font-body)', color: C.cream }}>
                 Contactez-nous par e-mail à <span style={{ color: C.gold }}>contact@goldenpousso.sn</span>
               </p>
             </div>
-            <Link
-              to="/contact"
+            <a
+              href={LIEN_WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
               style={{
                 display: 'inline-flex', alignItems: 'center',
                 padding: '1.5rem 4rem',
                 background: 'transparent', color: C.muted,
                 border: `1px solid ${C.borderMid}`,
-                fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
+                fontSize: '1.1rem', fontFamily: 'var(--font-body)',
                 letterSpacing: '0.2em', textTransform: 'uppercase',
                 textDecoration: 'none', flexShrink: 0,
                 transition: 'border-color 0.2s, color 0.2s',
@@ -301,7 +304,7 @@ const MentionsLegalesPage = () => {
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.borderMid; e.currentTarget.style.color = C.muted; }}
             >
               Nous contacter
-            </Link>
+            </a>
           </div>
 
         </div>

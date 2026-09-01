@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import BandeCoordonnees from './BandeCoordonnees';
 import Navbar from './Navbar';
 import HomeFooter from './Footer';
 import useAuthStore from '../store/authStore';
-
-const WHATSAPP_NUMBER = '221781263535';
+import { WHATSAPP_NUMBER } from '../constants/contact';
 
 const WhatsAppChat = () => {
   const [open, setOpen] = useState(false);
@@ -28,7 +28,7 @@ const WhatsAppChat = () => {
           position: 'fixed', bottom: '8rem', right: '2rem', zIndex: 9998,
           width: '42rem', background: '#fff', borderRadius: '1.6rem',
           boxShadow: '0 -4px 48px rgba(0,0,0,0.18)',
-          overflow: 'hidden', fontFamily: 'Inter, sans-serif',
+          overflow: 'hidden', fontFamily: 'var(--font-body)',
           animation: 'chatIn 0.25s ease',
         }}>
           {/* Header */}
@@ -70,7 +70,7 @@ const WhatsAppChat = () => {
               rows={2}
               style={{
                 flex: 1, resize: 'none', border: 'none', borderRadius: '2.4rem',
-                padding: '1rem 1.6rem', fontSize: '1.3rem', fontFamily: 'Inter, sans-serif',
+                padding: '1rem 1.6rem', fontSize: '1.3rem', fontFamily: 'var(--font-body)',
                 outline: 'none', background: '#fff', color: '#1A1208',
                 lineHeight: 1.5, maxHeight: '10rem', overflowY: 'auto',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
@@ -125,6 +125,7 @@ function Layout() {
   const { isAuthenticated } = useAuthStore();
   return (
     <>
+      <BandeCoordonnees />
       <Navbar />
       <main>
         <Outlet />

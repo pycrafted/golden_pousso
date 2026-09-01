@@ -13,12 +13,12 @@ from rest_framework.response import Response
 
 from accounts.models import Customer
 from .models import (
-    Category, Collection, Product, ProductImage, ProductVariant,
+    Category, Product, ProductImage, ProductVariant,
     Order, Review, ContactMessage, StockAlert, HeroBanner, AtelierImage, ShowcaseVideo,
 )
 from .emails import send_order_status_email
 from .gestion_serializers import (
-    GestionCategorySerializer, GestionCollectionSerializer,
+    GestionCategorySerializer,
     GestionProductSerializer, GestionProductImageSerializer, GestionProductVariantSerializer,
     GestionOrderSerializer, GestionReviewSerializer, GestionContactMessageSerializer,
     GestionStockAlertSerializer, GestionHeroBannerSerializer, GestionAtelierImageSerializer,
@@ -39,14 +39,9 @@ class GestionCategoryViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaffUser]
 
 
-class GestionCollectionViewSet(viewsets.ModelViewSet):
-    queryset = Collection.objects.all().order_by('-date')
-    serializer_class = GestionCollectionSerializer
-    permission_classes = [IsStaffUser]
-
 
 class GestionProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.all().select_related('category', 'collection').prefetch_related('images', 'variants').order_by('-created_at')
+    queryset = Product.objects.all().select_related('category').prefetch_related('images', 'variants').order_by('-created_at')
     serializer_class = GestionProductSerializer
     permission_classes = [IsStaffUser]
 
@@ -110,9 +105,20 @@ class GestionHeroBannerViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, m
 
 
 class GestionAtelierImageViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
-    queryset = AtelierImage.objects.all().order_by('-updated_at')
+    queryset = AtelierImage.objects.all().order_by('order', '-updated_at')
     serializer_class = GestionAtelierImageSerializer
     permission_classes = [IsStaffUser]
+
+    def get_queryset(self):
+        """
+        `?emplacement=accueil` isole un emplacement.
+
+        Sans ce filtre, les deux blocs de l'Espace Gestion afficheraient le
+        même tas d'images et le propriétaire ne saurait pas laquelle part où.
+        """
+        qs = super().get_queryset()
+        emplacement = self.request.query_params.get('emplacement')
+        return qs.filter(emplacement=emplacement) if emplacement else qs
 
 
 class GestionShowcaseVideoViewSet(viewsets.ModelViewSet):

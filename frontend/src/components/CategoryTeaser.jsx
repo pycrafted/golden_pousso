@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
+import { LIEN_WHATSAPP } from '../constants/contact';
 
 const FALLBACK = [
   { num: '01', title: 'Boubous & Bazin',      subtitle: 'Tenues de cérémonie',    href: '/categorie/boubous', slug: 'boubous' },
   { num: '02', title: 'Chaussures',           subtitle: 'Cuir et savoir-faire',   href: '/categorie/chaussures', slug: 'chaussures' },
   { num: '03', title: 'Bijoux & Accessoires', subtitle: 'Finitions artisanales',  href: '/categorie/bijoux',  slug: 'bijoux'  },
-  { num: '04', title: 'Sur Mesure',           subtitle: 'Votre vision, nos mains', href: '/contact',          slug: null      },
+  { num: '04', title: 'Sur Mesure',           subtitle: 'Votre vision, nos mains', href: LIEN_WHATSAPP,      slug: null      },
 ];
 
 const CategoryCard = ({ item, index, onSelect, isActive }) => {
@@ -58,7 +59,7 @@ const CategoryCard = ({ item, index, onSelect, isActive }) => {
       {/* Bas — sous-titre + titre + CTA */}
       <div>
         <h3 style={{
-          fontFamily: 'Syne, sans-serif',
+          fontFamily: 'var(--font-display)',
           fontSize: 'clamp(1.8rem, 2vw, 2.8rem)',
           color: (active || hovered) ? '#1A1208' : '#7A6A50',
           lineHeight: 1.1,
@@ -80,7 +81,7 @@ const CategoryCard = ({ item, index, onSelect, isActive }) => {
           transition: 'opacity 0.3s ease, transform 0.3s ease',
         }}>
           <span style={{
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'var(--font-body)',
             fontSize: '1rem',
             fontWeight: 600,
             letterSpacing: '0.2em',

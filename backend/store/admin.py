@@ -1,25 +1,69 @@
 import csv
 from django.contrib import admin
 from django.http import HttpResponse
-from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, AtelierImage, Review, StockAlert, ShowcaseVideo
+from .models import SectionTexte, Category, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, HeroPromotion, AtelierImage, Review, StockAlert, ShowcaseVideo
 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'slug', 'is_active', 'order']
+    """Les cinq rayons structurels sont renommables, pas supprimables.
+
+    Voir Category.SLUGS_STRUCTURELS. La page d'accueil porte leur photo et
+    leur ordre côté frontend et les retrouve par leur slug : supprimer un
+    rayon laisserait une tuile qui pointe vers une page inexistante, en
+    changer le slug la laisserait sans nom ni compteur.
+
+    Le modèle refuse déjà la suppression. Ce qui suit n'est pas un doublon
+    mais l'autre moitié du travail : faire en sorte que l'admin ne PROPOSE
+    pas une action qu'il ne pourra pas mener. Un bouton qui échoue vaut moins
+    qu'un bouton absent.
+    """
+
+    list_display = ['name', 'slug', 'structurel', 'is_active', 'order']
     list_filter = ['is_active']
     search_fields = ['name', 'slug']
-    prepopulated_fields = {'slug': ('name',)}
     ordering = ['order', 'name']
 
+    @admin.display(description='Rayon fixe', boolean=True)
+    def structurel(self, obj):
+        return obj.est_structurelle
 
-@admin.register(Collection)
-class CollectionAdmin(admin.ModelAdmin):
-    list_display = ['name', 'slug', 'date', 'is_featured', 'is_active']
-    list_filter = ['is_featured', 'is_active']
-    search_fields = ['name', 'slug']
-    prepopulated_fields = {'slug': ('name',)}
-    ordering = ['-date']
+    def get_readonly_fields(self, request, obj=None):
+        # Le slug est la clé qui relie le rayon à sa photo dans le frontend.
+        if obj is not None and obj.est_structurelle:
+            return ('slug',)
+        return ()
+
+    def get_exclude(self, request, obj=None):
+        # La photo d'un rayon structurel ne vient plus d'ici : c'est un fichier
+        # du frontend (public/images/rayons/), découpé au ratio des tuiles par
+        # outils/exporter_rayons.py. Laisser le champ dans le formulaire
+        # inviterait à téléverser une image qui ne s'afficherait nulle part —
+        # une action sans effet est pire qu'une action absente.
+        if obj is not None and obj.est_structurelle:
+            return ('image', 'display')
+        return super().get_exclude(request, obj)
+
+    def get_prepopulated_fields(self, request, obj=None):
+        # prepopulated_fields et readonly_fields sur le même champ font planter
+        # l'admin : on ne pré-remplit le slug que pour un rayon libre.
+        if obj is not None and obj.est_structurelle:
+            return {}
+        return {'slug': ('name',)}
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and obj.est_structurelle:
+            return False
+        return super().has_delete_permission(request, obj)
+
+    def get_actions(self, request):
+        # L'action de masse ne reçoit pas d'objet : elle ne peut pas être
+        # filtrée par rayon. Elle est donc retirée pour tout le monde — cinq
+        # rayons sur cinq sont verrouillés, elle ne servirait qu'à échouer.
+        actions = super().get_actions(request)
+        actions.pop('delete_selected', None)
+        return actions
+
 
 
 class ProductImageInline(admin.TabularInline):
@@ -166,9 +210,52 @@ class StockAlertAdmin(admin.ModelAdmin):
 
 @admin.register(ShowcaseVideo)
 class ShowcaseVideoAdmin(admin.ModelAdmin):
-    list_display = ['__str__', 'video', 'order', 'is_active', 'created_at']
+    list_display = ['__str__', 'video', 'product', 'order', 'is_active', 'created_at']
     list_editable = ['order', 'is_active']
+    list_filter = ['is_active']
+    # `product` pointe vers tout le catalogue : un <select> chargerait chaque
+    # produit à l'ouverture de la page.
+    autocomplete_fields = ['product']
     ordering = ['order', '-created_at']
+
+
+@admin.register(HeroPromotion)
+class HeroPromotionAdmin(admin.ModelAdmin):
+    """Programmer une campagne du hero.
+
+    Hors campagne, le hero affiche son message d'accueil : il n'y a donc rien
+    à faire ici le reste de l'année, et rien à débrancher le lendemain de la
+    fin — la date s'en charge.
+    """
+
+    list_display = ['offre', 'accroche', 'debut', 'fin', 'is_active', 'etat']
+    list_editable = ['is_active']
+    list_filter = ['is_active']
+    fieldsets = [
+        ("Ce que le hero affiche", {
+            'fields': ['titre', 'offre', 'accroche'],
+            'description': "Trois niveaux de lecture, du plus gros au plus petit.",
+        }),
+        ("Le bouton", {'fields': ['lien', 'libelle_lien']}),
+        ("Quand", {
+            'fields': ['debut', 'fin', 'is_active'],
+            'description': "Les deux dates sont incluses. Passée la fin, le hero "
+                           "revient seul au message d'accueil.",
+        }),
+    ]
+
+    @admin.display(description='État')
+    def etat(self, obj):
+        from django.utils import timezone
+        from django.utils.html import format_html
+        a = timezone.localdate()
+        if not obj.is_active:
+            return format_html('<span style="color:#999">suspendue</span>')
+        if obj.debut > a:
+            return format_html('<span style="color:#0a7">programmée</span>')
+        if obj.fin < a:
+            return format_html('<span style="color:#999">terminée</span>')
+        return format_html('<b style="color:#C9A84C">à l’écran</b>')
 
 
 @admin.register(HeroBanner)
@@ -187,8 +274,9 @@ class HeroBannerAdmin(admin.ModelAdmin):
 
 @admin.register(AtelierImage)
 class AtelierImageAdmin(admin.ModelAdmin):
-    list_display = ['__str__', 'is_active', 'updated_at', 'preview']
-    list_editable = ['is_active']
+    list_display = ['__str__', 'order', 'is_active', 'updated_at', 'preview']
+    list_editable = ['order', 'is_active']
+    ordering = ['order', '-updated_at']
     readonly_fields = ['updated_at', 'preview']
 
     def preview(self, obj):
@@ -199,3 +287,23 @@ class AtelierImageAdmin(admin.ModelAdmin):
     preview.short_description = 'Aperçu'
 
 
+
+
+@admin.register(SectionTexte)
+class SectionTexteAdmin(admin.ModelAdmin):
+    list_display = ['zone', 'surtitre', 'titre', 'updated_at']
+    # Modifiables directement dans la liste : c'est le seul écran où l'on veut
+    # relire tous les intitulés du site d'un coup et en corriger deux ou trois.
+    list_editable = ['surtitre', 'titre']
+    search_fields = ['zone', 'titre', 'surtitre']
+    # La clé relie le texte à son composant : la changer casserait le lien.
+    readonly_fields = ['cle', 'zone', 'updated_at']
+
+    def has_add_permission(self, request):
+        # Une ligne ajoutée à la main ne serait lue par aucun composant.
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # Supprimer une ligne fait retomber la section sur son texte en dur,
+        # sans prévenir : on préfère qu'elle reste modifiable.
+        return False

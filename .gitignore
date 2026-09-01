@@ -21,3 +21,22 @@ frontend/.env
 *.log
 .DS_Store
 Thumbs.db
+
+# ── Matiere premiere, pas le site ──────────────────────────────────────────
+# Les photos d'origine et les images de travail servent a FABRIQUER les
+# visuels ; ce qui part en production, ce sont les fichiers decoupes de
+# frontend/public/images/ et les medias televerses depuis l'Espace Gestion.
+# shoes/ pese a lui seul 142 Mo : une fois dans l'historique, il y reste.
+/shoes/
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+
+# Outils locaux de l'agent
+.claude/
+
+# Notes de travail
+/REPRODUCE_*.md
+/PIECES_SELECTIONNEES_ANALYSE.md
+/GOLDEN_POUSSO_tasks.md

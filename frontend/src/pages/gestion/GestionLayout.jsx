@@ -6,7 +6,6 @@ const NAV_ITEMS = [
   { to: '/gestion', label: 'Tableau de bord', end: true, icon: 'bx-grid-alt' },
   { to: '/gestion/produits', label: 'Produits', icon: 'bx-package' },
   { to: '/gestion/categories', label: 'Catégories', icon: 'bx-category' },
-  { to: '/gestion/collections', label: 'Collections', icon: 'bx-collection' },
   { to: '/gestion/commandes', label: 'Commandes', icon: 'bx-receipt' },
   { to: '/gestion/avis', label: 'Avis clients', icon: 'bx-star' },
   { to: '/gestion/alertes-stock', label: 'Alertes de réassort', icon: 'bx-bell' },

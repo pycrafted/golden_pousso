@@ -48,26 +48,12 @@
     }
   },
   {
-    "model": "store.collection",
-    "pk": 1,
-    "fields": {
-      "name": "Défilé Été 2025",
-      "slug": "defile-ete-2025",
-      "description": "Notre collection estivale célébrant les couleurs vibrantes et les tissus légers de l'Afrique de l'Ouest.",
-      "cover_image": null,
-      "date": "2025-06-01",
-      "is_featured": true,
-      "is_active": true
-    }
-  },
-  {
     "model": "store.product",
     "pk": 1,
     "fields": {
       "name": "Grand Boubou Bazin Riche Brodé",
       "slug": "grand-boubou-bazin-riche-brode",
       "category": 1,
-      "collection": 1,
       "description": "Magnifique grand boubou en bazin riche avec broderies dorées faites à la main. Tissu importé de qualité supérieure, idéal pour les cérémonies et fêtes religieuses.",
       "price": 45000,
       "old_price": 55000,
@@ -86,7 +72,6 @@
       "name": "Boubou Wax Fleuri Moderne",
       "slug": "boubou-wax-fleuri-moderne",
       "category": 1,
-      "collection": null,
       "description": "Boubou tendance en tissu wax aux motifs floraux. Coupe moderne alliant tradition et élégance contemporaine.",
       "price": 28000,
       "old_price": null,
@@ -105,7 +90,6 @@
       "name": "Sandales Cuir Tressé Artisanal",
       "slug": "sandales-cuir-tresse-artisanal",
       "category": 2,
-      "collection": 1,
       "description": "Sandales en cuir véritable tressé à la main par nos artisans cordonners de Dakar. Confortables et durables.",
       "price": 18500,
       "old_price": null,
@@ -124,7 +108,6 @@
       "name": "Sac Cabas Wax Multicolore",
       "slug": "sac-cabas-wax-multicolore",
       "category": 3,
-      "collection": null,
       "description": "Grand sac cabas en tissu wax authentique avec doublure en coton. Spacieux et pratique pour le quotidien.",
       "price": 12000,
       "old_price": 15000,
@@ -143,7 +126,6 @@
       "name": "Collier Perles Traditionnelles Or",
       "slug": "collier-perles-traditionnelles-or",
       "category": 4,
-      "collection": 1,
       "description": "Collier en perles de verre africaines et finitions dorées. Pièce unique fabriquée à la main, symbole de l'artisanat sénégalais.",
       "price": 8500,
       "old_price": null,
@@ -158,46 +140,100 @@
   {
     "model": "store.productvariant",
     "pk": 1,
-    "fields": { "product": 1, "size": "S", "color": "Bleu marine", "stock": 3, "price_adjustment": 0 }
+    "fields": {
+      "product": 1,
+      "size": "S",
+      "color": "Bleu marine",
+      "stock": 3,
+      "price_adjustment": 0
+    }
   },
   {
     "model": "store.productvariant",
     "pk": 2,
-    "fields": { "product": 1, "size": "M", "color": "Bleu marine", "stock": 5, "price_adjustment": 0 }
+    "fields": {
+      "product": 1,
+      "size": "M",
+      "color": "Bleu marine",
+      "stock": 5,
+      "price_adjustment": 0
+    }
   },
   {
     "model": "store.productvariant",
     "pk": 3,
-    "fields": { "product": 1, "size": "L", "color": "Bleu marine", "stock": 4, "price_adjustment": 0 }
+    "fields": {
+      "product": 1,
+      "size": "L",
+      "color": "Bleu marine",
+      "stock": 4,
+      "price_adjustment": 0
+    }
   },
   {
     "model": "store.productvariant",
     "pk": 4,
-    "fields": { "product": 2, "size": "M", "color": "Rouge et or", "stock": 4, "price_adjustment": 0 }
+    "fields": {
+      "product": 2,
+      "size": "M",
+      "color": "Rouge et or",
+      "stock": 4,
+      "price_adjustment": 0
+    }
   },
   {
     "model": "store.productvariant",
     "pk": 5,
-    "fields": { "product": 2, "size": "L", "color": "Rouge et or", "stock": 4, "price_adjustment": 0 }
+    "fields": {
+      "product": 2,
+      "size": "L",
+      "color": "Rouge et or",
+      "stock": 4,
+      "price_adjustment": 0
+    }
   },
   {
     "model": "store.productvariant",
     "pk": 6,
-    "fields": { "product": 3, "size": "38", "color": "Naturel", "stock": 5, "price_adjustment": 0 }
+    "fields": {
+      "product": 3,
+      "size": "38",
+      "color": "Naturel",
+      "stock": 5,
+      "price_adjustment": 0
+    }
   },
   {
     "model": "store.productvariant",
     "pk": 7,
-    "fields": { "product": 3, "size": "39", "color": "Naturel", "stock": 5, "price_adjustment": 0 }
+    "fields": {
+      "product": 3,
+      "size": "39",
+      "color": "Naturel",
+      "stock": 5,
+      "price_adjustment": 0
+    }
   },
   {
     "model": "store.productvariant",
     "pk": 8,
-    "fields": { "product": 3, "size": "40", "color": "Naturel", "stock": 5, "price_adjustment": 0 }
+    "fields": {
+      "product": 3,
+      "size": "40",
+      "color": "Naturel",
+      "stock": 5,
+      "price_adjustment": 0
+    }
   },
   {
     "model": "store.productvariant",
     "pk": 9,
-    "fields": { "product": 3, "size": "41", "color": "Naturel", "stock": 5, "price_adjustment": 0 }
+    "fields": {
+      "product": 3,
+      "size": "41",
+      "color": "Naturel",
+      "stock": 5,
+      "price_adjustment": 0
+    }
   }
 ]

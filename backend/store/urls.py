@@ -5,12 +5,10 @@ urlpatterns = [
     # Catégories
     path('categories/', views.CategoryListView.as_view(), name='category-list'),
 
-    # Collections
-    path('collections/', views.CollectionListView.as_view(), name='collection-list'),
-    path('collections/<slug:slug>/', views.CollectionDetailView.as_view(), name='collection-detail'),
 
     # Produits
     path('products/', views.ProductListView.as_view(), name='product-list'),
+    path('products/facets/', views.product_facets, name='product-facets'),
     path('products/featured/', views.product_featured, name='product-featured'),
     path('products/new/', views.product_new, name='product-new'),
     path('products/<slug:slug>/', views.ProductDetailView.as_view(), name='product-detail'),
@@ -34,10 +32,14 @@ urlpatterns = [
 
     # Hero banner
     path('hero-banner/', views.hero_banner, name='hero-banner'),
+    path('hero-promotion/', views.hero_promotion, name='hero-promotion'),
 
     # Atelier image
     path('atelier-image/', views.atelier_image, name='atelier-image'),
 
     # Vidéos — section "Nos Créations en Mouvement"
+    # Titres de sections
+    path('textes-sections/', views.textes_sections, name='textes-sections'),
+
     path('videos/', views.showcase_videos, name='showcase-videos'),
 ]

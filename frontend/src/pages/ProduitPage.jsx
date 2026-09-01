@@ -1,119 +1,80 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import CldImg from '../components/CldImg';
+import { useParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import SkeletonCard from '../components/SkeletonCard';
+import CldImg from '../components/CldImg';
+import ProductCard from '../components/ProductCard';
 import SEOHead from '../components/SEOHead';
-import apiClient from '../api/client';
-import useCartStore from '../store/cartStore';
 import SizeGuideModal from '../components/SizeGuideModal';
 import StockAlertForm from '../components/StockAlertForm';
-import ReviewsSection from '../components/ReviewsSection';
+import apiClient from '../api/client';
+import useCartStore from '../store/cartStore';
+import useFavorisStore from '../store/favorisStore';
+import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
-const formatFCFA = (price) => new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
-const toEUR = (fcfa) => Math.round(fcfa / 655.957);
-const WHATSAPP_NUMBER = '221781263535';
+/**
+ * Fiche produit.
+ * ---------------------------------------------------------------------------
+ * La mise en page vient du transfert de `ProductDetail` de
+ * `Redesign_mcommaman.com` : fil d'Ariane, grille 1,05 / 0,95, visuel en 4/5,
+ * colonne d'achat à droite, « Dans le même esprit » en pied. Cette ossature
+ * n'a pas bougé.
+ *
+ * Ce qui a changé, à la demande : la PALETTE et le CONTENU de la colonne de
+ * droite. La page était restée dans le rose de la source (`--fp-rose`,
+ * `--fp-stone`) sur fond blanc, avec une colonne qui ne disait rien de plus
+ * qu'un titre, un prix et un bouton. Elle lit maintenant les tokens Or &
+ * Indigo comme le reste du site : plus une seule couleur en dur ici.
+ *
+ * ── Ce que la colonne dit, et ce qu'elle ne dit plus ────────────────────────
+ * L'ordre : rayon (en tête de page) · titre · avis · prix · description ·
+ * couleur · taille · quantité, panier, cœur · stock.
+ * La description est lue TÔT, entre le prix et les choix : on sait ce qu'on
+ * achète avant de choisir une taille, pas après avoir déplié un accordéon.
+ *
+ * ⚠ La colonne ne porte AUCUNE information de service. Elle a porté un temps
+ * une carte de trois promesses — prêt-à-porter ou sur-mesure, moyens de
+ * paiement, retouches — retirée à la demande, après la suppression des pages
+ * /faq et /livraison-retours qui portaient les mêmes faits.
+ *
+ * Conséquence à connaître avant de toucher à cette page : rien sur le site
+ * n'annonce plus les FRAIS ni les DÉLAIS de livraison, les MOYENS DE PAIEMENT,
+ * le SUR-MESURE ni les CONDITIONS DE RETOUR avant l'étape de validation de la
+ * commande. Le seul écrit qui subsiste est celui des CGV, dans
+ * `MentionsLegalesPage`. Si les paniers se mettent à être abandonnés au moment
+ * de découvrir les frais, c'est la première chose à remettre : les montants
+ * vivent dans `Order.DELIVERY_FEES` et les moyens de paiement dans
+ * `Order.PAYMENT_CHOICES`, côté backend.
+ *
+ * ── Ce qui a été ajouté côté fonction ───────────────────────────────────────
+ * • La QUANTITÉ. On ne pouvait ajouter qu'une pièce à la fois, alors que
+ *   `cartStore.addItem` accepte une quantité depuis toujours. Pour un boubou
+ *   de cérémonie commandé en plusieurs exemplaires, c'était le parcours du
+ *   combattant.
+ * • Le CŒUR. Il existait sur la carte produit et disparaissait sur la fiche —
+ *   soit exactement là où l'on hésite.
+ * • Le SUPPLÉMENT DE VARIANTE. La colonne affichait `product.price` pendant
+ *   que le panier facturait `price + variant.price_adjustment` : la fiche
+ *   annonçait un prix, le panier en réclamait un autre. Le prix suit
+ *   maintenant la variante choisie, et le supplément est dit à voix haute.
+ * • Le STOCK RÉEL de la variante. `variants.find()` renvoyait la première
+ *   variante même sans aucune sélection : la fiche pouvait annoncer « épuisé »
+ *   sur la foi d'une taille que le client n'avait pas demandée.
+ *
+ * ── Ce qui n'a pas été ajouté, volontairement ───────────────────────────────
+ * • Pas de bouton WhatsApp : il avait été retiré à la demande, et le Layout
+ *   pose déjà une bulle WhatsApp flottante sur toutes les pages.
+ * • Pas de référence article : le modèle `Product` n'a pas de SKU.
+ * • Pas de note en dur. La ligne d'avis ne s'affiche que s'il existe vraiment
+ *   des avis approuvés (`rating_avg`, `review_count`).
+ * • Les couleurs restent des boutons de texte : elles sont saisies en texte
+ *   libre en admin, sans code hexadécimal. Le jour où `ProductVariant` gagne
+ *   un champ couleur, la pastille ronde devient possible.
+ */
 
-/* ── Boutons de partage ── */
-const ShareButtons = ({ product }) => {
-  const [copied, setCopied] = useState(false);
-  const url = window.location.href;
-  const text = `${product.name} — ${new Intl.NumberFormat('fr-FR').format(product.price)} FCFA sur Golden Pousso`;
-
-  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`, '_blank');
-  const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
-  const copyLink = () => {
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  const btnBase = {
-    display: 'flex', alignItems: 'center', gap: '0.6rem',
-    padding: '0.8rem 1.6rem',
-    border: '1px solid #2A2A2A', borderRadius: '2px',
-    background: 'transparent', cursor: 'pointer',
-    fontSize: '1.2rem', fontFamily: 'Inter, sans-serif',
-    letterSpacing: '0.08em', transition: 'border-color 0.2s, color 0.2s',
-  };
-
-  return (
-    <div style={{ marginTop: '3rem', paddingTop: '2.4rem', borderTop: '1px solid #2A2A2A', display: 'flex', alignItems: 'center', gap: '1.2rem', flexWrap: 'wrap' }}>
-      <span style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#7A6A50' }}>
-        Partager
-      </span>
-      <button onClick={shareWhatsApp} style={{ ...btnBase, color: '#25D366' }}
-        onMouseEnter={(e) => e.currentTarget.style.borderColor = '#25D366'}
-        onMouseLeave={(e) => e.currentTarget.style.borderColor = '#CEC0A0'}
-      >
-        <i className="bx bxl-whatsapp" style={{ fontSize: '1.7rem' }}></i> WhatsApp
-      </button>
-      <button onClick={shareFacebook} style={{ ...btnBase, color: '#1877F2' }}
-        onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1877F2'}
-        onMouseLeave={(e) => e.currentTarget.style.borderColor = '#CEC0A0'}
-      >
-        <i className="bx bxl-facebook" style={{ fontSize: '1.7rem' }}></i> Facebook
-      </button>
-      <button onClick={copyLink} style={{ ...btnBase, color: copied ? '#22c55e' : '#7A6A50', borderColor: copied ? '#22c55e' : '#CEC0A0' }}>
-        <i className={`bx ${copied ? 'bx-check' : 'bx-link'}`} style={{ fontSize: '1.7rem' }}></i>
-        {copied ? 'Copié !' : 'Copier'}
-      </button>
-    </div>
-  );
-};
-
-/* ── PLPCard (produits similaires) ── */
-const SimilarCard = ({ product }) => {
-  const navigate = useNavigate();
-  const [hovered, setHovered] = useState(false);
-  const outOfStock = product.stock === 0;
-
-  return (
-    <div
-      onClick={() => !outOfStock && navigate(`/produit/${product.slug}`)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        cursor: outOfStock ? 'default' : 'pointer',
-        opacity: outOfStock ? 0.55 : 1,
-        transform: hovered && !outOfStock ? 'translateY(-4px)' : 'translateY(0)',
-        transition: 'transform 0.3s ease',
-      }}
-    >
-      <div style={{ position: 'relative', aspectRatio: '3/4', overflow: 'hidden', marginBottom: '1.6rem', background: '#E8DCC8', borderRadius: '2px' }}>
-        {product.primary_image ? (
-          <CldImg src={product.primary_image} alt={product.name}
-            sizes="(max-width: 640px) 100vw, 25vw" widths={[300, 600]}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
-              opacity: hovered && product.secondary_image ? 0 : 1,
-              transform: hovered && !product.secondary_image ? 'scale(1.08)' : 'scale(1)',
-              transition: 'opacity 0.7s ease, transform 0.7s ease' }} />
-        ) : (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: '1.1rem', color: '#7A6A50', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Photo bientôt</span>
-          </div>
-        )}
-        {product.secondary_image && (
-          <CldImg src={product.secondary_image} alt={product.name}
-            sizes="(max-width: 640px) 100vw, 25vw" widths={[300, 600]}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: hovered ? 1 : 0, transition: 'opacity 0.7s ease' }} />
-        )}
-      </div>
-      <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.4rem', fontWeight: 500, color: '#1A1208', marginBottom: '0.4rem' }}>{product.name}</h3>
-      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.3rem', color: '#B8960A' }}>
-        {formatFCFA(product.price)}
-        <span style={{ color: '#7A6A50', marginLeft: '0.4rem' }}>| {toEUR(product.price)} €</span>
-      </p>
-    </div>
-  );
-};
-
-/* ── Page principale ── */
 const ProduitPage = () => {
   const { slug } = useParams();
-  const navigate = useNavigate();
   const addItem = useCartStore((s) => s.addItem);
+  const currency = useSettingsStore((s) => s.currency);
 
   const [product, setProduct] = useState(null);
   const [similar, setSimilar] = useState([]);
@@ -123,17 +84,24 @@ const ProduitPage = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
-  const [quantity, setQuantity] = useState(1);
-  const [imgZoomed, setImgZoomed] = useState(false);
-  const [zoomOrigin, setZoomOrigin] = useState('50% 50%');
+  const [quantite, setQuantite] = useState(1);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
-  const handleImgMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setZoomOrigin(`${x}% ${y}%`);
-  };
+  /* ── Loupe ──────────────────────────────────────────────────────────────
+     `zoom` : la loupe est active. `origine` : le point de la photo, en %, que
+     le pointeur désigne — c'est le `transform-origin` de l'agrandissement,
+     donc le détail reste sous le curseur au lieu de fuir vers un coin.
+     `hdDemandee` ne redescend jamais à false : la variante haute définition
+     est montée au premier survol et le reste, sinon chaque entrée dans la
+     photo relancerait un téléchargement et ferait clignoter le détail. */
+  const [zoom, setZoom] = useState(false);
+  const [origine, setOrigine] = useState({ x: 50, y: 50 });
+  const [hdDemandee, setHdDemandee] = useState(false);
+
+  // Un booléen et non l'objet du magasin : un sélecteur qui renvoie un nouvel
+  // objet à chaque rendu ferait boucler zustand.
+  const aime = useFavorisStore((s) => s.items.some((f) => f.id === product?.id));
+  const basculerFavori = useFavorisStore((s) => s.basculer);
 
   useEffect(() => {
     setLoading(true);
@@ -141,7 +109,9 @@ const ProduitPage = () => {
     setSelectedImage(0);
     setSelectedSize('');
     setSelectedColor('');
-    setQuantity(1);
+    setQuantite(1);
+    setZoom(false);
+    setHdDemandee(false);
 
     apiClient.get(`/products/${slug}/`)
       .then((r) => {
@@ -156,78 +126,112 @@ const ProduitPage = () => {
       .finally(() => setLoading(false));
   }, [slug]);
 
-  if (loading) return (
-    <div style={{ background: '#FAF6EE', minHeight: '100vh', padding: '16rem 4rem 8rem' }}>
-      <div style={{ maxWidth: '120rem', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6rem' }}>
-        <SkeletonCard />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingTop: '2rem' }}>
-          {[70, 45, 30, 80, 55].map((w, i) => (
-            <div key={i} style={{ height: '2rem', background: '#E8DCC8', borderRadius: '2px', width: `${w}%`, animation: 'pulse 1.5s ease-in-out infinite' }} />
-          ))}
-        </div>
+  if (loading) {
+    return (
+      <div className="fp fp-etat">
+        <p className="fp-etat-texte">Chargement…</p>
+        <style>{FEUILLE}</style>
       </div>
-      <style>{`@keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:.7} }`}</style>
-    </div>
-  );
+    );
+  }
 
-  if (error || !product) return (
-    <div style={{ background: '#FAF6EE', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem', textAlign: 'center' }}>
-      <div>
-        <p style={{ fontSize: '4rem', marginBottom: '2rem', color: '#B8960A' }}>✕</p>
-        <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.8rem', color: '#1A1208', marginBottom: '1.2rem' }}>Produit introuvable</h2>
-        <Link to="/recherche" style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: '#B8960A', textDecoration: 'none', borderBottom: '1px solid #B8960A', paddingBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-          Retour à la boutique
-        </Link>
+  if (error || !product) {
+    return (
+      <div className="fp fp-etat">
+        <h1>Pièce introuvable</h1>
+        <Link to="/boutique" className="btn btn--primary btn--auto">Retour à la boutique</Link>
+        <style>{FEUILLE}</style>
       </div>
-    </div>
-  );
+    );
+  }
 
-  const images = product.images?.length ? product.images : [];
-  const currentImage = images[selectedImage];
-  const sizes = [...new Set(product.variants?.map((v) => v.size).filter(Boolean))];
-  const colors = [...new Set(product.variants?.map((v) => v.color).filter(Boolean))];
-  const stockVariant = product.variants?.find(
-    (v) => (!selectedSize || v.size === selectedSize) && (!selectedColor || v.color === selectedColor)
-  );
-  const availableStock = stockVariant?.stock ?? product.stock;
-  const outOfStock = availableStock === 0;
-  const discountPercent = product.old_price && product.old_price > product.price
-    ? Math.round(((product.old_price - product.price) / product.old_price) * 100)
+  // La vidéo, quand le produit en a une, occupe la première place de la galerie.
+  const media = [
+    ...(product.video_url ? [{ type: 'video', key: 'video', src: product.video_url }] : []),
+    ...(product.images ?? []).map((img) => ({
+      type: 'image', key: `img-${img.id}`, src: img.image, alt: img.alt_text,
+    })),
+  ];
+  const courant = media[selectedImage];
+  // On garde l'index d'origine : c'est lui qui pilote le visuel principal.
+  const vues = media.map((m, index) => ({ media: m, index }));
+
+  const tailles = [...new Set(product.variants?.map((v) => v.size).filter(Boolean))];
+  const couleurs = [...new Set(product.variants?.map((v) => v.color).filter(Boolean))];
+
+  /* La variante n'existe QUE si le client a choisi quelque chose. Sans ce
+     garde-fou, `find()` renvoie la première variante du produit et la fiche
+     parle du stock d'une taille que personne n'a demandée. */
+  const aChoisi = Boolean(selectedSize || selectedColor);
+  const variante = aChoisi
+    ? product.variants?.find(
+        (v) => (!selectedSize || v.size === selectedSize) && (!selectedColor || v.color === selectedColor)
+      ) ?? null
     : null;
 
-  const handleAddToCart = () => {
-    if (sizes.length > 0 && !selectedSize) { toast.error('Veuillez choisir une taille'); return; }
-    const variant = product.variants?.find(
-      (v) => (!selectedSize || v.size === selectedSize) && (!selectedColor || v.color === selectedColor)
-    ) ?? null;
-    addItem(product, variant, quantity);
-    toast.success(`${product.name} ajouté au panier !`);
+  const stockDispo = variante ? variante.stock : product.stock;
+  const epuise = stockDispo === 0;
+  // Sous ce seuil, le dire est une information ; au-dessus, c'est une ficelle.
+  const presqueEpuise = stockDispo > 0 && stockDispo <= 3;
+
+  /* La quantité est BORNÉE au rendu, pas remise à 1 par un effet. Changer de
+     taille change le stock : une quantité de 4 retenue d'une taille où il en
+     restait 6 n'a plus de sens sur une taille où il en reste 1. La borner ici
+     la ramène à ce qui est réellement disponible sans effacer le choix du
+     client quand la nouvelle taille en a assez — et évite le rendu en cascade
+     qu'un `setQuantite` dans un effet provoquerait. */
+  const qte = Math.min(quantite, Math.max(1, stockDispo));
+
+  /* Le panier facture `price + price_adjustment`. La fiche doit donc annoncer
+     la même chose, supplément compris, sinon le montant change en cours de
+     route. L'ancien prix suit le même décalage : la remise reste calculée sur
+     les deux nombres réellement affichés. */
+  const supplement = Number(variante?.price_adjustment ?? 0);
+  const prix = Number(product.price) + supplement;
+  const prixAvant = product.old_price ? Number(product.old_price) + supplement : null;
+  const remise = prixAvant && prixAvant > prix
+    ? Math.round((1 - prix / prixAvant) * 100)
+    : 0;
+
+  const ajouterAuPanier = () => {
+    if (tailles.length > 0 && !selectedSize) {
+      toast.error('Choisissez une taille');
+      return;
+    }
+    addItem(product, variante, qte);
+    toast.success(qte > 1
+      ? `${qte} × ${product.name} ajoutés au panier`
+      : `${product.name} ajouté au panier`);
   };
 
-  const handleBuyNow = () => {
-    if (sizes.length > 0 && !selectedSize) { toast.error('Veuillez choisir une taille'); return; }
-    const variant = product.variants?.find(
-      (v) => (!selectedSize || v.size === selectedSize) && (!selectedColor || v.color === selectedColor)
-    ) ?? null;
-    addItem(product, variant, quantity);
-    navigate('/commande');
+  const changerQuantite = (delta) => {
+    setQuantite(Math.min(Math.max(1, qte + delta), Math.max(1, stockDispo)));
   };
 
-  const whatsappOrderUrl = () => {
-    const lines = [
-      'Bonjour Golden Pousso, je souhaite commander :',
-      product.name,
-      selectedSize ? `Taille : ${selectedSize}` : null,
-      selectedColor ? `Couleur : ${selectedColor}` : null,
-      `Quantité : ${quantity}`,
-      `Prix : ${formatFCFA(product.price)}`,
-      window.location.href,
-    ].filter(Boolean);
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
+  /* La loupe ne vaut que pour une photo : sur une vidéo elle masquerait les
+     contrôles natifs, qui occupent précisément la bande où l'on pointe. */
+  const zoomable = courant?.type === 'image';
+
+  const suivrePointeur = (e) => {
+    if (!zoomable || !MQ_POINTEUR_FIN?.matches) return;
+    // La bande de vues est posée EN SURIMPRESSION sur le bas du visuel : sans
+    // cette sortie, viser une miniature ferait plonger l'agrandissement vers
+    // le bas de la photo au moment même où l'on s'apprête à en changer.
+    if (e.target.closest('.fp-vues')) { setZoom(false); return; }
+    const r = e.currentTarget.getBoundingClientRect();
+    setOrigine({
+      x: ((e.clientX - r.left) / r.width) * 100,
+      y: ((e.clientY - r.top) / r.height) * 100,
+    });
+    setZoom(true);
+    setHdDemandee(true);
   };
+
+  const note = product.rating_avg;
+  const nbAvis = product.review_count;
 
   return (
-    <div style={{ background: '#FAF6EE', minHeight: '100vh', color: '#1A1208', paddingTop: '10rem', paddingBottom: '10rem' }}>
+    <div className="fp">
       <SEOHead
         title={product.name}
         description={product.description ? product.description.slice(0, 155) : undefined}
@@ -236,363 +240,680 @@ const ProduitPage = () => {
         type="product"
       />
 
-      <div style={{ maxWidth: '120rem', margin: '0 auto', padding: '0 4rem' }}>
+      <div className="fp-shell">
+        {/* Le fil d'Ariane complet a été retiré à la demande. Il ne reste que
+            le rayon : « Accueil » est déjà dans la navigation permanente, et
+            le dernier maillon répétait le titre affiché deux lignes plus bas.
+            Ce qui restait d'utile — repartir vers le rayon — tient en un mot. */}
+        <nav className="fp-fil" aria-label="Rayon">
+          <Link to={`/categorie/${product.category?.slug}`} className="eyebrow">
+            {product.category?.name}
+          </Link>
+        </nav>
 
-
-
-        {/* ── Contenu principal ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8rem', alignItems: 'flex-start' }} className="produit-grid">
-
+        <div className="fp-grille">
           {/* ── Galerie ── */}
-          <div>
-            {/* Image principale */}
-            <div
-              onMouseEnter={() => currentImage && setImgZoomed(true)}
-              onMouseLeave={() => { setImgZoomed(false); setZoomOrigin('50% 50%'); }}
-              onMouseMove={handleImgMouseMove}
-              style={{
-                aspectRatio: '3/4', overflow: 'hidden',
-                background: '#E8DCC8', borderRadius: '2px',
-                cursor: imgZoomed ? 'crosshair' : 'default',
-                position: 'relative',
-              }}
-            >
-              {currentImage ? (
-                <CldImg src={currentImage.image} alt={currentImage.alt_text || product.name}
+          {/* Le point de mire descend en variables CSS plutôt qu'en transform
+              inline : la règle de grossissement reste dans la feuille, avec le
+              garde-fou « pointeur fin » qu'un style inline ne saurait pas
+              porter. */}
+          <div
+            className={`fp-visuel ${zoomable ? 'peut-zoomer' : ''} ${zoom ? 'est-zoom' : ''}`}
+            style={{ '--zx': `${origine.x}%`, '--zy': `${origine.y}%` }}
+            onMouseMove={suivrePointeur}
+            onMouseLeave={() => setZoom(false)}
+          >
+            {courant?.type === 'video' ? (
+              <video
+                key={courant.src}
+                src={courant.src}
+                controls autoPlay muted loop playsInline
+              />
+            ) : courant ? (
+              <>
+                <CldImg
+                  src={courant.src}
+                  alt={courant.alt || product.name}
                   eager
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  widths={[600, 900]}
-                  style={{
-                    width: '100%', height: '100%', objectFit: 'cover',
-                    transform: imgZoomed ? 'scale(1.8)' : 'scale(1)',
-                    transformOrigin: zoomOrigin,
-                    transition: imgZoomed ? 'transform 0.1s ease' : 'transform 0.35s ease',
-                    willChange: 'transform',
-                  }} />
-              ) : (
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: '1.2rem', color: '#7A6A50', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Photo bientôt</span>
-                </div>
-              )}
+                  sizes="(max-width: 900px) 100vw, 50vw"
+                  widths={[800, 1600]}
+                />
+                {/* Sans cette seconde couche, la loupe agrandirait la variante
+                    choisie pour l'affichage — 800 px étirés sur 1 240, soit
+                    une broderie plus floue une fois grossie qu'à plat. On ne
+                    la télécharge qu'au premier survol : sur une 3G, personne
+                    ne paie 1 600 px pour une loupe dont il ne se sert pas. */}
+                {hdDemandee && (
+                  <CldImg
+                    className="fp-hd"
+                    src={courant.src}
+                    alt=""
+                    aria-hidden="true"
+                    eager
+                    sizes="1600px"
+                    widths={[1600]}
+                  />
+                )}
+              </>
+            ) : (
+              <span className="fp-vide">Photo bientôt</span>
+            )}
 
-              {/* Flèches navigation */}
-              {images.length > 1 && (
-                <>
+            {/* La bande montre TOUTES les vues, y compris celle affichée :
+                masquer la première la rendait inatteignable dès le premier
+                clic sur une autre. Quand la vue courante est une vidéo, la
+                bande se relève pour ne pas couvrir les contrôles natifs. */}
+            {vues.length > 1 && (
+              <div className={`fp-vues ${courant?.type === 'video' ? 'est-video' : ''}`}>
+                {vues.map(({ media: m, index: i }) => (
                   <button
-                    onClick={(e) => { e.stopPropagation(); setSelectedImage((i) => (i - 1 + images.length) % images.length); }}
-                    style={{ position: 'absolute', left: '1.2rem', top: '50%', transform: 'translateY(-50%)', width: '4rem', height: '4rem', background: 'rgba(250,246,238,0.9)', border: '1px solid #2A2A2A', color: '#1A1208', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', transition: 'border-color 0.2s, color 0.2s' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#B8960A'; e.currentTarget.style.color = '#B8960A'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#CEC0A0'; e.currentTarget.style.color = '#1A1208'; }}
+                    key={m.key}
+                    type="button"
+                    onClick={() => { setSelectedImage(i); setZoom(false); }}
+                    aria-label={`Afficher la vue ${i + 1} de ${product.name}`}
+                    aria-current={selectedImage === i}
+                    className={`fp-vue ${selectedImage === i ? 'is-active' : ''}`}
                   >
-                    <i className="bx bx-chevron-left"></i>
+                    {m.type === 'video'
+                      ? <video src={m.src} muted playsInline preload="metadata" />
+                      : <CldImg src={m.src} alt="" sizes="72px" widths={[160, 320]} />}
                   </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setSelectedImage((i) => (i + 1) % images.length); }}
-                    style={{ position: 'absolute', right: '1.2rem', top: '50%', transform: 'translateY(-50%)', width: '4rem', height: '4rem', background: 'rgba(250,246,238,0.9)', border: '1px solid #2A2A2A', color: '#1A1208', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', transition: 'border-color 0.2s, color 0.2s' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#B8960A'; e.currentTarget.style.color = '#B8960A'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#CEC0A0'; e.currentTarget.style.color = '#1A1208'; }}
-                  >
-                    <i className="bx bx-chevron-right"></i>
-                  </button>
-                </>
-              )}
-
-            </div>
-
-            {/* Miniatures */}
-            {images.length > 1 && (
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.2rem', flexWrap: 'wrap' }}>
-                {images.map((img, i) => (
-                  <div key={img.id} onClick={() => setSelectedImage(i)}
-                    style={{
-                      width: '7rem', aspectRatio: '3/4', overflow: 'hidden',
-                      border: `1px solid ${selectedImage === i ? '#B8960A' : '#CEC0A0'}`,
-                      cursor: 'pointer', flexShrink: 0,
-                      background: '#E8DCC8', borderRadius: '2px',
-                      transition: 'border-color 0.2s',
-                    }}>
-                    <CldImg src={img.image} alt={img.alt_text} widths={[150, 300]} sizes="112px" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* ── Infos produit ── */}
-          <div style={{ paddingTop: '2rem' }}>
+          {/* ── Colonne d'achat ── */}
+          <div className="fp-achat">
+            {/* La colonne s'ouvre sur le titre : le rayon est déjà en tête de
+                page, au même dessin et à la même taille, et deux fois le même
+                mot à trois centimètres d'écart ne se lit qu'une. */}
+            <h1 className="fp-titre">{product.name}</h1>
 
-            {/* Badges */}
-            <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '2rem' }}>
-              {product.is_new && (
-                <span style={{ background: '#B8960A', color: '#FAF6EE', padding: '0.4rem 1.2rem', fontSize: '1rem', fontFamily: 'Inter, sans-serif', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-                  Nouveau
+            {/* La ligne ne s'affiche que s'il existe vraiment des avis. */}
+            {note && nbAvis > 0 && (
+              <div className="fp-note">
+                <span className="fp-etoiles" aria-hidden="true">
+                  {'★'.repeat(Math.round(note))}{'☆'.repeat(5 - Math.round(note))}
+                </span>
+                <span className="fp-note-texte">
+                  {String(note).replace('.', ',')} · {nbAvis} avis
+                </span>
+              </div>
+            )}
+
+            <div className="fp-prix-ligne">
+              <span className="fp-prix">{formatPrice(prix, currency)}</span>
+              {prixAvant && prixAvant > prix && (
+                <span className="fp-prix-avant">
+                  <span className="visually-hidden">Ancien prix : </span>
+                  {formatPrice(prixAvant, currency)}
                 </span>
               )}
-              {discountPercent && (
-                <span style={{ background: '#C2662D', color: '#1A1208', padding: '0.4rem 1.2rem', fontSize: '1rem', fontFamily: 'Inter, sans-serif', fontWeight: 700, letterSpacing: '0.1em' }}>
-                  −{discountPercent}%
-                </span>
-              )}
+              {remise > 0 && <span className="badge badge--promo">−{remise} %</span>}
             </div>
 
-            {/* Catégorie */}
-            <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.25em', color: '#B8960A', marginBottom: '1.2rem' }}>
-              <Link to={`/categorie/${product.category.slug}`} style={{ color: '#B8960A', textDecoration: 'none' }}>
-                {product.category.name}
-              </Link>
-            </p>
-
-            {/* Nom */}
-            <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.8rem, 3.5vw, 4rem)', color: '#1A1208', letterSpacing: '-0.01em', lineHeight: 1.1, marginBottom: '2.4rem' }}>
-              {product.name}
-            </h1>
-
-            {/* Prix */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '1.6rem', marginBottom: '0.8rem' }}>
-              <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '2.8rem', color: '#B8960A', letterSpacing: '-0.01em' }}>
-                {formatFCFA(product.price)}
-              </span>
-              {product.old_price && (
-                <span style={{ fontSize: '1.8rem', color: '#7A6A50', textDecoration: 'line-through', fontFamily: 'Inter, sans-serif' }}>
-                  {formatFCFA(product.old_price)}
-                </span>
-              )}
-            </div>
-
-            {/* Stock */}
-            <p style={{
-              fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', letterSpacing: '0.1em',
-              textTransform: 'uppercase', marginBottom: '3rem',
-              color: outOfStock ? '#ef4444' : availableStock <= 3 ? '#e8a000' : '#22c55e',
-            }}>
-              ● {outOfStock ? 'Rupture de stock' : availableStock <= 3 ? `Stock limité — ${availableStock} restant${availableStock > 1 ? 's' : ''}` : 'En stock'}
-            </p>
-
-            {/* Description */}
-            {product.description && (
-              <p style={{ fontSize: '1.4rem', fontFamily: 'Inter, sans-serif', color: '#7A6A50', lineHeight: 1.8, marginBottom: '3rem', borderTop: '1px solid #2A2A2A', paddingTop: '2.4rem' }}>
-                {product.description}
+            {/* Un prix qui bouge quand on choisit une taille, sans qu'on dise
+                pourquoi, passe pour une erreur — ou pour un piège. */}
+            {supplement !== 0 && (
+              <p className="fp-supplement">
+                {supplement > 0 ? 'Dont ' : 'Remise de '}
+                {formatPrice(Math.abs(supplement), currency)} pour cette variante.
               </p>
             )}
 
-            {/* Tailles */}
-            {sizes.length > 0 && (
-              <div style={{ marginBottom: '2.4rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem' }}>
-                  <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#7A6A50' }}>
-                    Taille
-                  </p>
+            {/* La description est lue directement, et lue TÔT : elle tient la
+                place du chapô, entre le prix et les choix. On sait ce qu'on
+                achète avant de choisir une taille, pas après avoir cliqué sur
+                un accordéon en bas de colonne. */}
+            <div className="fp-description">
+              <span className="eyebrow">La pièce</span>
+              <p>{product.description || 'Description à venir.'}</p>
+            </div>
+
+            {couleurs.length > 0 && (
+              <div className="fp-bloc-choix">
+                <div className="fp-bloc-entete">
+                  <span className="fp-bloc-titre">Couleur</span>
+                  <span className="fp-bloc-valeur">{selectedColor || 'Au choix'}</span>
+                </div>
+                <div className="fp-options">
+                  {couleurs.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setSelectedColor(selectedColor === c ? '' : c)}
+                      aria-pressed={selectedColor === c}
+                      className={`fp-option ${selectedColor === c ? 'is-active' : ''}`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {tailles.length > 0 && (
+              <div className="fp-bloc-choix">
+                <div className="fp-bloc-entete">
+                  <span className="fp-bloc-titre">Taille</span>
                   <button
+                    type="button"
                     onClick={() => setSizeGuideOpen(true)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', color: '#B8960A', textDecoration: 'underline', letterSpacing: '0.05em' }}
+                    className="fp-lien-bouton link-reveal"
                   >
                     Guide des tailles
                   </button>
                 </div>
-                <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
-                  {sizes.map((size) => {
-                    const v = product.variants?.find((v) => v.size === size);
-                    const soldOut = v && v.stock === 0;
-                    const active = selectedSize === size;
-                    return (
-                      <button key={size} onClick={() => !soldOut && setSelectedSize(active ? '' : size)}
-                        disabled={soldOut}
-                        style={{
-                          padding: '0.8rem 2rem', borderRadius: '2px',
-                          cursor: soldOut ? 'not-allowed' : 'pointer',
-                          border: `1px solid ${active ? '#B8960A' : '#CEC0A0'}`,
-                          background: active ? '#B8960A' : 'transparent',
-                          color: soldOut ? '#CEC0A0' : active ? '#FAF6EE' : '#1A1208',
-                          fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', letterSpacing: '0.08em',
-                          textDecoration: soldOut ? 'line-through' : 'none',
-                          transition: 'all 0.2s ease',
-                        }}>
-                        {size}
-                      </button>
-                    );
-                  })}
+                <div className="fp-options">
+                  {tailles.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setSelectedSize(selectedSize === t ? '' : t)}
+                      aria-pressed={selectedSize === t}
+                      className={`fp-option ${selectedSize === t ? 'is-active' : ''}`}
+                    >
+                      {t}
+                    </button>
+                  ))}
                 </div>
-                {sizes.length > 0 && !selectedSize && (
-                  <p style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: '#C2662D', marginTop: '0.8rem' }}>
-                    Choisissez une taille
-                  </p>
-                )}
+                {/* Le sur-mesure était redit ici. Il ouvre maintenant la carte
+                    des promesses, à quelques centimètres sous le bouton : le
+                    répéter deux fois dans une colonne le fait lire zéro. */}
               </div>
             )}
 
-            {/* Couleurs */}
-            {colors.length > 0 && (
-              <div style={{ marginBottom: '2.4rem' }}>
-                <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#7A6A50', marginBottom: '1.2rem' }}>
-                  Couleur
+            {epuise ? (
+              <div className="fp-rupture">
+                <p className="fp-rupture-titre">
+                  {selectedSize
+                    ? `Taille ${selectedSize} épuisée pour le moment.`
+                    : 'Pièce épuisée pour le moment.'}
                 </p>
-                <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
-                  {colors.map((color) => {
-                    const active = selectedColor === color;
-                    return (
-                      <button key={color} onClick={() => setSelectedColor(active ? '' : color)}
-                        style={{
-                          padding: '0.8rem 2rem', borderRadius: '2px', cursor: 'pointer',
-                          border: `1px solid ${active ? '#B8960A' : '#CEC0A0'}`,
-                          background: active ? 'rgba(184,150,10,0.1)' : 'transparent',
-                          color: active ? '#B8960A' : '#1A1208',
-                          fontSize: '1.3rem', fontFamily: 'Inter, sans-serif',
-                          transition: 'all 0.2s ease',
-                        }}>
-                        {color}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Quantité */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginBottom: '3rem' }}>
-              <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#7A6A50' }}>
-                Quantité
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #2A2A2A' }}>
-                <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  style={{ width: '4rem', height: '4rem', background: 'transparent', border: 'none', color: '#1A1208', cursor: 'pointer', fontSize: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#E8DCC8'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >−</button>
-                <span style={{ minWidth: '4rem', textAlign: 'center', fontSize: '1.6rem', fontFamily: 'Inter, sans-serif', color: '#1A1208', fontVariantNumeric: 'tabular-nums' }}>
-                  {quantity}
-                </span>
-                <button onClick={() => setQuantity((q) => Math.min(availableStock, q + 1))}
-                  style={{ width: '4rem', height: '4rem', background: 'transparent', border: 'none', color: '#1A1208', cursor: 'pointer', fontSize: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#E8DCC8'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >+</button>
-              </div>
-            </div>
-
-            {/* CTA */}
-            <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap' }}>
-              <button onClick={handleAddToCart} disabled={outOfStock}
-                style={{
-                  flex: 1, minWidth: '18rem', padding: '1.6rem 2rem',
-                  background: outOfStock ? '#E8DCC8' : '#B8960A',
-                  color: outOfStock ? '#7A6A50' : '#FAF6EE',
-                  border: 'none', cursor: outOfStock ? 'not-allowed' : 'pointer',
-                  fontSize: '1.2rem', fontFamily: 'Inter, sans-serif',
-                  fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em',
-                  transition: 'background 0.25s, color 0.25s',
-                }}
-                onMouseEnter={(e) => { if (!outOfStock) { e.currentTarget.style.background = '#C2662D'; e.currentTarget.style.color = '#1A1208'; } }}
-                onMouseLeave={(e) => { if (!outOfStock) { e.currentTarget.style.background = '#B8960A'; e.currentTarget.style.color = '#FAF6EE'; } }}
-              >
-                {outOfStock ? 'Épuisé' : 'Ajouter au panier'}
-              </button>
-              <button onClick={handleBuyNow} disabled={outOfStock}
-                style={{
-                  flex: 1, minWidth: '18rem', padding: '1.6rem 2rem',
-                  background: 'transparent',
-                  color: outOfStock ? '#7A6A50' : '#1A1208',
-                  border: `1px solid ${outOfStock ? '#CEC0A0' : '#1A1208'}`,
-                  cursor: outOfStock ? 'not-allowed' : 'pointer',
-                  fontSize: '1.2rem', fontFamily: 'Inter, sans-serif',
-                  fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em',
-                  transition: 'border-color 0.25s, color 0.25s',
-                }}
-                onMouseEnter={(e) => { if (!outOfStock) { e.currentTarget.style.borderColor = '#B8960A'; e.currentTarget.style.color = '#B8960A'; } }}
-                onMouseLeave={(e) => { if (!outOfStock) { e.currentTarget.style.borderColor = '#1A1208'; e.currentTarget.style.color = '#1A1208'; } }}
-              >
-                Acheter maintenant
-              </button>
-            </div>
-
-            {outOfStock && (
-              <div style={{ marginTop: '1.6rem' }}>
-                <p style={{ fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', color: '#7A6A50', marginBottom: '1rem' }}>
-                  Ce produit est épuisé. Laissez votre email pour être averti(e) dès son retour en stock.
+                <p className="fp-rupture-texte">
+                  Laissez votre e-mail : vous serez prévenu(e) dès le retour en atelier.
                 </p>
                 <StockAlertForm productSlug={product.slug} />
               </div>
-            )}
+            ) : (
+              <>
+                <div className="fp-actions">
+                  <div className="fp-qte" role="group" aria-label="Quantité">
+                    <button
+                      type="button"
+                      onClick={() => changerQuantite(-1)}
+                      disabled={qte <= 1}
+                      aria-label="Retirer une pièce"
+                    >−</button>
+                    <span className="fp-qte-valeur" aria-live="polite">{qte}</span>
+                    <button
+                      type="button"
+                      onClick={() => changerQuantite(1)}
+                      disabled={qte >= stockDispo}
+                      aria-label="Ajouter une pièce"
+                    >+</button>
+                  </div>
 
-            {/* Commander via WhatsApp */}
-            <a
-              href={whatsappOrderUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.9rem',
-                width: '100%', padding: '1.4rem 2rem', marginTop: '1.2rem',
-                background: 'transparent', border: '1px solid #25D366', color: '#25D366',
-                fontSize: '1.2rem', fontFamily: 'Inter, sans-serif', fontWeight: 600,
-                textTransform: 'uppercase', letterSpacing: '0.15em', textDecoration: 'none',
-                transition: 'background 0.2s, color 0.2s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#25D366'; e.currentTarget.style.color = '#FAF6EE'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#25D366'; }}
-            >
-              <i className="bx bxl-whatsapp" style={{ fontSize: '1.8rem' }}></i>
-              Commander via WhatsApp
-            </a>
+                  <button type="button" onClick={ajouterAuPanier} className="btn btn--primary fp-cta">
+                    Ajouter au panier
+                  </button>
 
-            {/* Fabrication — storytelling atelier */}
-            <div style={{ marginTop: '3rem', padding: '2rem 2.2rem', background: '#F4EFE4', borderLeft: '3px solid #B8960A' }}>
-              <p style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: '#5A4C36', lineHeight: 1.8, fontStyle: 'italic' }}>
-                « Confectionnée à la main dans notre atelier de Pikine Tally Boumack, Dakar — chaque pièce Golden Pousso peut nécessiter plusieurs jours de travail artisanal, dans le respect des techniques de couture traditionnelles sénégalaises. »
-              </p>
-            </div>
-
-            {/* Partager */}
-            <ShareButtons product={product} />
-
-            {/* Réassurance mini */}
-            <div style={{ marginTop: '3rem', paddingTop: '2.4rem', borderTop: '1px solid #2A2A2A', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {[
-                { icon: 'bx-car', text: 'Livraison Dakar & Thiès — retrait gratuit en boutique' },
-                { icon: 'bx-store', text: 'Atelier à Pikine Tally Boumack, Dakar' },
-                { icon: 'bx-shield', text: 'Paiement sécurisé — Wave, Orange Money, Free Money' },
-              ].map(({ icon, text }) => (
-                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
-                  <i className={`bx ${icon}`} style={{ fontSize: '1.8rem', color: '#B8960A' }}></i>
-                  <span style={{ fontSize: '1.3rem', fontFamily: 'Inter, sans-serif', color: '#7A6A50' }}>{text}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      basculerFavori(product);
+                      toast(aime
+                        ? `${product.name} retiré des favoris`
+                        : `${product.name} mis de côté`);
+                    }}
+                    aria-pressed={aime}
+                    aria-label={aime
+                      ? `Retirer ${product.name} des favoris`
+                      : `Mettre ${product.name} de côté`}
+                    className={`fp-coeur ${aime ? 'is-aime' : ''}`}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24"
+                         fill={aime ? 'currentColor' : 'none'}
+                         stroke="currentColor" strokeWidth="1.8"
+                         strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8z" />
+                    </svg>
+                  </button>
                 </div>
-              ))}
-            </div>
+
+                {presqueEpuise && (
+                  <p className="fp-tension">
+                    Plus que {stockDispo} {stockDispo > 1 ? 'pièces disponibles' : 'pièce disponible'}
+                    {selectedSize ? ` en taille ${selectedSize}` : ''}.
+                  </p>
+                )}
+              </>
+            )}
           </div>
         </div>
 
-        <ReviewsSection productSlug={product.slug} />
-
-        {sizeGuideOpen && (
-          <SizeGuideModal categorySlug={product.category?.slug} onClose={() => setSizeGuideOpen(false)} />
-        )}
-
-        {/* ── Produits similaires ── */}
         {similar.length > 0 && (
-          <div style={{ marginTop: '10rem', borderTop: '1px solid #2A2A2A', paddingTop: '7rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginBottom: '1.6rem' }}>
-              <div style={{ width: '4.8rem', height: '1px', background: '#B8960A' }} />
-              <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: '#B8960A' }}>
-                Vous aimerez aussi
-              </p>
-            </div>
-            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.8rem, 4vw, 4.2rem)', color: '#1A1208', letterSpacing: '-0.02em', marginBottom: '5rem' }}>
-              Pièces similaires
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2.4rem' }} className="similar-grid">
-              {similar.map((p) => <SimilarCard key={p.id} product={p} />)}
+          <div className="fp-recos">
+            <h2 className="fp-recos-titre">Dans le même esprit</h2>
+            <div className="fp-recos-grille">
+              {similar.map((p, i) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  index={i}
+                  sizes="(max-width: 640px) 72vw, (max-width: 1024px) 40vw, 22vw"
+                />
+              ))}
             </div>
           </div>
         )}
       </div>
 
+      {sizeGuideOpen && (
+        <SizeGuideModal
+          categorySlug={product.category?.slug}
+          onClose={() => setSizeGuideOpen(false)}
+        />
+      )}
 
-      <style>{`
-        @keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:.7} }
-        @media (max-width: 900px) { .produit-grid { grid-template-columns: 1fr !important; gap: 4rem !important; } }
-        @media (max-width: 700px) { .similar-grid { grid-template-columns: repeat(2, 1fr) !important; } }
-        @media (max-width: 480px) { .similar-grid { grid-template-columns: 1fr !important; } }
-      `}</style>
+      <style>{FEUILLE}</style>
     </div>
   );
 };
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Plus une seule couleur en dur : tout passe par les tokens Or & Indigo de
+   styles.css. Les longueurs sont en rem — la racine du site est à 62,5 %,
+   donc `--s-4` vaut bien 16 px, contrairement aux valeurs en pixels de la
+   source qui étaient calées sur une racine à 16 px.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* La loupe suppose un survol. Au doigt il n'existe pas : un effleurement
+   figerait la photo agrandie sans moyen d'en sortir, et ferait télécharger
+   pour rien la variante 1 600 px. Le même test garde la règle CSS plus bas —
+   les deux doivent rester d'accord. */
+const MQ_POINTEUR_FIN = typeof window !== 'undefined'
+  ? window.matchMedia('(hover: hover) and (pointer: fine)')
+  : null;
+
+const FEUILLE = `
+  .fp {
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    padding-top: 9.6rem;
+  }
+
+  .fp-etat {
+    display: grid;
+    place-items: center;
+    gap: var(--s-5);
+    text-align: center;
+    padding: var(--s-10) var(--page-pad);
+  }
+  .fp-etat-texte { color: var(--text-muted); }
+
+  .fp-shell {
+    margin: 0 auto;
+    max-width: var(--page-max);
+    padding: var(--s-5) var(--page-pad) var(--s-8);
+  }
+
+  /* ── Rayon ──────────────────────────────────────────────────────────────
+     Seul fil d'Ariane de la page. La classe .eyebrow du système porte la
+     taille, la graisse, les capitales et l'interlettrage ; il ne reste ici
+     que le survol.
+     (Pas de backticks dans ce commentaire : il vit dans un template literal,
+     le premier backtick fermerait la chaîne.) */
+  .fp-fil .eyebrow { transition: color var(--dur-1) var(--ease); }
+  .fp-fil a.eyebrow:hover { color: var(--text); }
+
+  .fp-grille {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: var(--s-7);
+    padding-top: var(--s-5);
+    align-items: start;
+  }
+
+  /* ── Galerie ── */
+  .fp-visuel {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: var(--r-3);
+    background: var(--surface-sunk);
+    display: grid;
+    place-items: center;
+  }
+  .fp-visuel > img,
+  .fp-visuel > video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* ── Loupe ────────────────────────────────────────────────────────────────
+     1,55 et pas davantage : au-delà, le cadrage 4/5 ne montre plus la pièce
+     mais un morceau de tissu hors contexte, et le moindre geste de la main
+     balaye la moitié du vêtement. À 1,55 on lit la trame d'un bazin et la
+     broderie sans perdre de vue ce qu'on regarde.
+
+     La propriété scale, et non transform : le point de mire
+     (transform-origin) doit suivre la main SANS retard, alors que le
+     grossissement gagne à s'installer en douceur. Une transition posée sur
+     transform les traiterait ensemble et l'image traînerait derrière le
+     curseur.
+     (Pas de backticks ici : ce commentaire vit dans un template literal.)
+
+     Réservé au pointeur fin. Au doigt il n'existe pas de survol : la règle ne
+     ferait que figer la photo agrandie au premier effleurement, sans moyen
+     d'en sortir. */
+  /* La haute définition ne se montre qu'agrandie : à plat elle n'apporte rien
+     que le poids d'un second décodage à l'écran. */
+  .fp-hd { opacity: 0; }
+
+  @media (hover: hover) and (pointer: fine) {
+    .fp-visuel.peut-zoomer { cursor: zoom-in; }
+    .fp-visuel > img {
+      transform-origin: var(--zx, 50%) var(--zy, 50%);
+      transition: scale var(--dur-2) var(--ease), opacity var(--dur-1) var(--ease);
+    }
+    .fp-visuel.est-zoom > img { scale: 1.55; }
+
+    .fp-visuel.est-zoom .fp-hd { opacity: 1; }
+  }
+
+  /* Le grossissement reste — c'est la fonction même de la loupe ; seule sa
+     mise en route cesse d'être animée. */
+  @media (prefers-reduced-motion: reduce) {
+    .fp-visuel > img { transition: none; }
+  }
+  .fp-vide {
+    font-size: var(--t-xs);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-eyebrow);
+    color: var(--text-muted);
+  }
+
+  /* ── Colonne d'achat ── */
+  .fp-achat { padding-top: var(--s-1); }
+
+  /* Capitales, comme le h1 de la boutique.
+     ⚠ L'interlettrage passe de --ls-display (-0,02em) à +0,02em, et ce n'est
+     pas un détail de goût : un chasse resserrée est faite pour les bas de
+     casse, dont les jambages creusent l'espace. En capitales, toutes les
+     lettres ont la même hauteur et le négatif les fait se toucher. C'est la
+     valeur qu'emploient déjà les autres titres en capitales du site. */
+  .fp-titre {
+    margin-top: var(--s-4);
+    font-family: var(--font-display);
+    font-size: var(--t-h2);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text);
+    text-wrap: balance;
+  }
+
+  .fp-note { display: flex; align-items: center; gap: var(--s-3); margin-top: var(--s-3); }
+  .fp-etoiles { font-size: var(--t-sm); letter-spacing: 2px; color: var(--text-accent); }
+  .fp-note-texte { font-size: var(--t-xs); color: var(--text-muted); }
+
+  .fp-prix-ligne {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-4);
+  }
+  .fp-prix {
+    font-size: 3.2rem;
+    font-weight: 600;
+    letter-spacing: var(--ls-tight);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-accent);
+  }
+  /* La barre est purement visuelle : aucun lecteur d'écran n'annonce un
+     line-through, d'où le libellé « Ancien prix » posé en visually-hidden. */
+  .fp-prix-avant {
+    font-size: var(--t-body);
+    color: var(--text-muted);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+  .fp-supplement {
+    margin-top: var(--s-2);
+    font-size: var(--t-xs);
+    color: var(--text-muted);
+  }
+
+  /* ── Choix ── */
+  .fp-bloc-choix { margin-top: var(--s-6); }
+  .fp-bloc-entete {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-4);
+    margin-bottom: var(--s-3);
+  }
+  .fp-bloc-titre {
+    font-size: var(--t-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .fp-bloc-valeur { font-size: var(--t-sm); color: var(--text); }
+
+  .fp-lien-bouton {
+    font-family: var(--font-body);
+    font-size: var(--t-xs);
+    font-weight: 600;
+    color: var(--text-accent);
+    background: none;
+    cursor: pointer;
+  }
+
+  /* Le rôle décide du rayon : ce sont des actions, donc des pilules. */
+  .fp-options { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+  .fp-option {
+    border: 1px solid var(--line);
+    background: transparent;
+    border-radius: var(--r-pill);
+    padding: 1.1rem var(--s-5);
+    min-height: 4.4rem;
+    font-family: var(--font-body);
+    font-size: var(--t-sm);
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color var(--dur-1) var(--ease),
+                background var(--dur-1) var(--ease),
+                color var(--dur-1) var(--ease);
+  }
+  .fp-option:hover { border-color: var(--gp-brass-700); }
+  .fp-option.is-active {
+    border-color: var(--action-fill);
+    background: var(--action-fill);
+    color: var(--action-fill-text);
+  }
+
+  /* ── Actions ── */
+  .fp-actions {
+    display: flex;
+    align-items: stretch;
+    gap: var(--s-3);
+    margin-top: var(--s-6);
+  }
+
+  .fp-qte {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    overflow: hidden;
+  }
+  .fp-qte button {
+    width: 4.4rem;
+    min-height: 4.8rem;
+    background: none;
+    font-family: var(--font-body);
+    font-size: 1.8rem;
+    line-height: 1;
+    color: var(--text);
+    cursor: pointer;
+    transition: background var(--dur-1) var(--ease);
+  }
+  .fp-qte button:hover:not(:disabled) { background: var(--surface-sunk); }
+  .fp-qte button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .fp-qte-valeur {
+    min-width: 3rem;
+    text-align: center;
+    font-size: var(--t-body);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* .btn porte width:100% sous 768 px : le flex:1 le laisse partager la
+     rangée avec le sélecteur de quantité et le cœur. */
+  .fp-cta { flex: 1; min-width: 0; }
+
+  .fp-coeur {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 4.8rem;
+    min-height: 4.8rem;
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color var(--dur-1) var(--ease),
+                color var(--dur-1) var(--ease),
+                transform var(--dur-1) var(--ease);
+  }
+  .fp-coeur:hover  { border-color: var(--gp-brass-700); }
+  .fp-coeur:active { transform: scale(0.92); }
+  .fp-coeur.is-aime { color: var(--text-promo); border-color: var(--text-promo); }
+
+  /* La rareté se dit en terre cuite : c'est le rôle de l'accent secondaire —
+     promo, solde, urgence douce. */
+  .fp-tension {
+    margin-top: var(--s-3);
+    font-size: var(--t-xs);
+    font-weight: 600;
+    color: var(--text-promo);
+  }
+
+  /* ── Rupture ── */
+  .fp-rupture {
+    margin-top: var(--s-6);
+    padding: var(--s-5);
+    border: 1px solid var(--line);
+    border-radius: var(--r-3);
+    background: var(--surface-sunk);
+  }
+  .fp-rupture-titre { font-size: var(--t-body); font-weight: 600; color: var(--text); }
+  .fp-rupture-texte {
+    margin: var(--s-2) 0 var(--s-4);
+    font-size: var(--t-xs);
+    color: var(--text-muted);
+  }
+
+  /* ── Description ──────────────────────────────────────────────────────────
+     Ni filet ni bordure : posée sous le prix, une ligne horizontale
+     enfermerait le prix dans le bloc du titre au lieu d'ouvrir le texte.
+     L'écart seul suffit à séparer. */
+  .fp-description { margin-top: var(--s-5); }
+  .fp-description p {
+    margin-top: var(--s-3);
+    white-space: pre-line;
+    font-size: var(--t-body);
+    line-height: var(--lh-body);
+    color: var(--text-muted);
+  }
+
+  /* ── Les vues, en surimpression sur le bas du visuel ──────────────────────
+     Posée en absolu, la bande ne prend aucune hauteur dans la colonne : le
+     visuel garde son 4/5 exact. Le dégradé n'est pas décoratif — sans lui, une
+     miniature claire posée sur un bazin blanc n'a plus de contour. */
+  .fp-vues {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 2;
+    display: flex;
+    gap: var(--s-2);
+    padding: var(--s-7) var(--s-3) var(--s-3);
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: linear-gradient(to top, rgba(15, 19, 32, 0.58), rgba(15, 19, 32, 0));
+  }
+  .fp-vues::-webkit-scrollbar { display: none; }
+  /* Les contrôles natifs d'une vidéo occupent la même bande basse. */
+  .fp-vues.est-video { padding-bottom: 5.6rem; }
+
+  .fp-vue {
+    position: relative;
+    flex: 0 0 auto;
+    width: 5.6rem;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: 1rem;
+    background: var(--surface-sunk);
+    cursor: pointer;
+    opacity: 0.82;
+    box-shadow: 0 0 0 1.5px rgba(250, 246, 238, 0.45);
+    transition: opacity var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
+  }
+  .fp-vue:hover { opacity: 1; }
+  .fp-vue.is-active { opacity: 1; box-shadow: 0 0 0 2px var(--gp-brass-400); }
+  .fp-vue img,
+  .fp-vue video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* ── Recommandations ── */
+  .fp-recos { padding-top: var(--section-y); }
+  .fp-recos-titre {
+    margin-bottom: var(--s-5);
+    font-family: var(--font-display);
+    font-size: var(--t-h3);
+    color: var(--text);
+  }
+  .fp-recos-grille {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--s-5);
+  }
+
+  @media (max-width: 900px) {
+    .fp { padding-top: 8rem; }
+    .fp-grille { grid-template-columns: 1fr; gap: var(--s-6); }
+    .fp-recos-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fp-vues { gap: 0.6rem; padding: var(--s-6) var(--s-2) var(--s-2); }
+    .fp-vue { width: 4.6rem; }
+  }
+
+  /* Au doigt, la rangée d'action tient mal à trois : le bouton passe sous le
+     couple quantité + cœur plutôt que d'être écrasé entre les deux. */
+  @media (max-width: 480px) {
+    .fp-actions { flex-wrap: wrap; }
+    .fp-qte { order: 1; }
+    .fp-coeur { order: 2; margin-left: auto; }
+    .fp-cta { order: 3; flex: 1 0 100%; }
+  }
+`;
 
 export default ProduitPage;

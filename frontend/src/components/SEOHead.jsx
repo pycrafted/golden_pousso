@@ -6,7 +6,10 @@ const DEFAULT_IMAGE = '/og-image.jpg';
 const BASE_URL = 'https://goldenpousso.sn';
 
 const SEOHead = ({ title, description, image, url, type = 'website', noindex = false }) => {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} — Couture Africaine Haut de Gamme`;
+  /* Le tiret cadratin qui joignait le nom à la devise a été retiré : une
+     virgule suffit, et l'onglet ne portait plus le même séparateur selon
+     qu'une page avait un titre propre ou non. */
+  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME}, Couture Africaine Haut de Gamme`;
   const metaDesc = description || DEFAULT_DESCRIPTION;
   const metaImage = image || DEFAULT_IMAGE;
   const canonical = url ? `${BASE_URL}${url}` : BASE_URL;

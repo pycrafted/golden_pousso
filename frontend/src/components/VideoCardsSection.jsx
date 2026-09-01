@@ -1,365 +1,351 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import apiClient from '../api/client';
+import usePrefersReducedMotion from '../hooks/usePrefersReducedMotion';
+import Reveal from './Reveal';
+import useTexteSection from '../hooks/useTexteSection';
 
-const useIsMobile = () => {
-  const [mobile, setMobile] = useState(() => window.innerWidth <= 767);
-  useEffect(() => {
-    const fn = () => setMobile(window.innerWidth <= 767);
-    window.addEventListener('resize', fn);
-    return () => window.removeEventListener('resize', fn);
-  }, []);
-  return mobile;
-};
+/**
+ * « Nos créations en mouvement »
+ * ---------------------------------------------------------------------------
+ * Les séquences viennent de l'API (`/videos/`), donc de l'Espace Gestion →
+ * Vidéos. La version précédente embarquait en dur quatre plans du dépôt
+ * Redesign_mcommaman.com, avec des pièces et des prix qui n'étaient pas ceux
+ * de cette maison — et dont les fichiers ont depuis disparu de `public/`.
+ *
+ * Le DESSIN reste celui de la source : palette rose/ink/stone/gold, Plus
+ * Jakarta Sans, tuiles arrondies, deux voiles, pastille de son, carte produit
+ * en pied de tuile. Seules les données ont changé. Ne pas « harmoniser » le
+ * reste sans demande explicite.
+ *
+ * La carte produit n'apparaît que si la vidéo est rattachée à une pièce
+ * (champ facultatif, réglable en admin). La vidéo montre, la carte vend.
+ */
 
-const CARD_REM = 27;
-const GAP_REM  = 1.6;
-const STEP     = CARD_REM + GAP_REM;
-const BASE     = -STEP;
+/* Décalages de départ, en secondes. Quand deux tuiles servent la même
+   séquence — fréquent quand la maison n'en a que deux ou trois — des lectures
+   synchronisées se lisent immédiatement comme une copie. */
+const DEPARTS = [0, 3, 5, 2, 6, 4];
 
-// Ref-callback plutôt que useRef : cette section rend `null` tant que les vidéos ne sont
-// pas chargées, donc le nœud DOM n'existe pas encore lors du tout premier rendu. Un useEffect
-// à deps [] classique raterait son attachement ; ici l'observer se (ré)attache dès que le
-// nœud apparaît réellement (une fois les vidéos arrivées).
-const useInView = () => {
-  const [node, setNode] = useState(null);
-  const [visible, setVisible] = useState(false);
-  const ref = useCallback((el) => setNode(el), []);
 
-  useEffect(() => {
-    if (!node) return;
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
-      { threshold: 0.08, rootMargin: '-60px' }
-    );
-    obs.observe(node);
-    return () => obs.disconnect();
-  }, [node]);
+/** Haut-parleur, son coupé : la barre traverse le cône. */
+const IconMuet = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7}
+       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M11 5.5 6.8 9H4.2a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2.6L11 18.5z" />
+    <path d="m16.5 10 4 4M20.5 10l-4 4" />
+  </svg>
+);
 
-  return [ref, visible];
-};
+/** Haut-parleur, son actif : deux ondes à droite du cône. */
+const IconSon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7}
+       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M11 5.5 6.8 9H4.2a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2.6L11 18.5z" />
+    <path d="M15 9.5a3.6 3.6 0 0 1 0 5M17.8 7.2a7.2 7.2 0 0 1 0 9.6" />
+  </svg>
+);
 
+/**
+ * Bande de séquences verticales, à la façon d'un banc de montage : les tuiles
+ * ne sont pas alignées, une sur deux descend d'un cran.
+ *
+ * Les vidéos ne jouent que ce qui est à l'écran — une bande de quatre lecteurs
+ * qui tournent en fond coûte cher en batterie pour rien. Le son est coupé
+ * d'office, c'est la seule façon qu'un navigateur accepte de lancer une vidéo
+ * sans clic ; un bouton par tuile le rend, une tuile à la fois.
+ */
 const VideoCardsSection = () => {
-  const isMobile = useIsMobile();
-  const [headerRef, headerVisible] = useInView();
-  const [videos, setVideos] = useState([]);
-  const [loaded, setLoaded] = useState(false);
-  const n = videos.length;
+  const reduced = usePrefersReducedMotion();
+  /* Le titre vient du back-office (Espace Gestion → Textes des sections) ; la
+     valeur écrite ici n'est qu'un repli, pour que la section ne perde jamais
+     son intitulé si l'API ne répond pas. */
+  const textes = useTexteSection('accueil-mouvement', { titre: 'Le tissu en mouvement' });
+  const [bande, setBande] = useState([]);
+  const [son, setSon] = useState(null);
+  const lecteurs = useRef([]);
 
   useEffect(() => {
-    apiClient.get('/videos/').then(({ data }) => setVideos(data)).catch(() => {}).finally(() => setLoaded(true));
+    apiClient.get('/videos/')
+      .then(({ data }) => setBande(data.results ?? data))
+      .catch(() => {});
   }, []);
 
-  const [activeIdx,         setActiveIdx]         = useState(0);
-  const [offset,            setOffset]            = useState(BASE);
-  const [animated,          setAnimated]          = useState(false);
-  const [sliding,           setSliding]           = useState(false);
-  const [playingDelta,      setPlayingDelta]      = useState(null);
-  const [hoveredDelta,      setHoveredDelta]      = useState(null);
-  /*
-   * Pendant l'animation, la carte "centre visuel" est à delta=dir.
-   * À l'état de repos, le centre visuel est toujours delta=0.
-   */
-  const [visualCenterDelta, setVisualCenterDelta] = useState(0);
+  /* Une seule bande son à la fois : ouvrir la deuxième referme la première. */
+  useEffect(() => {
+    lecteurs.current.forEach((v, i) => {
+      if (v) v.muted = son !== i;
+    });
+  }, [son, bande]);
 
-  const getIdx = useCallback((delta) =>
-    ((activeIdx + delta) % n + n) % n, [activeIdx, n]);
+  /* Lecture pilotée par la visibilité, tuile par tuile. `IntersectionObserver`
+     plutôt qu'un écouteur de défilement : le navigateur ne réveille le fil
+     principal que lorsqu'une tuile passe le seuil. */
+  useEffect(() => {
+    if (reduced || bande.length === 0) return;
 
-  const go = useCallback((dir) => {
-    if (sliding) return;
-    setPlayingDelta(null);
-    setSliding(true);
-    setAnimated(true);
-    setVisualCenterDelta(dir);
-    setOffset(BASE + dir * -STEP);
-
-    setTimeout(() => {
-      setAnimated(false);
-      setVisualCenterDelta(0);
-      setActiveIdx(prev => ((prev + dir) % n + n) % n);
-      setOffset(BASE);
-      setTimeout(() => setSliding(false), 50);
-    }, 500);
-  }, [sliding, n]);
-
-  const containerW = 3 * CARD_REM + 2 * GAP_REM;
-  const deltas = [-2, -1, 0, 1, 2];
-
-  const effectiveCenter = animated ? visualCenterDelta : 0;
-
-  const cardTransition = (!sliding || animated)
-    ? 'transform 0.5s ease, margin-top 0.5s ease'
-    : 'none';
-
-  if (n === 0) return null; // rien tant que le propriétaire n'a pas ajouté de vidéo (Espace Gestion → Vidéos)
-
-  const centerVideoUrl = videos[getIdx(0)].video_url;
-
-  if (isMobile) {
-    return (
-      <section style={{ padding: '6rem 0', background: '#FAF6EE' }}>
-        <div className="container">
-          {/* En-tête */}
-          <div ref={headerRef} style={{
-            marginBottom: '4rem', textAlign: 'center',
-            opacity: headerVisible ? 1 : 0,
-            transform: headerVisible ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'opacity 0.8s ease, transform 0.8s ease',
-          }}>
-            <p style={{ fontSize: '1.1rem', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3em', color: '#B8960A', marginBottom: '1.6rem' }}>
-              Univers Visuel
-            </p>
-            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(2.4rem, 7vw, 4rem)', color: '#1A1208', textTransform: 'uppercase', letterSpacing: '0.02em', lineHeight: 1.1 }}>
-              Nos Créations<br /><span style={{ color: '#B8960A' }}>en Mouvement</span>
-            </h2>
-          </div>
-
-          {/* Carte unique */}
-          <div style={{ width: 'min(32rem, 85vw)', margin: '0 auto' }}>
-            <div style={{ position: 'relative', aspectRatio: '9/16', overflow: 'hidden', borderRadius: '4px', background: '#1a1208' }}>
-              {playingDelta === 0 ? (
-                <video
-                  key={centerVideoUrl}
-                  src={centerVideoUrl}
-                  controls
-                  autoPlay
-                  playsInline
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                <>
-                  <video src={centerVideoUrl} muted playsInline preload="metadata" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
-                  <div
-                    onClick={() => setPlayingDelta(0)}
-                    style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 2 }}
-                  >
-                    <div style={{ width: '5.6rem', height: '5.6rem', borderRadius: '50%', background: 'rgba(255,255,255,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.35)' }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="#B8960A"><polygon points="6 3 20 12 6 21 6 3" /></svg>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Flèches sous la carte */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '2.4rem', marginTop: '3rem' }}>
-            <button onClick={() => { setPlayingDelta(null); go(-1); }} disabled={sliding}
-              style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: 'transparent', border: 'none', cursor: sliding ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: sliding ? 0.3 : 1 }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#B8960A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-            </button>
-            <button onClick={() => { setPlayingDelta(null); go(1); }} disabled={sliding}
-              style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: 'transparent', border: 'none', cursor: sliding ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: sliding ? 0.3 : 1 }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#B8960A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
-            </button>
-          </div>
-        </div>
-      </section>
+    const io = new IntersectionObserver(
+      (entrees) => {
+        entrees.forEach((e) => {
+          const v = e.target;
+          if (e.isIntersecting) {
+            /* Refus du navigateur (onglet caché, économie d'énergie) : le
+               poster reste, ce n'est pas une erreur à remonter. */
+            v.play().catch(() => {});
+          } else {
+            v.pause();
+          }
+        });
+      },
+      { threshold: 0.45 }
     );
-  }
+
+    lecteurs.current.forEach((v) => v && io.observe(v));
+    return () => io.disconnect();
+  }, [reduced, bande]);
+
+  // Rien tant que le propriétaire n'a pas publié de vidéo
+  // (Espace Gestion → Vidéos).
+  if (bande.length === 0) return null;
 
   return (
-    <section style={{ padding: '8rem 0', background: '#FAF6EE' }}>
-      <div className="container">
+    <section className="em">
+      <div className="em-shell">
+        {/* En-tête au style Golden Pousso — titre seul, souligné du filet
+            doré, comme les autres sections. C'est la seule partie de cette
+            section transférée qui rejoint le système du site ; les tuiles en
+            dessous restent celles de la source.
 
-        {/* En-tête */}
-        <div ref={headerRef} style={{
-          marginBottom: '6rem', textAlign: 'center',
-          opacity: headerVisible ? 1 : 0,
-          transform: headerVisible ? 'translateY(0)' : 'translateY(20px)',
-          transition: 'opacity 0.8s ease, transform 0.8s ease',
-        }}>
-          <p style={{
-            fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
-            textTransform: 'uppercase', letterSpacing: '0.3em',
-            color: '#B8960A', marginBottom: '1.6rem',
-          }}>
-            Univers Visuel
-          </p>
-          <h2 style={{
-            fontFamily: 'Syne, sans-serif',
-            fontSize: 'clamp(3rem, 5vw, 5rem)',
-            color: '#1A1208', textTransform: 'uppercase',
-            letterSpacing: '0.02em', lineHeight: 1.1,
-          }}>
-            Nos Créations
-            <br />
-            <span style={{ color: '#B8960A' }}>en Mouvement</span>
-          </h2>
-        </div>
+            Plus de dorure sur un mot du titre : elle ne servait qu'à mettre
+            « Golden Pousso » en laiton, et le titre ne le contient plus. */}
+        <Reveal className="em-entete">
+          <h2>{textes.titre}</h2>
+          <span className="filet-titre" aria-hidden="true" />
+        </Reveal>
 
-        {/* Carousel + flèches */}
-        <div style={{ position: 'relative' }}>
-
-          <ArrowBtn dir="left"  onClick={() => go(-1)} disabled={sliding}
-            pos={{ left:  `calc(50% - ${containerW / 2}rem - 8rem)` }} />
-
-          <div style={{
-            width: `${containerW}rem`,
-            maxWidth: '100%',
-            margin: '0 auto',
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'start',
-              gap: `${GAP_REM}rem`,
-              transform: `translateX(${offset}rem)`,
-              transition: animated ? 'transform 0.5s cubic-bezier(0.4,0,0.2,1)' : 'none',
-              willChange: 'transform',
-            }}>
-              {deltas.map((delta) => {
-                const idx      = getIdx(delta);
-                const videoUrl = videos[idx]?.video_url;
-                const isCenter   = delta === effectiveCenter;
-                const isVisible  = Math.abs(delta) <= 1;
-                const isPlaying  = playingDelta === delta;
-                const isHovered  = hoveredDelta === delta;
-
-                return (
-                  <div
-                    key={delta}
-                    onMouseEnter={isVisible ? () => setHoveredDelta(delta) : undefined}
-                    onMouseLeave={isVisible ? () => setHoveredDelta(null) : undefined}
-                    style={{
-                      flex: `0 0 ${CARD_REM}rem`,
-                      marginTop: isCenter ? '0' : '5rem',
-                      transform: isCenter ? 'scale(1)' : 'scale(0.94)',
-                      transition: cardTransition,
+        <Reveal variant="scale">
+          <div className="em-bande">
+            {bande.map((item, i) => (
+              <div
+                key={item.id}
+                /* Une tuile sur deux descend : la bande cesse d'être une
+                   rangée et devient une composition. */
+                className={`em-tuile ${i % 2 === 1 ? 'em-tuile--basse' : ''}`}
+              >
+                <div className="em-cadre">
+                  <video
+                    ref={(el) => { lecteurs.current[i] = el; }}
+                    src={item.video_url}
+                    poster={item.poster_url || undefined}
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    onLoadedMetadata={(e) => {
+                      const v = e.currentTarget;
+                      const depart = DEPARTS[i % DEPARTS.length];
+                      if (depart && v.duration > depart) v.currentTime = depart;
                     }}
+                  />
+
+                  {/* Deux voiles. Le haut porte le bouton de son. Le bas ne
+                      porte plus rien depuis le retrait de la carte produit : il
+                      est gardé parce qu'il assoit la tuile — sans lui, une
+                      vidéo claire se termine en bord franc contre le fond de
+                      la page. */}
+                  <div aria-hidden="true" className="em-voile-haut" />
+                  <div aria-hidden="true" className="em-voile-bas" />
+
+                  <button
+                    type="button"
+                    onClick={() => setSon((s) => (s === i ? null : i))}
+                    aria-pressed={son === i}
+                    aria-label={son === i ? 'Couper le son' : 'Écouter cette séquence'}
+                    className="em-son"
                   >
-                    <div style={{
-                      position: 'relative',
-                      width: '100%',
-                      aspectRatio: '9/16',
-                      overflow: 'hidden',
-                      borderRadius: '4px',
-                      background: '#1a1208',
-                    }}>
+                    {son === i ? <IconSon /> : <IconMuet />}
+                  </button>
 
-                      {/* Aperçu (1ère image de la vidéo) — visible tant que la vidéo n'est pas lancée */}
-                      {!isPlaying && (
-                        <video
-                          src={videoUrl}
-                          muted
-                          playsInline
-                          preload="metadata"
-                          style={{
-                            position: 'absolute', inset: 0,
-                            width: '100%', height: '100%',
-                            objectFit: 'cover', display: 'block',
-                            pointerEvents: 'none',
-                            transition: 'transform 0.3s ease',
-                            transform: isHovered ? 'scale(1.04)' : 'scale(1)',
-                          }}
-                        />
-                      )}
-
-                      {/* Voile sombre sur les cartes latérales — s'allège au hover */}
-                      {!isCenter && !isPlaying && (
-                        <div style={{
-                          position: 'absolute', inset: 0,
-                          background: isHovered ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.38)',
-                          transition: 'background 0.3s ease',
-                          zIndex: 1,
-                        }} />
-                      )}
-
-                      {/* Lecteur vidéo — dès que l'utilisateur lance la lecture */}
-                      {isPlaying && (
-                        <video
-                          key={videoUrl}
-                          src={videoUrl}
-                          controls
-                          autoPlay
-                          playsInline
-                          style={{
-                            position: 'absolute', inset: 0,
-                            width: '100%', height: '100%',
-                            objectFit: 'cover', display: 'block',
-                          }}
-                        />
-                      )}
-
-                      {/* Bouton play — toute carte visible, vidéo non lancée */}
-                      {isVisible && !isPlaying && (
-                        <div
-                          onClick={() => setPlayingDelta(delta)}
-                          style={{
-                            position: 'absolute', inset: 0,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer',
-                            zIndex: 2,
-                            opacity: 1,
-                          }}
-                        >
-                          <div style={{
-                            width: isCenter ? '5.6rem' : '4.4rem',
-                            height: isCenter ? '5.6rem' : '4.4rem',
-                            borderRadius: '50%',
-                            background: 'rgba(255,255,255,0.92)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
-                            transition: 'transform 0.2s ease',
-                            transform: isHovered ? 'scale(1.08)' : 'scale(1)',
-                          }}>
-                            <svg
-                              width={isCenter ? 24 : 18}
-                              height={isCenter ? 24 : 18}
-                              viewBox="0 0 24 24" fill="#B8960A"
-                            >
-                              <polygon points="6 3 20 12 6 21 6 3" />
-                            </svg>
-                          </div>
-                        </div>
-                      )}
-
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                </div>
+              </div>
+            ))}
           </div>
-
-          <ArrowBtn dir="right" onClick={() => go(1)}  disabled={sliding}
-            pos={{ right: `calc(50% - ${containerW / 2}rem - 8rem)` }} />
-        </div>
-
+        </Reveal>
       </div>
-    </section>
-  );
-};
 
-const ArrowBtn = ({ dir, onClick, disabled, pos }) => {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        position: 'absolute', top: '50%',
-        transform: hovered ? 'translateY(-50%) scale(1.1)' : 'translateY(-50%) scale(1)',
-        ...pos,
-        zIndex: 2,
-        width: '6rem', height: '6rem',
-        borderRadius: '50%',
-        border: 'none',
-        background: 'transparent',
-        cursor: disabled ? 'default' : 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'transform 0.2s ease',
-        opacity: disabled ? 0.3 : 1,
-      }}
-    >
-      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
-        stroke="#B8960A" strokeWidth="2"
-        strokeLinecap="round" strokeLinejoin="round">
-        {dir === 'left'
-          ? <polyline points="15 18 9 12 15 6" />
-          : <polyline points="9 18 15 12 9 6" />}
-      </svg>
-    </button>
+      <style>{`
+        /* Palette et rythme de la source, redéclarés localement. Cette section
+           ne doit rien au thème Or & Indigo. */
+        .em {
+          --em-rose:  #e0417f;
+          --em-ink:   #241a20;
+          --em-stone: #f6e9f0;
+          --em-ease:  cubic-bezier(0.22, 0.68, 0.16, 1);
+          /* Plus Jakarta Sans, la fonte de la source, a été remplacée par
+             celle du site : « tous les écrits, vraiment tous ». */
+          --em-font:  var(--font-display);
+
+          /* ↓ LA HAUTEUR DES TUILES SE RÈGLE ICI.
+
+             L'écart suivait --section-y, le rythme de toute la page. Il a été
+             resserré : cette section n'en a plus besoin, pour deux raisons qui
+             se cumulent.
+
+             D'abord le titre a été retiré — il portait 36 px de marge sous
+             lui, et l'espace du haut servait à le poser. Ensuite le hero finit
+             maintenant en dégradé vers le fond de la page, dont le dernier
+             tiers est un aplat d'écru franc : cette zone vide EST déjà la
+             séparation. La reprendre en padding la comptait deux fois, et les
+             vidéos tombaient bien trop bas.
+
+             Le reste du dessin de cette section reste celui de la source. */
+          padding: var(--s-6) 0 0;
+          font-family: var(--em-font);
+          overflow: visible;
+        }
+
+/* En-tête centré, dans la police et le laiton du site — pas dans la
+           palette de la source. */
+        .em-entete {
+          margin-bottom: 36px;
+          text-align: center;
+          font-family: var(--font-display);
+        }
+
+        .em-shell {
+          margin: 0 auto;
+          width: 100%;
+          max-width: 1400px;
+          padding: 0 20px;
+        }
+
+        /* Sous 1024px : bande qui défile et déborde jusqu'aux bords.
+           Au-dessus : grille de quatre colonnes, plus de défilement. */
+        .em-bande {
+          display: flex;
+          gap: 1rem;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          scrollbar-width: none;
+          overscroll-behavior-x: contain;
+          margin: 0 -20px;
+          padding: 0 20px 8px;
+        }
+        .em-bande::-webkit-scrollbar { display: none; }
+        .em-bande > * { flex: none; scroll-snap-align: start; }
+
+        /* 56vw / 36vw : les largeurs qu'occupe une carte produit aux mêmes
+           tailles d'écran (1,6 puis 2,4 cartes visibles). */
+        .em-tuile {
+          position: relative;
+          width: 56vw;
+          overflow: hidden;
+          border-radius: 24px;
+          background: var(--em-stone);
+        }
+
+        /* 3/4 et non le 9/16 de la source : ces tuiles doivent faire la
+           même taille que les cartes de « Nos créations », juste au-dessus.
+           En 9/16 elles montaient à 560 px de haut contre 404 pour une carte —
+           deux objets de même largeur et de hauteurs très différentes, à un
+           écran d'intervalle.
+           Conséquence assumée : une vidéo verticale est davantage recadrée. */
+        .em-cadre {
+          position: relative;
+          aspect-ratio: 3 / 4;
+          overflow: hidden;
+        }
+        .em-cadre video {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 1200ms var(--em-ease);
+        }
+        .em-tuile:hover .em-cadre video { transform: scale(1.05); }
+
+        .em-voile-haut,
+        .em-voile-bas {
+          position: absolute;
+          left: 0;
+          right: 0;
+          pointer-events: none;
+        }
+        .em-voile-haut {
+          top: 0;
+          height: 96px;
+          background: linear-gradient(to bottom, rgba(36,26,32,.45), transparent);
+        }
+        .em-voile-bas {
+          bottom: 0;
+          height: 40%;
+          background: linear-gradient(to top, rgba(36,26,32,.85), rgba(36,26,32,.25), transparent);
+        }
+
+        .em-son {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          z-index: 20;
+          display: grid;
+          place-items: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 9999px;
+          background: rgba(255,255,255,.85);
+          color: var(--em-ink);
+          backdrop-filter: blur(8px);
+          cursor: pointer;
+          transition: background-color 300ms, color 300ms;
+        }
+        .em-son:hover { background: var(--em-rose); color: #fff; }
+        .em-son svg { width: 16px; height: 16px; }
+
+        @media (min-width: 640px) {
+          .em-tuile { width: 36vw; }
+        }
+
+        @media (min-width: 768px) {
+          /* Le padding-top est retiré ici : il est désormais porté par
+             la variable --section-y, qui gère elle-même sa progression. */
+          .em-shell { padding: 0 32px; }
+          .em-bande { margin: 0 -32px; padding: 0 32px 8px; }
+        }
+
+        @media (min-width: 1024px) {
+          .em-shell { padding: 0 40px; }
+          .em-bande {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1.25rem;
+            overflow: visible;
+            margin: 0;
+            padding: 0;
+            /* Chaque tuile s'arrête à sa propre hauteur.
+
+               Par défaut une cellule de grille s'étire sur la hauteur de sa
+               rangée. Les tuiles paires descendant de 48 px, la rangée faisait
+               48 px de plus que la hauteur naturelle d'une tuile : les tuiles
+               impaires — la première et la troisième — s'étiraient d'autant et
+               laissaient voir 48 px de leur fond rose sous la vidéo, le cadre
+               vidéo étant lui bloqué en 3/4.
+
+               Ce fond n'apparaissait donc que là où la composition était censée
+               créer du vide, et le décalage se lisait comme un défaut plutôt
+               que comme une intention. */
+            align-items: start;
+          }
+          .em-bande > * { width: auto; }
+          .em-tuile--basse { margin-top: 48px; }
+        }
+
+        /* La quatrième colonne n'arrive qu'une fois l'écran assez large pour
+           que les tuiles gardent la largeur d'une carte produit. */
+        @media (min-width: 1280px) {
+          .em-bande { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
+      `}</style>
+    </section>
   );
 };
 

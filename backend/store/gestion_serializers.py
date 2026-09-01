@@ -3,7 +3,7 @@ from rest_framework import serializers
 from django.db.models import Sum
 from accounts.models import Customer
 from .models import (
-    Category, Collection, Product, ProductImage, ProductVariant,
+    Category, Product, ProductImage, ProductVariant,
     Order, Review, ContactMessage, StockAlert, HeroBanner, AtelierImage, ShowcaseVideo,
 )
 
@@ -14,12 +14,6 @@ class GestionCategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug', 'description', 'image', 'is_active', 'order']
         extra_kwargs = {'slug': {'required': False}}
 
-
-class GestionCollectionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Collection
-        fields = ['id', 'name', 'slug', 'description', 'cover_image', 'date', 'is_featured', 'is_active']
-        extra_kwargs = {'slug': {'required': False}}
 
 
 class GestionProductImageSerializer(serializers.ModelSerializer):
@@ -42,11 +36,11 @@ class GestionProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'slug', 'category', 'category_name', 'collection', 'description',
+            'id', 'name', 'slug', 'category', 'category_name', 'description',
             'price', 'old_price', 'stock', 'is_active', 'is_featured', 'is_new',
-            'images', 'variants', 'created_at', 'updated_at',
+            'video', 'images', 'variants', 'created_at', 'updated_at',
         ]
-        extra_kwargs = {'slug': {'required': False}}
+        extra_kwargs = {'slug': {'required': False}, 'video': {'required': False}}
 
 
 class GestionOrderItemSerializer(serializers.ModelSerializer):
@@ -105,13 +99,13 @@ class GestionHeroBannerSerializer(serializers.ModelSerializer):
 class GestionAtelierImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = AtelierImage
-        fields = ['id', 'image', 'is_active', 'updated_at']
+        fields = ['id', 'image', 'emplacement', 'is_active', 'order', 'updated_at']
 
 
 class GestionShowcaseVideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShowcaseVideo
-        fields = ['id', 'title', 'video', 'order', 'is_active', 'created_at']
+        fields = ['id', 'title', 'video', 'poster', 'product', 'order', 'is_active', 'created_at']
         extra_kwargs = {'video': {'required': False}}
 
 

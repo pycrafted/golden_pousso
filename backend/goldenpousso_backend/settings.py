@@ -28,7 +28,6 @@ JAZZMIN_SETTINGS = {
     'hide_apps': [],
     'icons': {
         'store.category': 'fas fa-tags',
-        'store.collection': 'fas fa-layer-group',
         'store.product': 'fas fa-tshirt',
         'store.order': 'fas fa-shopping-bag',
         'store.contactmessage': 'fas fa-envelope',
@@ -170,6 +169,30 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', ''),
 }
 
+# Cloudflare R2 — hébergement des vidéos (aucun frais de sortie, contrairement à Cloudinary
+# où la bande passante vidéo épuise vite le quota). Tant que ces variables ne sont pas
+# renseignées, les vidéos suivent le stockage historique : rien ne casse.
+R2_ACCOUNT_ID        = os.environ.get('CLOUDFLARE_R2_ACCOUNT_ID', '')
+R2_ACCESS_KEY_ID     = os.environ.get('CLOUDFLARE_R2_ACCESS_KEY_ID', '')
+R2_SECRET_ACCESS_KEY = os.environ.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY', '')
+R2_BUCKET_NAME       = os.environ.get('CLOUDFLARE_R2_BUCKET', '')
+# Domaine personnalisé branché sur le bucket (ex. media.goldenpousso.com). L'adresse
+# r2.dev de Cloudflare est limitée en débit et réservée aux tests : à ne pas utiliser ici.
+R2_PUBLIC_DOMAIN     = os.environ.get('CLOUDFLARE_R2_PUBLIC_DOMAIN', '')
+
+R2_ENABLED = all([
+    R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_DOMAIN,
+])
+
+if R2_ENABLED:
+    _VIDEO_STORAGE = 'goldenpousso_backend.video_storage.R2VideoStorage'
+elif not DEBUG:
+    # Sans R2, Cloudinary exige resource_type='video' : le stockage par défaut du paquet
+    # envoie tout en 'image' et rejetterait les MP4.
+    _VIDEO_STORAGE = 'cloudinary_storage.storage.VideoMediaCloudinaryStorage'
+else:
+    _VIDEO_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
 STORAGES = {
     'default': {
         'BACKEND': (
@@ -177,6 +200,9 @@ STORAGES = {
             if not DEBUG
             else 'django.core.files.storage.FileSystemStorage'
         ),
+    },
+    'videos': {
+        'BACKEND': _VIDEO_STORAGE,
     },
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',

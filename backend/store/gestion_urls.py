@@ -7,7 +7,6 @@ router.register(r'products', gestion.GestionProductViewSet, basename='gestion-pr
 router.register(r'product-images', gestion.GestionProductImageViewSet, basename='gestion-product-image')
 router.register(r'product-variants', gestion.GestionProductVariantViewSet, basename='gestion-product-variant')
 router.register(r'categories', gestion.GestionCategoryViewSet, basename='gestion-category')
-router.register(r'collections', gestion.GestionCollectionViewSet, basename='gestion-collection')
 router.register(r'orders', gestion.GestionOrderViewSet, basename='gestion-order')
 router.register(r'reviews', gestion.GestionReviewViewSet, basename='gestion-review')
 router.register(r'messages', gestion.GestionContactMessageViewSet, basename='gestion-message')

@@ -14,7 +14,7 @@ const C = {
 
 const LINKS = [
   { to: '/',          label: 'Accueil' },
-  { to: '/contact',   label: 'Contact' },
+  { to: '/boutique', label: 'Boutique' },
 ];
 
 const Page404 = () => (
@@ -30,7 +30,7 @@ const Page404 = () => (
 
       {/* Numéro 404 */}
       <p style={{
-        fontFamily: 'Syne, sans-serif',
+        fontFamily: 'var(--font-display)',
         fontSize: 'clamp(10rem, 20vw, 18rem)',
         lineHeight: 1,
         letterSpacing: '-0.04em',
@@ -48,7 +48,7 @@ const Page404 = () => (
       <span style={{ fontSize: '1.6rem', color: C.gold, letterSpacing: '0.5em', marginBottom: '3rem' }}>✦ ✦ ✦</span>
 
       <h1 style={{
-        fontFamily: 'Syne, sans-serif',
+        fontFamily: 'var(--font-display)',
         fontSize: 'clamp(2.4rem, 4vw, 4rem)',
         color: C.cream, letterSpacing: '-0.01em',
         lineHeight: 1.1, marginBottom: '1.6rem',
@@ -57,7 +57,7 @@ const Page404 = () => (
       </h1>
 
       <p style={{
-        fontSize: '1.4rem', fontFamily: 'Inter, sans-serif',
+        fontSize: '1.4rem', fontFamily: 'var(--font-body)',
         color: C.muted, lineHeight: 1.8,
         maxWidth: '44rem', marginBottom: '5rem',
       }}>
@@ -67,12 +67,12 @@ const Page404 = () => (
       {/* CTA principal */}
       <div style={{ display: 'flex', gap: '1.6rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '6rem' }}>
         <Link
-          to="/recherche"
+          to="/boutique"
           style={{
             display: 'inline-flex', alignItems: 'center',
             padding: '1.6rem 5rem',
             background: C.gold, color: '#1A1208',
-            fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
+            fontSize: '1.1rem', fontFamily: 'var(--font-body)',
             fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
             textDecoration: 'none', transition: 'background 0.25s, color 0.25s',
           }}
@@ -88,7 +88,7 @@ const Page404 = () => (
             padding: '1.6rem 4rem',
             background: 'transparent', color: C.muted,
             border: `1px solid ${C.borderMid}`,
-            fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
+            fontSize: '1.1rem', fontFamily: 'var(--font-body)',
             letterSpacing: '0.2em', textTransform: 'uppercase',
             textDecoration: 'none', transition: 'border-color 0.2s, color 0.2s',
           }}
@@ -110,7 +110,7 @@ const Page404 = () => (
             key={to}
             to={to}
             style={{
-              fontSize: '1.1rem', fontFamily: 'Inter, sans-serif',
+              fontSize: '1.1rem', fontFamily: 'var(--font-body)',
               textTransform: 'uppercase', letterSpacing: '0.2em',
               color: C.muted, textDecoration: 'none',
               transition: 'color 0.2s',

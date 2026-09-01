@@ -1,7 +1,7 @@
-from rest_framework import serializers
+﻿from rest_framework import serializers
 from django.db import transaction
 from django.db.models import Avg
-from .models import Category, Collection, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, AtelierImage, Review, StockAlert, ShowcaseVideo
+from .models import Category, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, AtelierImage, Review, StockAlert, ShowcaseVideo, SectionTexte, HeroPromotion
 
 
 def cld(url, transform='f_auto,q_auto'):
@@ -12,27 +12,52 @@ def cld(url, transform='f_auto,q_auto'):
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    """Une seule des quatre catégories a une image propre. `image_url` retombe
+    donc sur la photo d'un produit du rayon : une tuile sans visuel casse la
+    grille de la page d'accueil, et l'admin ne peut pas toujours fournir une
+    image dédiée pour chaque rayon."""
+    image_url = serializers.SerializerMethodField()
+    product_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'description', 'image', 'order']
+        fields = ['id', 'name', 'slug', 'description', 'image', 'image_url',
+                  'product_count', 'order']
 
+    def get_product_count(self, obj):
+        """Nombre de pièces en ligne dans le rayon.
 
-class CollectionListSerializer(serializers.ModelSerializer):
-    product_images = serializers.SerializerMethodField()
+        Lit l'annotation posée par la vue quand elle existe ; retombe sur un
+        comptage direct pour les autres appels (détail produit, admin…)."""
+        compte = getattr(obj, 'nb_produits', None)
+        return compte if compte is not None else obj.products.filter(is_active=True).count()
 
-    class Meta:
-        model = Collection
-        fields = ['id', 'name', 'slug', 'description', 'cover_image', 'date', 'is_featured', 'product_images']
-
-    def get_product_images(self, obj):
+    def get_image_url(self, obj):
         request = self.context.get('request')
-        images = []
-        for product in obj.products.filter(is_active=True).prefetch_related('images'):
-            img = product.images.filter(is_primary=True).first() or product.images.first()
-            if img:
-                url = request.build_absolute_uri(img.image.url) if request else img.image.url
-                images.append(cld(url, 'w_800,f_auto,q_auto,c_limit'))
-        return images
+
+        def absolu(url):
+            return request.build_absolute_uri(url) if request else url
+
+        if obj.image:
+            return absolu(obj.fichier_web.url)
+
+        produit = (
+            obj.products
+            .filter(is_active=True, images__isnull=False)
+            .prefetch_related('images')
+            .first()
+        )
+        if produit:
+            image = produit.images.first()
+            if image:
+                return absolu(image.fichier_web.url)
+        return None
+
+
+def video_url(product, request):
+    if not product.video:
+        return None
+    return request.build_absolute_uri(product.video.url) if request else product.video.url
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -46,7 +71,10 @@ class ProductImageSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not obj.image:
             return None
-        url = request.build_absolute_uri(obj.image.url) if request else obj.image.url
+        # `fichier_web` : la variante 1800 px si elle existe, l'original sinon.
+        # L'original peut peser 25 Mo — il n'a rien à faire dans un navigateur.
+        fichier = obj.fichier_web
+        url = request.build_absolute_uri(fichier.url) if request else fichier.url
         return cld(url, 'w_1200,f_auto,q_auto,c_limit')
 
 
@@ -60,6 +88,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     primary_image = serializers.SerializerMethodField()
     secondary_image = serializers.SerializerMethodField()
+    video_url = serializers.SerializerMethodField()
     discount_percent = serializers.SerializerMethodField()
     rating_avg = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
@@ -68,9 +97,13 @@ class ProductListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'slug', 'category', 'price', 'old_price',
-            'primary_image', 'secondary_image', 'discount_percent', 'is_new', 'is_featured', 'stock',
+            'primary_image', 'secondary_image', 'video_url',
+            'discount_percent', 'is_new', 'is_featured', 'stock',
             'rating_avg', 'review_count',
         ]
+
+    def get_video_url(self, obj):
+        return video_url(obj, self.context.get('request'))
 
     def get_rating_avg(self, obj):
         avg = obj.reviews.filter(is_approved=True).aggregate(avg=Avg('rating'))['avg']
@@ -83,7 +116,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         img = obj.images.filter(is_primary=True).first() or obj.images.first()
         if img and request:
-            return cld(request.build_absolute_uri(img.image.url), 'w_600,f_auto,q_auto,c_limit')
+            return cld(request.build_absolute_uri(img.fichier_web.url), 'w_600,f_auto,q_auto,c_limit')
         return None
 
     def get_secondary_image(self, obj):
@@ -94,7 +127,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         else:
             img = None
         if img and request:
-            return cld(request.build_absolute_uri(img.image.url), 'w_600,f_auto,q_auto,c_limit')
+            return cld(request.build_absolute_uri(img.fichier_web.url), 'w_600,f_auto,q_auto,c_limit')
         return None
 
     def get_discount_percent(self, obj):
@@ -103,10 +136,10 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
-    collection = CollectionListSerializer(read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
     primary_image = serializers.SerializerMethodField()
+    video_url = serializers.SerializerMethodField()
     discount_percent = serializers.SerializerMethodField()
     rating_avg = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
@@ -114,10 +147,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'slug', 'category', 'collection', 'description',
+            'id', 'name', 'slug', 'category', 'description',
             'price', 'old_price', 'discount_percent', 'stock',
             'is_active', 'is_featured', 'is_new',
-            'primary_image', 'images', 'variants',
+            'primary_image', 'video_url', 'images', 'variants',
             'rating_avg', 'review_count',
             'created_at', 'updated_at'
         ]
@@ -126,8 +159,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         img = obj.images.filter(is_primary=True).first() or obj.images.first()
         if img and request:
-            return cld(request.build_absolute_uri(img.image.url), 'w_1200,f_auto,q_auto,c_limit')
+            return cld(request.build_absolute_uri(img.fichier_web.url), 'w_1200,f_auto,q_auto,c_limit')
         return None
+
+    def get_video_url(self, obj):
+        return video_url(obj, self.context.get('request'))
 
     def get_discount_percent(self, obj):
         return obj.discount_percent
@@ -139,13 +175,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     def get_review_count(self, obj):
         return obj.reviews.filter(is_approved=True).count()
 
-
-class CollectionDetailSerializer(serializers.ModelSerializer):
-    products = ProductListSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Collection
-        fields = ['id', 'name', 'slug', 'description', 'cover_image', 'date', 'is_featured', 'products']
 
 
 # ── Commandes ──
@@ -237,24 +266,75 @@ class OrderOutputSerializer(serializers.ModelSerializer):
         ]
 
 
+class ShowcaseVideoProductSerializer(serializers.ModelSerializer):
+    """Strict minimum pour la carte posée sur la vidéo : photo, nom, prix."""
+    primary_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'slug', 'price', 'primary_image']
+
+    def get_primary_image(self, obj):
+        image = obj.images.first()
+        if not image:
+            return None
+        request = self.context.get('request')
+        url = image.fichier_web.url
+        return request.build_absolute_uri(url) if request else url
+
+
 class ShowcaseVideoSerializer(serializers.ModelSerializer):
     video_url = serializers.SerializerMethodField()
+    poster_url = serializers.SerializerMethodField()
+    product = ShowcaseVideoProductSerializer(read_only=True)
 
     class Meta:
         model = ShowcaseVideo
-        fields = ['id', 'video_url']
+        fields = ['id', 'video_url', 'poster_url', 'product']
+
+    def _absolu(self, fichier):
+        """URL absolue si la requête est dans le contexte, relative sinon.
+
+        L'ancienne version renvoyait `None` quand le contexte manquait : la
+        vidéo disparaissait silencieusement au lieu de tomber sur une URL
+        relative, qui fonctionne parfaitement puisque l'API et les médias sont
+        servis sur le même hôte."""
+        if not fichier:
+            return None
+        request = self.context.get('request')
+        return request.build_absolute_uri(fichier.url) if request else fichier.url
 
     def get_video_url(self, obj):
-        request = self.context.get('request')
-        if obj.video and request:
-            return request.build_absolute_uri(obj.video.url)
-        return None
+        return self._absolu(obj.video)
+
+    def get_poster_url(self, obj):
+        return self._absolu(obj.poster)
+
+
+class SectionTexteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SectionTexte
+        fields = ['cle', 'surtitre', 'titre']
 
 
 class ContactMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
         fields = ['name', 'contact', 'subject', 'message']
+
+
+class HeroPromotionSerializer(serializers.ModelSerializer):
+    """Ce que le hero a besoin de savoir, et rien de plus.
+
+    `fin` est expose parce que le frontend en tire le decompte des derniers
+    jours. `debut` et `is_active` restent en base : la fenetre est deja
+    tranchee par HeroPromotion.en_cours(), le navigateur n'a pas a la
+    reevaluer.
+    """
+
+    class Meta:
+        model = HeroPromotion
+        fields = ['titre', 'offre', 'accroche', 'lien', 'libelle_lien', 'fin']
 
 
 class HeroBannerSerializer(serializers.ModelSerializer):
@@ -267,7 +347,7 @@ class HeroBannerSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         request = self.context.get('request')
         if obj.image and request:
-            return cld(request.build_absolute_uri(obj.image.url), 'w_1920,f_auto,q_auto,c_limit')
+            return cld(request.build_absolute_uri(obj.fichier_web.url), 'w_1920,f_auto,q_auto,c_limit')
         return None
 
 
@@ -276,12 +356,15 @@ class AtelierImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AtelierImage
-        fields = ['id', 'image_url']
+        # `order` place la photo : 0 à gauche, 1 à droite. Sans lui, le
+        # frontend ne pourrait que les empiler dans l'ordre reçu — et une
+        # seule photo publiée à droite atterrirait à gauche.
+        fields = ['id', 'image_url', 'order']
 
     def get_image_url(self, obj):
         request = self.context.get('request')
         if obj.image and request:
-            return cld(request.build_absolute_uri(obj.image.url), 'w_1200,f_auto,q_auto,c_limit')
+            return cld(request.build_absolute_uri(obj.fichier_web.url), 'w_1200,f_auto,q_auto,c_limit')
         return None
 
 

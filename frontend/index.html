@@ -5,13 +5,64 @@
     <link rel="icon" type="image/png" href="/gemini.png" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#B8960A" />
+    <meta name="theme-color" content="#0F1320" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="/icons/icon.svg" />
+
+    <!-- ══ Polices ══════════════════════════════════════════════════════════
+         Chargées ici et NON via @import dans styles.css : un @import oblige le
+         navigateur à télécharger la feuille avant même de découvrir l'URL des
+         polices — un aller-retour réseau complet ajouté au chemin critique.
+         Sur une 3G sénégalaise, c'est plusieurs centaines de ms de page nue.
+
+         Le preconnect ouvre la connexion TLS vers fonts.gstatic.com en
+         parallèle du parsing HTML. crossorigin est obligatoire sur la seconde
+         ligne : les fichiers de police sont servis en CORS, sans cet attribut
+         la connexion préouverte n'est pas réutilisée.
+
+         Fraunces = marque et voix éditoriale · Inter = information.
+
+         Fraunces est demandée en variable sur trois axes :
+           opsz 9..144  la lettre se redessine selon la taille de rendu ;
+                        c'est ce qui la rend lisible à 15 px comme à 96 px.
+           wght 300..900 remplace les quatre graisses statiques de l'ancienne
+                        Syne par un seul fichier — et rend enfin valides les
+                        `fontWeight: 400` qui étaient demandés sans être
+                        chargés.
+           WONK 0..1    substitue les formes volontairement irrégulières
+                        (inclinaison des h/n/m, terminaisons en goutte des
+                        b/d/k/l). Réservé aux grands titres — voir la classe
+                        `.wonk` dans styles.css.
+
+         L'axe SOFT n'est pas demandé : son effet est subtil et il alourdit le
+         fichier pour un gain invisible en dessous de 60 px. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,WONK@9..144,300..900,0..1&display=swap"
+    />
+    <!-- UNE SEULE FAMILLE, à la demande : tous les écrits du site sont en
+         Fraunces. Inter et Plus Jakarta Sans ont été retirées du lien — elles
+         n'étaient plus nommées nulle part, et les laisser aurait fait
+         télécharger deux familles jamais peintes, sur le chemin critique.
+         Les trois sections transférées (« Notre catalogue », « Bienvenue à
+         Golden Pousso », la fiche produit) employaient Plus Jakarta Sans pour
+         rester conformes à leur modèle : c'est le seul écart au transfert à
+         l'identique sur ce point. -->
+
     <!-- Boxicons -->
+    <link rel="preconnect" href="https://unpkg.com" />
     <link href="https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css" rel="stylesheet" />
-    <!-- Google Analytics GA4 — remplacer G-XXXXXXXXXX par votre ID de mesure -->
+
+    <!-- ══ Google Analytics GA4 ═════════════════════════════════════════════
+         DÉSACTIVÉ : l'ID était resté sur le gabarit G-XXXXXXXXXX. En l'état le
+         site payait un DNS + TLS + téléchargement de gtag.js à chaque visite
+         pour n'envoyer les données nulle part.
+         Pour réactiver : remplacer les deux G-XXXXXXXXXX par l'ID de mesure
+         réel, puis retirer les balises de commentaire ci-dessous.
+
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -19,6 +70,8 @@
       gtag('js', new Date());
       gtag('config', 'G-XXXXXXXXXX');
     </script>
+    -->
+
     <title>Golden Pousso — Couture Africaine</title>
   </head>
   <body>
