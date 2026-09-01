@@ -184,22 +184,40 @@ R2_ENABLED = all([
     R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_DOMAIN,
 ])
 
-if R2_ENABLED:
+# TOUT part sur R2 — images comprises — dès que les cinq variables sont là.
+#
+# Les images passaient auparavant par Cloudinary, pour ses transformations à la volée.
+# Ce n'est plus nécessaire : `store/imaging.py` fabrique les trois largeurs web à
+# l'enregistrement, et le frontend déduit les autres du nom de fichier. R2 n'a donc
+# rien à transformer, il rend des fichiers.
+#
+# ⚠ Cloudinary reste le repli en production tant que R2 n'est pas configuré : sans ces
+# deux lignes, une variable R2 oubliée ferait écrire les médias sur le disque éphémère
+# de Render, qui est effacé à chaque déploiement.
+# ⚠ LES IMAGES NE PARTENT SUR R2 QU'EN PRODUCTION, et c'est délibéré.
+# En développement elles restent sur le disque : les centaines de fichiers déjà
+# présents dans backend/media/ n'existent pas sur le bucket, et router `default`
+# vers R2 en local afficherait des images cassées partout. Les VIDÉOS, elles,
+# suivent R2 dès qu'il est configuré — c'est le comportement d'origine, et elles
+# sont trop lourdes pour le disque local.
+if R2_ENABLED and not DEBUG:
+    _MEDIA_STORAGE = 'goldenpousso_backend.video_storage.R2MediaStorage'
+    _VIDEO_STORAGE = 'goldenpousso_backend.video_storage.R2VideoStorage'
+elif R2_ENABLED:
+    _MEDIA_STORAGE = 'django.core.files.storage.FileSystemStorage'
     _VIDEO_STORAGE = 'goldenpousso_backend.video_storage.R2VideoStorage'
 elif not DEBUG:
+    _MEDIA_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     # Sans R2, Cloudinary exige resource_type='video' : le stockage par défaut du paquet
     # envoie tout en 'image' et rejetterait les MP4.
     _VIDEO_STORAGE = 'cloudinary_storage.storage.VideoMediaCloudinaryStorage'
 else:
+    _MEDIA_STORAGE = 'django.core.files.storage.FileSystemStorage'
     _VIDEO_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 STORAGES = {
     'default': {
-        'BACKEND': (
-            'cloudinary_storage.storage.MediaCloudinaryStorage'
-            if not DEBUG
-            else 'django.core.files.storage.FileSystemStorage'
-        ),
+        'BACKEND': _MEDIA_STORAGE,
     },
     'videos': {
         'BACKEND': _VIDEO_STORAGE,
