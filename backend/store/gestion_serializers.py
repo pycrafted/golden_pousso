@@ -103,9 +103,14 @@ class GestionAtelierImageSerializer(serializers.ModelSerializer):
 
 
 class GestionShowcaseVideoSerializer(serializers.ModelSerializer):
+    #: Clé d'un objet déjà déposé sur R2 par le navigateur, via l'URL signée de
+    #: `lien-envoi`. Le fichier ne transite alors PAS par le serveur : on ne
+    #: reçoit ici que son emplacement. Voir la vue pour le pourquoi.
+    video_cle = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
     class Meta:
         model = ShowcaseVideo
-        fields = ['id', 'title', 'video', 'poster', 'product', 'order', 'is_active', 'created_at']
+        fields = ['id', 'title', 'video', 'video_cle', 'poster', 'product', 'order', 'is_active', 'created_at']
         # Facultatif pour pouvoir MODIFIER un titre ou un ordre sans renvoyer
         # le fichier, qui pèse des dizaines de mégaoctets. Voir `validate` :
         # à la CRÉATION, il redevient obligatoire.
@@ -120,12 +125,46 @@ class GestionShowcaseVideoSerializer(serializers.ModelSerializer):
         la page d'accueil, sans que rien n'indique ce qui manquait. C'est
         exactement ce qui est arrivé en production.
         """
-        if self.instance is None and not attrs.get('video'):
+        if self.instance is None and not attrs.get('video') and not attrs.get('video_cle'):
             raise serializers.ValidationError({
                 'video': "Choisissez un fichier vidéo : une séquence sans "
                          "fichier n'apparaîtrait pas sur le site.",
             })
         return attrs
+
+    def validate_video_cle(self, valeur):
+        """La clé vient du serveur, elle doit y ressembler.
+
+        C'est le serveur qui a nommé l'objet en délivrant l'URL signée. Une clé
+        qui ne commence pas par `videos/` désignerait autre chose que la vidéo
+        qu'on vient de déposer — au mieux une erreur, au pire une photo du
+        catalogue rattachée par mégarde à une séquence.
+        """
+        valeur = (valeur or '').strip()
+        if valeur and not valeur.startswith('videos/'):
+            raise serializers.ValidationError("Clé de dépôt invalide.")
+        return valeur
+
+    def _poser_la_cle(self, instance, cle):
+        """Rattache l'objet déjà déposé, sans le relire ni le réécrire.
+
+        Assigner `.name` plutôt que `.save()` est délibéré : le fichier est
+        DÉJÀ sur le bucket. Passer par le champ le retéléchargerait pour le
+        renvoyer aussitôt — exactement le trajet qu'on cherche à supprimer.
+        """
+        instance.video.name = cle
+        instance.save(update_fields=['video'])
+        return instance
+
+    def create(self, validated_data):
+        cle = validated_data.pop('video_cle', '')
+        instance = super().create(validated_data)
+        return self._poser_la_cle(instance, cle) if cle else instance
+
+    def update(self, instance, validated_data):
+        cle = validated_data.pop('video_cle', '')
+        instance = super().update(instance, validated_data)
+        return self._poser_la_cle(instance, cle) if cle else instance
 
 
 # ── Clients ──

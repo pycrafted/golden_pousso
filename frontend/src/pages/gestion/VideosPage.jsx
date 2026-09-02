@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 import apiClient from '../../api/client';
+import { reduirePourEnvoi } from '../../utils/imageUpload';
 import { COLORS, RADIUS, FONT_BODY } from '../../theme';
 import { PageHeader, HelpBox, GestionButton, GestionInput, Field, Badge, GestionTable, Td, EmptyState, ConfirmDialog } from './ui';
 
@@ -30,20 +32,56 @@ const VideoForm = ({ video, produits, onClose, onSaved }) => {
     if (!video && !file) { toast.error('Choisissez un fichier vidéo'); return; }
     setSaving(true);
     try {
+      const suivre = ({ loaded, total }) => {
+        if (total) setAvancement(Math.round((loaded / total) * 100));
+      };
+
+      /* ── Le fichier ne passe pas par notre serveur ──────────────────────
+         Il n'y arrivait pas : l'envoi répondait 502 sans laisser la moindre
+         trace dans les journaux, l'instance s'endormant au bout de quinze
+         minutes et le proxy ne pouvant pas retenir des dizaines de mégaoctets
+         le temps du réveil. Et même éveillée, la route était absurde — Dakar
+         vers l'Oregon, puis l'Oregon vers un bucket européen, pour un fichier
+         qui doit finir chez Cloudflare, présent à Dakar même.
+
+         Le serveur délivre donc une autorisation d'écriture d'une heure sur
+         une clé qu'il choisit, le navigateur y dépose, et on ne poste ensuite
+         que cette clé. `axios` nu et non `apiClient` : l'intercepteur y
+         ajouterait l'en-tête Authorization, que R2 lirait à la place de la
+         signature — et rejetterait. */
+      let cleDeposee = '';
+      if (file) {
+        const { data: lien } = await apiClient.post('/gestion/videos/lien-envoi/', {
+          nom: file.name,
+          type: file.type || 'video/mp4',
+        });
+        if (lien.disponible) {
+          await axios.put(lien.url, file, {
+            // Exactement le type signé par le serveur, sinon la signature ne
+            // correspond plus.
+            headers: { 'Content-Type': lien.type },
+            onUploadProgress: suivre,
+          });
+          cleDeposee = lien.cle;
+        }
+      }
+
       const fd = new FormData();
       fd.append('title', form.title);
       fd.append('order', form.order);
       fd.append('is_active', form.is_active);
-      if (file) fd.append('video', file);
-      if (poster) fd.append('poster', poster);
+      if (cleDeposee) fd.append('video_cle', cleDeposee);
+      // Repli quand R2 n'est pas configuré (développement) : l'envoi classique.
+      else if (file) fd.append('video', file);
+      // L'affiche est une image : elle passe par la réduction commune, ce qui
+      // la ramène sous le mégaoctet et lui permet de voyager avec le reste.
+      if (poster) fd.append('poster', await reduirePourEnvoi(poster));
       // Chaîne vide = « aucune pièce » : le champ est facultatif côté
       // modèle, il faut donc envoyer un vide explicite pour le détacher.
       fd.append('product', form.product || '');
       const options = {
         headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: ({ loaded, total }) => {
-          if (total) setAvancement(Math.round((loaded / total) * 100));
-        },
+        onUploadProgress: cleDeposee ? undefined : suivre,
       };
       const res = video
         ? await apiClient.patch(`/gestion/videos/${video.id}/`, fd, options)
@@ -51,7 +89,17 @@ const VideoForm = ({ video, produits, onClose, onSaved }) => {
       toast.success(video ? 'Vidéo mise à jour' : 'Vidéo ajoutée');
       onSaved(res.data);
     } catch (err) {
-      toast.error(err.response?.data?.video?.[0] || 'Erreur lors de l’envoi — le fichier est peut-être trop volumineux.');
+      // Un dépôt direct qui échoue ne renvoie pas de réponse lisible : le
+      // navigateur bloque la lecture d'une réponse sans en-têtes CORS. Dire
+      // « fichier trop volumineux » dans ce cas enverrait chercher au mauvais
+      // endroit — c'est la configuration du bucket qu'il faut regarder.
+      const messageApi = err.response?.data?.video?.[0] || err.response?.data?.detail;
+      toast.error(
+        messageApi
+        || (err.config?.url?.startsWith('http')
+          ? 'Le dépôt sur le stockage a été refusé — vérifiez la règle CORS du bucket.'
+          : 'Erreur lors de l’envoi — le fichier est peut-être trop volumineux.'),
+      );
     } finally {
       setSaving(false);
       setAvancement(0);

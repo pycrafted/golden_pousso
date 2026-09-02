@@ -3,10 +3,15 @@
 Accès réservé aux comptes Customer.is_staff=True (activé une fois via l'admin Django, aucun système
 de rôle supplémentaire nécessaire).
 """
+import os
+import uuid
 from datetime import date
+
+from django.conf import settings
+from django.core.files.storage import storages
 from django.db.models import Sum
 from rest_framework import viewsets, mixins, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
@@ -125,6 +130,67 @@ class GestionShowcaseVideoViewSet(viewsets.ModelViewSet):
     queryset = ShowcaseVideo.objects.all()
     serializer_class = GestionShowcaseVideoSerializer
     permission_classes = [IsStaffUser]
+
+    @action(detail=False, methods=['post'], url_path='lien-envoi')
+    def lien_envoi(self, request):
+        """Délivre une URL signée pour déposer la vidéo DIRECTEMENT sur R2.
+
+        ── Pourquoi le fichier ne passe plus par ici ────────────────────────
+        Il n'y arrivait pas. L'envoi répondait 502 Bad Gateway, et les journaux
+        de Render ne montraient aucune trace de la requête : elle mourait dans
+        le proxy, avant Django. L'instance gratuite s'endort au bout de quinze
+        minutes d'inactivité ; au réveil, le proxy ne peut pas garder en
+        mémoire des dizaines de mégaoctets le temps que le conteneur démarre.
+        Une petite requête survit à ce réveil, une vidéo non.
+
+        Et même réveillée, la route était absurde : le fichier partait de Dakar
+        vers l'Oregon, puis l'Oregon le repoussait vers un bucket en Europe.
+        Deux traversées de l'Atlantique pour un fichier qui doit finir à
+        Cloudflare, lequel a un point de présence à Dakar même.
+
+        Le navigateur dépose donc sur R2 par cette URL signée, puis ne poste
+        ici qu'une ligne de texte : la clé de l'objet. Django n'a plus à porter
+        le poids.
+
+        ── Ce que l'URL autorise ────────────────────────────────────────────
+        Une seule écriture, sur une seule clé que le serveur choisit, pendant
+        une heure. Le client ne décide ni de l'emplacement ni du nom : il ne
+        peut donc pas écraser un objet existant.
+        """
+        if not settings.R2_ENABLED:
+            # Sans R2, il n'y a pas de dépôt direct possible : le formulaire
+            # retombe sur l'envoi classique en multipart, qui reste en place.
+            return Response({'disponible': False})
+
+        nom = (request.data.get('nom') or 'video.mp4').strip()
+        extension = os.path.splitext(nom)[1].lower() or '.mp4'
+        if extension not in ('.mp4', '.webm', '.mov', '.m4v'):
+            return Response(
+                {'detail': f"Format non accepté : {extension}. Utilisez .mp4, .webm ou .mov."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Le serveur nomme, jamais le client : un nom venu du navigateur
+        # pourrait viser une clé déjà prise, ou sortir du dossier des vidéos.
+        cle = f'videos/{uuid.uuid4().hex}{extension}'
+        type_mime = request.data.get('type') or 'video/mp4'
+
+        stockage = storages['videos']
+        client = stockage.connection.meta.client
+        url = client.generate_presigned_url(
+            'put_object',
+            Params={
+                'Bucket': stockage.bucket_name,
+                'Key': cle,
+                # Signé, donc le navigateur devra envoyer exactement cette
+                # valeur. C'est elle que R2 renverra ensuite aux visiteurs :
+                # sans elle, la balise <video> reçoit un octet-stream et refuse
+                # de lire.
+                'ContentType': type_mime,
+            },
+            ExpiresIn=3600,
+        )
+        return Response({'disponible': True, 'url': url, 'cle': cle, 'type': type_mime})
 
 
 class GestionCustomerViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
