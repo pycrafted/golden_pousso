@@ -222,7 +222,6 @@ const PaireImageBlock = ({ title, description, endpoint, field, filtre }) => {
    toujours côté modèle et l'API le renvoie encore : les photos déjà publiées
    là sont conservées, simplement plus affichées ni modifiables ici. */
 const FILTRE_ACCUEIL = { emplacement: 'accueil' };
-const FILTRE_PROMO = { emplacement: 'promotion' };
 
 const ContenuPage = () => (
   <>
@@ -233,14 +232,14 @@ const ContenuPage = () => (
       endpoint="/gestion/hero-banner/"
       field="image"
     />
-    <ImageBlock
-      title="Fond du hero — défilé (page d'accueil)"
-      description="Le fond du hero. Publiez-en PLUSIEURS : elles défilent en fondu, une toutes les six secondes, dans l'ordre où vous les envoyez. Une seule image donne un hero fixe. Format attendu : large, environ deux fois plus large que haut (2400 × 1037 px), le sujet à gauche et à droite, le milieu laissé libre pour le texte. Sans image ici, le site reprend la bannière du hero."
-      endpoint="/gestion/atelier-image/"
-      filtre={FILTRE_PROMO}
-      extra={FILTRE_PROMO}
-      field="image"
-    />
+    {/* ⚠ Le bloc « Fond du hero — défilé » a été retiré d'ici. Les cinq
+        tableaux sont maintenant des fichiers du FRONT, dans
+        frontend/public/images/hero/, listés par constants/hero.js.
+
+        Le laisser aurait été pire que de ne rien mettre : le propriétaire y
+        aurait téléversé une photo sans qu'il ne se passe rien à l'écran. Pour
+        changer le défilé, il faut composer l'image au format attendu et la
+        déposer dans le dépôt — c'est expliqué en tête de hero.js. */}
     <PaireImageBlock
       title="Notre savoir-faire (page d'accueil)"
       description="Les deux photos de la section qui présente le salon de couture, sur la page d'accueil. Chaque emplacement se change indépendamment de l'autre."

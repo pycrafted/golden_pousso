@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../api/client';
-import CldImg from './CldImg';
+import { TABLEAUX_HERO, LARGEUR_TABLEAU } from '../constants/hero';
 
 /**
  * Hero — la campagne, en pleine largeur.
@@ -89,33 +89,19 @@ const joursAvantFin = (fin) =>
   Math.ceil((new Date(fin + 'T23:59:59') - Date.now()) / JOUR_MS);
 
 const Hero = () => {
-  /* Les tableaux du défilé. Un seul élément = un hero fixe, exactement comme
-     avant ; deux ou plus et ils s'enchaînent. Rien à changer dans le code
-     pour en ajouter : ce sont les images publiées dans l'Espace Gestion →
-     Contenu → promotion, dans leur ordre. */
-  const [fonds, setFonds] = useState([]);
+  /* Les tableaux ne sont plus chargés : ce sont des fichiers du front, servis
+     par le CDN de Vercel, listés dans constants/hero.js. Un seul élément
+     donnerait un hero fixe ; à partir de deux ils s'enchaînent.
+
+     Ils venaient de l'API et de Cloudflare R2. Sans domaine personnalisé, R2
+     ne sert que par son adresse r2.dev, que Cloudflare bride volontairement :
+     un tableau sur cinq n'arrivait pas et le hero affichait un carré cassé. */
   const [tableau, setTableau] = useState(0);
   /* `null` tant que le serveur n'a pas repondu, `{}` ou la campagne ensuite.
      On ne montre donc pas l'accueil puis la promotion coup sur coup : le hero
      attend la reponse plutot que de clignoter d'un message a l'autre. */
   const [promo, setPromo] = useState(null);
   const [maintenant, setMaintenant] = useState(0);
-
-  /* Image dédiée si le propriétaire en a publié une ; sinon la bannière du
-     hero. Même chaîne que celle de la bande promotionnelle, reprise avec
-     elle. */
-  useEffect(() => {
-    apiClient.get('/atelier-image/')
-      .then(({ data }) => {
-        const dediees = (data.promotion ?? [])
-          .map((i) => i.image_url)
-          .filter(Boolean);
-        if (dediees.length) return setFonds(dediees);
-        return apiClient.get('/hero-banner/')
-          .then(({ data: hero }) => setFonds(hero.image_url ? [hero.image_url] : []));
-      })
-      .catch(() => {});
-  }, []);
 
   /* Le défilé. Un tableau toutes les six secondes — assez pour lire la
      parole posée dessus, assez court pour qu'on voie que ça bouge.
@@ -129,14 +115,14 @@ const Hero = () => {
      exactement ce que ce réglage demande d'éviter. Il voit alors le premier
      tableau, fixe. */
   useEffect(() => {
-    if (fonds.length < 2) return undefined;
+    if (TABLEAUX_HERO.length < 2) return undefined;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
     const horloge = setInterval(
-      () => setTableau((n) => (n + 1) % fonds.length),
+      () => setTableau((n) => (n + 1) % TABLEAUX_HERO.length),
       6000,
     );
     return () => clearInterval(horloge);
-  }, [fonds.length]);
+  }, []);
 
   /* La campagne du jour, s'il y en a une. L'API repond {} le reste de
      l'annee : c'est l'etat normal, pas une erreur. */
@@ -162,30 +148,32 @@ const Hero = () => {
 
   return (
     <section className="hero">
-      {/* Un <img> et non un background-image : CldImg construit le srcset,
-          qu'un fond CSS ne sait pas faire. */}
-      {/* Tous les tableaux sont rendus et superposés ; seul celui du moment
-          est opaque. C'est ce qui permet le fondu ENCHAÎNÉ : échanger le src
-          d'une seule image ferait disparaître l'ancienne avant que la
-          nouvelle n'arrive, et le hero clignoterait au fond indigo.
+      {/* Un <img> nu et non CldImg : ces fichiers ne sont plus des médias du
+          backend mais des fichiers du front, servis tels quels. Il n'y a
+          aucune URL à transformer, et une seule largeur — voir hero.js.
 
-          Corollaire à connaître : toutes les images se chargent, pas
-          seulement la première. Trois tableaux, c'est trois fois le poids au
-          premier rendu — seul le premier est en `eager`, les suivants
-          attendent. */}
-      {fonds.map((src, i) => (
+          Tous les tableaux sont rendus et superposés ; seul celui du moment
+          est opaque. C'est ce qui permet le fondu ENCHAÎNÉ : échanger le src
+          d'une seule image ferait disparaître l'ancienne avant que la nouvelle
+          n'arrive, et le hero clignoterait au fond indigo.
+
+          Corollaire : tous se chargent, pas seulement le premier. Seul le
+          premier est en `eager` — c'est lui qui compte pour la ligne de
+          flottaison ; les suivants attendent que le navigateur ait le temps. */}
+      {TABLEAUX_HERO.map((src, i) => (
         <span
           key={src}
           className={i === tableau ? 'hero-calque hero-calque--vu' : 'hero-calque'}
           aria-hidden="true"
         >
-          <CldImg
+          <img
             className="hero-fond"
             src={src}
             alt=""
-            eager={i === 0}
-            sizes="100vw"
-            widths={[800, 1600, 2400]}
+            width={LARGEUR_TABLEAU}
+            height={1037}
+            loading={i === 0 ? 'eager' : 'lazy'}
+            decoding="async"
           />
         </span>
       ))}
