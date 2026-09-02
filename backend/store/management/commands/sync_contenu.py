@@ -62,6 +62,33 @@ def empreinte(octets):
     return hashlib.sha256(octets).hexdigest()[:12]
 
 
+def nom_publie(chemin, octets):
+    """`hero-1.jpg` + son contenu donne `hero-1.a1b2c3d4e5f6.jpg`.
+
+    L'empreinte est écrite DANS le nom, et c'est tout le mécanisme de
+    déduplication : savoir si un tableau est déjà en ligne devient une lecture
+    de la base, sans un seul octet à retélécharger.
+
+    La version précédente relisait chaque image depuis le stockage pour la
+    hacher. Elle a produit des doublons en production : les fichiers d'un
+    déploiement antérieur étaient introuvables — écrits quand le stockage
+    préfixait encore « media/ » — la lecture échouait, la commande les croyait
+    absents et republiait tout. Un nom qui porte son empreinte ne peut pas
+    mentir, même quand le fichier a disparu.
+    """
+    return f'{chemin.stem}.{empreinte(octets)}{chemin.suffix}'
+
+
+def est_un_tableau(nom):
+    """Vrai si ce fichier a été publié par cette commande.
+
+    Sert au ménage : on ne retire QUE ce qu'on a posé. Une image que le
+    propriétaire aurait ajoutée lui-même dans l'Espace Gestion ne porte pas ce
+    préfixe et n'est jamais touchée.
+    """
+    return nom.rsplit('/', 1)[-1].startswith('hero-')
+
+
 class Command(BaseCommand):
     help = "Aligne les tableaux du hero et les titres de sections sur ceux du développement."
 
@@ -104,38 +131,47 @@ class Command(BaseCommand):
             ))
             return
 
-        existantes = AtelierImage.objects.filter(emplacement='promotion')
-
-        # Les empreintes déjà en ligne. On lit le contenu depuis le stockage,
-        # ce qui vaut aussi bien en local (disque) qu'en production (R2).
-        deja = set()
-        if not force:
-            for image in existantes:
-                try:
-                    with image.image.open('rb') as f:
-                        deja.add(empreinte(f.read()))
-                except (OSError, ValueError):
-                    # Fichier absent du stockage : la ligne est orpheline, on
-                    # la laisse tranquille mais elle ne bloque pas la suite.
-                    continue
-
-        if force:
-            nb = existantes.count()
-            existantes.delete()
-            self.stdout.write(f'  --force : {nb} ancienne(s) image(s) retirée(s)')
-
-        publiees = 0
+        # Ce que le défilé DOIT contenir, nom par nom.
+        attendus = {}
         for rang, chemin in enumerate(fichiers):
             octets = chemin.read_bytes()
-            if empreinte(octets) in deja:
-                self.stdout.write(f'  hero   {chemin.name} déjà en ligne')
+            attendus[nom_publie(chemin, octets)] = (rang, octets)
+
+        existantes = AtelierImage.objects.filter(emplacement='promotion')
+
+        # ── Ménage ──
+        # On retire les tableaux qui ne sont plus au programme : les orphelins
+        # d'un ancien stockage, et les images d'un défilé précédent. Tout ce
+        # qui ne porte pas le préfixe `hero-` appartient au propriétaire et
+        # reste en place.
+        retires = 0
+        for image in existantes:
+            nom = image.image.name.rsplit('/', 1)[-1]
+            if not est_un_tableau(nom):
+                continue
+            if force or nom not in attendus:
+                self.stdout.write(f'  hero   {nom} retire')
+                image.delete()
+                retires += 1
+
+        deja = {
+            i.image.name.rsplit('/', 1)[-1]
+            for i in AtelierImage.objects.filter(emplacement='promotion')
+        }
+
+        publiees = 0
+        for nom, (rang, octets) in attendus.items():
+            if nom in deja:
+                self.stdout.write(f'  hero   {nom} deja en ligne')
                 continue
             objet = AtelierImage(emplacement='promotion', is_active=True, order=rang)
-            objet.image.save(chemin.name, ContentFile(octets), save=True)
+            # `save=True` ecrit le fichier ET la ligne. Le nom porte deja son
+            # empreinte : le stockage n'a aucune raison de le renommer.
+            objet.image.save(nom, ContentFile(octets), save=True)
             publiees += 1
-            self.stdout.write(f'  hero   {chemin.name} publié (rang {rang})')
+            self.stdout.write(f'  hero   {nom} publie (rang {rang})')
 
         self.stdout.write(self.style.SUCCESS(
-            f'Défilé du hero : {publiees} tableau(x) publié(s), '
-            f'{len(fichiers) - publiees} déjà en ligne.'
+            f'Defile du hero : {publiees} publie(s), {retires} retire(s), '
+            f'{len(attendus) - publiees} deja en ligne.'
         ))
