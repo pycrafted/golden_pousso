@@ -92,6 +92,14 @@ Le client Axios dans `frontend/src/api/client.js` gère :
   `product` fait apparaître une carte cliquable photo/nom/prix en pied de
   tuile. Réglables dans `/admin/` ; l'Espace Gestion → Vidéos ne les expose
   pas encore côté formulaire React.
+  ⚠ `video` est **obligatoire**, à la création comme dans le modèle : le
+  sérialiseur de gestion le déclare facultatif pour qu'une modification de
+  titre n'oblige pas à renvoyer le fichier, et son `validate` le réimpose à la
+  création. Sans cela une ligne vide s'enregistrait, marquée « Visible », et
+  donnait une tuile blanche en page d'accueil. Le champ porte
+  `storage=video_storage` comme `Product.video` — sans lui il suivait le
+  stockage par défaut, soit le disque local en développement : les vidéos
+  marchaient en local et nulle part ailleurs.
 
 ## Conventions
 
