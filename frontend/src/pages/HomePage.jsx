@@ -6,6 +6,7 @@ import Hero from '../components/Hero';
 import UniversGrid from '../components/home/UniversGrid';
 import CategoryGrid from '../components/CategoryGrid';
 import VideoCardsSection from '../components/VideoCardsSection';
+import BandePromo from '../components/BandePromo';
 import AtelierSection from '../components/home/AtelierSection';
 import TestimonialsSection from '../components/TestimonialsSection';
 
@@ -260,6 +261,11 @@ const HomePage = () => (
 
     {/* ── 4. Montrer : le catalogue ── */}
     <CategoryGrid />
+
+    {/* ── 5. Presser : la campagne du moment, s'il y en a une ──
+        Elle ne rend rien hors campagne, et le reste de la page se referme
+        dessus sans laisser de trou. */}
+    <BandePromo />
 
     {/* ── 6. La sélection filtrable ── */}
     <Selection />
