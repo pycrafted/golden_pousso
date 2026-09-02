@@ -26,6 +26,10 @@ const ImageBlock = ({ title, description, endpoint, field, extra, filtre }) => {
     const fd = new FormData();
     fd.append(field, file);
     fd.append('is_active', true);
+    // L'ordre suit l'ordre d'envoi. Sans lui, toutes les images tombent a 0 et
+    // l'API les rend par date decroissante : le defile du hero jouerait les
+    // tableaux a l'envers, et l'ordre changerait au moindre reenregistrement.
+    fd.append('order', items.length);
     // Champs propres au bloc — l'emplacement, par exemple : sans lui
     // l'image partirait dans le tas par défaut.
     Object.entries(extra ?? {}).forEach(([cle, valeur]) => fd.append(cle, valeur));
@@ -227,8 +231,8 @@ const ContenuPage = () => (
       field="image"
     />
     <ImageBlock
-      title="Fond de la bande promotionnelle (page d'accueil)"
-      description="La photo derrière « Promotion / Bientôt la Tabaski ». Une image large convient mieux qu'un portrait en pied : la bande est deux fois plus large que haute. Sans image publiée ici, le site reprend la bannière du hero."
+      title="Fond du hero — défilé (page d'accueil)"
+      description="Le fond du hero. Publiez-en PLUSIEURS : elles défilent en fondu, une toutes les six secondes, dans l'ordre où vous les envoyez. Une seule image donne un hero fixe. Format attendu : large, environ deux fois plus large que haut (2400 × 1037 px), le sujet à gauche et à droite, le milieu laissé libre pour le texte. Sans image ici, le site reprend la bannière du hero."
       endpoint="/gestion/atelier-image/"
       filtre={FILTRE_PROMO}
       extra={FILTRE_PROMO}

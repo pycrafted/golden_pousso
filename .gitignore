@@ -40,3 +40,7 @@ Thumbs.db
 /REPRODUCE_*.md
 /PIECES_SELECTIONNEES_ANALYSE.md
 /GOLDEN_POUSSO_tasks.md
+
+# Dossier de transit : les tableaux du hero, copies la pour etre televerses
+# dans l'Espace Gestion. Les medias ne passent pas par git.
+/hero-a-televerser/
