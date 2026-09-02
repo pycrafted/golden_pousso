@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import apiClient from '../../api/client';
+import { reduirePourEnvoi } from '../../utils/imageUpload';
 import { COLORS, RADIUS, FONT_BODY } from '../../theme';
 import { PageHeader, GestionButton, Badge, Panel, ConfirmDialog } from './ui';
 
@@ -24,7 +25,9 @@ const ImageBlock = ({ title, description, endpoint, field, extra, filtre }) => {
     if (!file) { toast.error('Choisissez une image'); return; }
     setUploading(true);
     const fd = new FormData();
-    fd.append(field, file);
+    // Meme reduction que pour les photos produit : le serveur n'a besoin que
+    // de 1600 px, inutile de lui envoyer une photo de boitier.
+    fd.append(field, await reduirePourEnvoi(file));
     fd.append('is_active', true);
     // L'ordre suit l'ordre d'envoi. Sans lui, toutes les images tombent a 0 et
     // l'API les rend par date decroissante : le defile du hero jouerait les

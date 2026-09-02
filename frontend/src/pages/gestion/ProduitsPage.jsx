@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import apiClient from '../../api/client';
+import { reduirePourEnvoi } from '../../utils/imageUpload';
 import { COLORS, RADIUS, FONT_BODY } from '../../theme';
 import { PageHeader, GestionButton, GestionInput, GestionTextarea, GestionSelect, Field, Badge, GestionTable, Td, Panel, EmptyState, ConfirmDialog } from './ui';
 
@@ -104,22 +105,44 @@ const ProductAssets = ({ product, onChanged }) => {
   useEffect(() => { load(); }, [load]);
 
   const uploadImage = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const fd = new FormData();
-    fd.append('product', product.id);
-    fd.append('image', file);
-    fd.append('alt_text', newAlt);
-    fd.append('is_primary', images.length === 0);
+    const brut = e.target.files?.[0];
+    if (!brut) return;
+    // Le champ se vide TOUT DE SUITE : l'envoi peut durer, et un fichier qui
+    // reste affiche pendant qu'il ne se passe rien laisse croire a un blocage.
+    e.target.value = '';
+
+    const attente = toast.loading('Preparation de la photo...');
     try {
+      // Reduite ici, avant l'envoi : une photo de boitier fait 35 Mo, dont le
+      // serveur ne tire jamais plus de 750 Ko. Voir utils/imageUpload.js.
+      const file = await reduirePourEnvoi(brut);
+      toast.loading(
+        file.size < brut.size
+          ? `Envoi (${Math.round(file.size / 1024)} Ko au lieu de ${Math.round(brut.size / 1024)})...`
+          : 'Envoi...',
+        { id: attente },
+      );
+
+      const fd = new FormData();
+      fd.append('product', product.id);
+      fd.append('image', file);
+      fd.append('alt_text', newAlt);
+      fd.append('is_primary', images.length === 0);
       await apiClient.post('/gestion/product-images/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+
+      toast.success('Photo ajoutee', { id: attente });
       setNewAlt('');
       load();
       onChanged?.();
-    } catch {
-      toast.error("Erreur lors de l'upload");
+    } catch (err) {
+      // Le message du serveur plutot qu'un « erreur » muet : sans lui, on ne
+      // peut pas distinguer un fichier trop lourd d'une session expiree.
+      const detail = err.response?.data;
+      const msg = typeof detail === 'string'
+        ? detail
+        : detail?.image?.[0] || detail?.detail || err.message;
+      toast.error(`Echec de l'envoi : ${msg}`, { id: attente, duration: 8000 });
     }
-    e.target.value = '';
   };
 
   const setPrimary = async (imgId) => {

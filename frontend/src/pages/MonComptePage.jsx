@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import SEOHead from '../components/SEOHead';
+import { reduirePourEnvoi } from '../utils/imageUpload';
 
 /**
  * Mon compte — connexion, profil, mot de passe.
@@ -266,9 +267,10 @@ const Compte = () => {
     } finally { setOccupe(false); }
   };
 
-  const choisirAvatar = (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
+  const choisirAvatar = async (e) => {
+    const brut = e.target.files?.[0];
+    if (!brut) return;
+    const f = await reduirePourEnvoi(brut);
     setFichierAvatar(f);
     setApercuAvatar(URL.createObjectURL(f));
     setEdite('avatar');
