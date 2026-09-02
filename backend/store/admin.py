@@ -210,7 +210,7 @@ class StockAlertAdmin(admin.ModelAdmin):
 
 @admin.register(ShowcaseVideo)
 class ShowcaseVideoAdmin(admin.ModelAdmin):
-    list_display = ['__str__', 'video', 'product', 'order', 'is_active', 'created_at']
+    list_display = ['__str__', 'video_lien', 'video', 'product', 'order', 'is_active', 'created_at']
     list_editable = ['order', 'is_active']
     list_filter = ['is_active']
     # `product` pointe vers tout le catalogue : un <select> chargerait chaque

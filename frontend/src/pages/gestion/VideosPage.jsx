@@ -11,8 +11,8 @@ const VideoForm = ({ video, produits, onClose, onSaved }) => {
   const [poster, setPoster] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(video?.video ?? null);
   const [form, setForm] = useState(video
-    ? { title: video.title, order: video.order, is_active: video.is_active, product: video.product ?? '' }
-    : { title: '', order: 0, is_active: true, product: '' });
+    ? { title: video.title, order: video.order, is_active: video.is_active, product: video.product ?? '', video_lien: video.video_lien ?? '' }
+    : { title: '', order: 0, is_active: true, product: '', video_lien: '' });
   const [saving, setSaving] = useState(false);
   /* Une vidéo met des minutes à partir depuis une connexion sénégalaise. Sans
      ce compteur, le bouton dit « Envoi en cours… » sans bouger et on ne peut
@@ -29,7 +29,11 @@ const VideoForm = ({ video, produits, onClose, onSaved }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!video && !file) { toast.error('Choisissez un fichier vidéo'); return; }
+    const lien = form.video_lien.trim();
+    if (!video && !file && !lien) {
+      toast.error('Collez le lien de la vidéo, ou choisissez un fichier.');
+      return;
+    }
     setSaving(true);
     try {
       const suivre = ({ loaded, total }) => {
@@ -50,7 +54,9 @@ const VideoForm = ({ video, produits, onClose, onSaved }) => {
          ajouterait l'en-tête Authorization, que R2 lirait à la place de la
          signature — et rejetterait. */
       let cleDeposee = '';
-      if (file) {
+      // Un lien collé l'emporte : il n'y a plus rien à envoyer, le fichier est
+      // déjà chez Cloudflare.
+      if (file && !lien) {
         const { data: lien } = await apiClient.post('/gestion/videos/lien-envoi/', {
           nom: file.name,
           type: file.type || 'video/mp4',
@@ -70,9 +76,10 @@ const VideoForm = ({ video, produits, onClose, onSaved }) => {
       fd.append('title', form.title);
       fd.append('order', form.order);
       fd.append('is_active', form.is_active);
+      fd.append('video_lien', lien);
       if (cleDeposee) fd.append('video_cle', cleDeposee);
       // Repli quand R2 n'est pas configuré (développement) : l'envoi classique.
-      else if (file) fd.append('video', file);
+      else if (file && !lien) fd.append('video', file);
       // L'affiche est une image : elle passe par la réduction commune, ce qui
       // la ramène sous le mégaoctet et lui permet de voyager avec le reste.
       if (poster) fd.append('poster', await reduirePourEnvoi(poster));
@@ -93,7 +100,8 @@ const VideoForm = ({ video, produits, onClose, onSaved }) => {
       // navigateur bloque la lecture d'une réponse sans en-têtes CORS. Dire
       // « fichier trop volumineux » dans ce cas enverrait chercher au mauvais
       // endroit — c'est la configuration du bucket qu'il faut regarder.
-      const messageApi = err.response?.data?.video?.[0] || err.response?.data?.detail;
+      const donnees = err.response?.data;
+      const messageApi = donnees?.video_lien?.[0] || donnees?.video?.[0] || donnees?.detail;
       toast.error(
         messageApi
         || (err.config?.url?.startsWith('http')
@@ -116,13 +124,41 @@ const VideoForm = ({ video, produits, onClose, onSaved }) => {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <Field label={video ? 'Remplacer le fichier vidéo (optionnel)' : 'Fichier vidéo *'}>
-            <input type="file" accept="video/*" onChange={handleFileChange} style={{ fontFamily: FONT_BODY, fontSize: '1.2rem' }} />
+          <Field label="Lien de la vidéo">
+            <GestionInput
+              type="url"
+              value={form.video_lien}
+              onChange={(e) => set('video_lien', e.target.value)}
+              placeholder="https://…/ma-video.mp4"
+            />
+            <p style={{ fontFamily: FONT_BODY, fontSize: '1.15rem', color: COLORS.mutedOnLight, marginTop: '0.6rem' }}>
+              Déposez la vidéo dans Cloudflare, puis collez ici son adresse publique.
+              C’est la voie recommandée : le fichier ne passe pas par le site, donc
+              rien à attendre et rien qui puisse échouer en chemin.
+            </p>
           </Field>
 
-          {previewUrl && (
+          {/* Le choix de fichier reste, mais en second : il sert au
+              développement, et aux séquences déjà publiées ainsi. Un lien collé
+              le rend sans effet. */}
+          <Field label={form.video_lien.trim()
+            ? 'Fichier vidéo — inutile, le lien ci-dessus fait foi'
+            : (video ? 'Ou remplacer le fichier vidéo' : 'Ou envoyer un fichier')}>
+            <input
+              type="file"
+              accept="video/*"
+              onChange={handleFileChange}
+              disabled={!!form.video_lien.trim()}
+              style={{ fontFamily: FONT_BODY, fontSize: '1.2rem', opacity: form.video_lien.trim() ? 0.4 : 1 }}
+            />
+          </Field>
+
+          {/* Le lien collé prime sur l'aperçu du fichier : c'est lui qui sera
+              publié, autant vérifier tout de suite qu'il lit bien. Un lien
+              fautif se voit ici, pas trois jours plus tard sur l'accueil. */}
+          {(form.video_lien.trim() || previewUrl) && (
             <div style={{ marginBottom: '2rem' }}>
-              <video src={previewUrl} controls muted style={{ width: '18rem', aspectRatio: '9/16', objectFit: 'cover', borderRadius: RADIUS, background: '#1A1208', display: 'block' }} />
+              <video src={form.video_lien.trim() || previewUrl} controls muted style={{ width: '18rem', aspectRatio: '9/16', objectFit: 'cover', borderRadius: RADIUS, background: '#1A1208', display: 'block' }} />
             </div>
           )}
 

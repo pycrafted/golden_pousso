@@ -305,7 +305,10 @@ class ShowcaseVideoSerializer(serializers.ModelSerializer):
         return request.build_absolute_uri(fichier.url) if request else fichier.url
 
     def get_video_url(self, obj):
-        return self._absolu(obj.video)
+        # Le lien d'abord : quand il est renseigné, c'est lui qui fait foi.
+        # Il pointe déjà sur une adresse publique et complète — rien à
+        # reconstruire.
+        return obj.video_lien or self._absolu(obj.video)
 
     def get_poster_url(self, obj):
         return self._absolu(obj.poster)

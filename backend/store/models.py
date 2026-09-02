@@ -364,11 +364,29 @@ class StockAlert(models.Model):
 
 class ShowcaseVideo(models.Model):
     title = models.CharField(max_length=200, blank=True, help_text="Repère interne, non affiché sur le site")
+    # ── Deux façons de fournir la séquence ────────────────────────────────
+    # Un LIEN, ou un FICHIER. Le lien passe en premier quand les deux sont là.
+    #
+    # Le lien est la voie normale en production : le propriétaire dépose sa
+    # vidéo dans Cloudflare depuis son navigateur et colle l'adresse ici. Le
+    # fichier ne traverse alors jamais notre serveur — ce qu'il n'arrivait de
+    # toute façon pas à faire, l'instance Render s'endormant au bout de quinze
+    # minutes et son proxy ne retenant pas des dizaines de mégaoctets le temps
+    # du réveil.
+    video_lien = models.URLField(
+        max_length=500, blank=True,
+        verbose_name='Lien de la vidéo',
+        help_text="Adresse publique du fichier, déposé sur Cloudflare. "
+                  "C'est la façon recommandée : rien ne transite par le site.",
+    )
+    # L'envoi de fichier reste en place — c'est ce qui sert en développement,
+    # et les séquences déjà publiées ainsi continuent de fonctionner.
+    #
     # `storage=video_storage` comme `Product.video` : sans lui, la séquence
     # partait sur le stockage PAR DÉFAUT, qui n'est pas celui des vidéos.
     # En développement, R2 configuré, cela voulait dire le disque local — d'où
     # des vidéos qui marchaient en local et nulle part ailleurs.
-    video = models.FileField(upload_to='videos/', storage=video_storage)
+    video = models.FileField(upload_to='videos/', storage=video_storage, blank=True)
     # Image affichée avant que la vidéo ne démarre. Sans elle, la tuile reste
     # vide le temps du chargement — très visible sur connexion lente.
     poster = models.ImageField(

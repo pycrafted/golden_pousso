@@ -110,7 +110,7 @@ class GestionShowcaseVideoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ShowcaseVideo
-        fields = ['id', 'title', 'video', 'video_cle', 'poster', 'product', 'order', 'is_active', 'created_at']
+        fields = ['id', 'title', 'video', 'video_lien', 'video_cle', 'poster', 'product', 'order', 'is_active', 'created_at']
         # Facultatif pour pouvoir MODIFIER un titre ou un ordre sans renvoyer
         # le fichier, qui pèse des dizaines de mégaoctets. Voir `validate` :
         # à la CRÉATION, il redevient obligatoire.
@@ -125,12 +125,31 @@ class GestionShowcaseVideoSerializer(serializers.ModelSerializer):
         la page d'accueil, sans que rien n'indique ce qui manquait. C'est
         exactement ce qui est arrivé en production.
         """
-        if self.instance is None and not attrs.get('video') and not attrs.get('video_cle'):
+        fourni = attrs.get('video') or attrs.get('video_cle') or attrs.get('video_lien')
+        if self.instance is None and not fourni:
             raise serializers.ValidationError({
-                'video': "Choisissez un fichier vidéo : une séquence sans "
-                         "fichier n'apparaîtrait pas sur le site.",
+                'video_lien': "Collez le lien de la vidéo, ou choisissez un "
+                              "fichier : une séquence sans l'un des deux "
+                              "n'apparaîtrait pas sur le site.",
             })
         return attrs
+
+    def validate_video_lien(self, valeur):
+        """Une adresse que le navigateur saura lire, et rien d'autre.
+
+        Le champ est rempli à la main, en collant depuis le tableau de bord
+        Cloudflare : c'est exactement le geste où l'on colle une ligne de trop
+        ou l'adresse de la page au lieu de celle du fichier. Un `http://` seul
+        casserait par ailleurs la lecture, le site étant servi en HTTPS — le
+        navigateur bloque le contenu mixte sans rien dire.
+        """
+        valeur = (valeur or '').strip()
+        if valeur and not valeur.startswith('https://'):
+            raise serializers.ValidationError(
+                "Le lien doit commencer par https:// — une adresse en http "
+                "serait bloquée par le navigateur."
+            )
+        return valeur
 
     def validate_video_cle(self, valeur):
         """La clé vient du serveur, elle doit y ressembler.
