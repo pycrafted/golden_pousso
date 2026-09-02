@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../api/client';
 import { TABLEAUX_HERO, LARGEUR_TABLEAU } from '../constants/hero';
+import { DEMONSTRATION, CAMPAGNE_DEMO } from '../constants/demonstration';
 
 /**
  * Hero — la campagne, en pleine largeur.
@@ -127,9 +128,13 @@ const Hero = () => {
   /* La campagne du jour, s'il y en a une. L'API repond {} le reste de
      l'annee : c'est l'etat normal, pas une erreur. */
   useEffect(() => {
+    // Le repli de demonstration ne sert QUE si l'API ne renvoie aucune
+    // campagne : une vraie promotion saisie dans l'admin reprend la main.
+    // Voir constants/demonstration.js — a retirer apres la presentation.
+    const repli = DEMONSTRATION ? CAMPAGNE_DEMO : {};
     apiClient.get('/hero-promotion/')
-      .then(({ data }) => setPromo(data && data.titre ? data : {}))
-      .catch(() => setPromo({}));
+      .then(({ data }) => setPromo(data && data.titre ? data : repli))
+      .catch(() => setPromo(repli));
   }, []);
 
   /* Un onglet laisse ouvert une nuit doit voir la campagne expirer. Une heure

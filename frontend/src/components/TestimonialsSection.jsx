@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import apiClient from '../api/client';
+import { DEMONSTRATION, AVIS_DEMO } from '../constants/demonstration';
 
 // Ref-callback plutôt que useRef : cette section peut d'abord rendre `null` (le temps
 // de charger les avis), donc le nœud DOM n'existe pas encore lors du tout premier rendu.
@@ -35,7 +36,14 @@ const TestimonialsSection = () => {
   const [ref, visible] = useInView();
 
   useEffect(() => {
-    apiClient.get('/reviews/recents/').then(({ data }) => setReviews(data)).catch(() => {}).finally(() => setLoaded(true));
+    // Repli de démonstration : il ne s'affiche que si l'API ne renvoie AUCUN
+    // avis. Le premier vrai avis publié le fait disparaître de lui-même.
+    // ⚠ Ces avis sont inventés — voir constants/demonstration.js.
+    const repli = DEMONSTRATION ? AVIS_DEMO : [];
+    apiClient.get('/reviews/recents/')
+      .then(({ data }) => setReviews(data && data.length ? data : repli))
+      .catch(() => setReviews(repli))
+      .finally(() => setLoaded(true));
   }, []);
 
   if (!loaded || reviews.length === 0) return null;

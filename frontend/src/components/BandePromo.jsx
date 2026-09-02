@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../api/client';
 import Reveal from './Reveal';
+import { DEMONSTRATION, CAMPAGNE_DEMO } from '../constants/demonstration';
 
 /**
  * La bande de promotion — transfert de `Redesign_mcommaman.com`.
@@ -185,9 +186,12 @@ const BandePromo = () => {
 
   useEffect(() => {
     // L'API répond {} hors campagne : c'est l'état normal, pas une erreur.
+    // Le repli de démonstration ne sert QUE dans ce cas — une vraie campagne
+    // saisie dans l'admin reprend toujours la main. Voir constants/demonstration.js.
+    const repli = DEMONSTRATION ? CAMPAGNE_DEMO : {};
     apiClient.get('/hero-promotion/')
-      .then(({ data }) => setPromo(data && data.titre ? data : {}))
-      .catch(() => setPromo({}));
+      .then(({ data }) => setPromo(data && data.titre ? data : repli))
+      .catch(() => setPromo(repli));
   }, []);
 
   // Pas de campagne, pas de bande. Un bandeau promotionnel sans promotion
