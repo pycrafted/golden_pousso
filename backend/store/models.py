@@ -364,7 +364,11 @@ class StockAlert(models.Model):
 
 class ShowcaseVideo(models.Model):
     title = models.CharField(max_length=200, blank=True, help_text="Repère interne, non affiché sur le site")
-    video = models.FileField(upload_to='videos/')
+    # `storage=video_storage` comme `Product.video` : sans lui, la séquence
+    # partait sur le stockage PAR DÉFAUT, qui n'est pas celui des vidéos.
+    # En développement, R2 configuré, cela voulait dire le disque local — d'où
+    # des vidéos qui marchaient en local et nulle part ailleurs.
+    video = models.FileField(upload_to='videos/', storage=video_storage)
     # Image affichée avant que la vidéo ne démarre. Sans elle, la tuile reste
     # vide le temps du chargement — très visible sur connexion lente.
     poster = models.ImageField(

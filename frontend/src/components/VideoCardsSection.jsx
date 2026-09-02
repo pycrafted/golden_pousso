@@ -66,7 +66,10 @@ const VideoCardsSection = () => {
 
   useEffect(() => {
     apiClient.get('/videos/')
-      .then(({ data }) => setBande(data.results ?? data))
+      // Une séquence sans fichier ne donnerait qu'une tuile blanche : mieux
+      // vaut ne pas la dessiner. L'API peut en renvoyer — une ligne créée sans
+      // vidéo était acceptée avant que le sérialiseur ne l'interdise.
+      .then(({ data }) => setBande((data.results ?? data).filter((v) => v.video_url)))
       .catch(() => {});
   }, []);
 

@@ -106,7 +106,26 @@ class GestionShowcaseVideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShowcaseVideo
         fields = ['id', 'title', 'video', 'poster', 'product', 'order', 'is_active', 'created_at']
+        # Facultatif pour pouvoir MODIFIER un titre ou un ordre sans renvoyer
+        # le fichier, qui pèse des dizaines de mégaoctets. Voir `validate` :
+        # à la CRÉATION, il redevient obligatoire.
         extra_kwargs = {'video': {'required': False}}
+
+    def validate(self, attrs):
+        """Une séquence sans fichier n'est pas une séquence.
+
+        `required: False` ci-dessus ne devait servir qu'aux modifications. À la
+        création, il laissait enregistrer une ligne vide : elle apparaissait
+        « Visible » dans l'Espace Gestion et produisait une tuile blanche sur
+        la page d'accueil, sans que rien n'indique ce qui manquait. C'est
+        exactement ce qui est arrivé en production.
+        """
+        if self.instance is None and not attrs.get('video'):
+            raise serializers.ValidationError({
+                'video': "Choisissez un fichier vidéo : une séquence sans "
+                         "fichier n'apparaîtrait pas sur le site.",
+            })
+        return attrs
 
 
 # ── Clients ──
