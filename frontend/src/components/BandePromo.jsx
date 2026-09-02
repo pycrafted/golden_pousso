@@ -27,8 +27,16 @@ import Reveal from './Reveal';
  * bande ne rend rien du tout : mieux vaut pas de bande qu'une bande vide.
  */
 
-/** Image du fond. Le ratio compte peu : le calque est recadré en `cover`. */
+/**
+ * Image du fond, en deux largeurs.
+ *
+ * Le rapport est de 2,9:1 et non celui du bandeau (4,5:1) : le calque de
+ * parallaxe déborde de 28 % en haut ET en bas, il lui faut donc 56 % de hauteur
+ * en plus que la partie visible. Une image au format du bandeau se ferait
+ * recadrer et le sujet sortirait du champ.
+ */
 const PHOTO = '/images/promo/bande-promo.webp';
+const PHOTO_PETIT = '/images/promo/bande-promo-1200.webp';
 
 const MOIS = [
   'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
@@ -173,7 +181,15 @@ const BandePromo = () => {
         {/* Pas de voile ni d'aplat sombre sur la photo elle-même, comme dans
             la source : la lisibilité du texte tient au dégradé posé juste en
             dessous, qui n'assombrit que ce qu'il faut. */}
-        <img src={PHOTO} alt="" className="bp-photo" loading="lazy" decoding="async" />
+        <img
+          src={PHOTO}
+          srcSet={`${PHOTO_PETIT} 1200w, ${PHOTO} 2400w`}
+          sizes="100vw"
+          alt=""
+          className="bp-photo"
+          loading="lazy"
+          decoding="async"
+        />
       </FondQuiSeDecouvre>
 
       <div className="bp-ombre" aria-hidden />
