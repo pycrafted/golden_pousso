@@ -100,6 +100,16 @@ Le client Axios dans `frontend/src/api/client.js` gère :
   `storage=video_storage` comme `Product.video` — sans lui il suivait le
   stockage par défaut, soit le disque local en développement : les vidéos
   marchaient en local et nulle part ailleurs.
+  ⚠ **En production, le fichier ne passe pas par Django.** Le formulaire
+  demande une URL signée à `/gestion/videos/lien-envoi/`, dépose dessus, puis
+  ne poste que la clé (`video_cle`). L'envoi classique répondait 502 sans
+  laisser de trace dans les journaux : l'instance Render gratuite s'endort au
+  bout de quinze minutes, et son proxy ne retient pas des dizaines de
+  mégaoctets le temps du réveil. Le repli multipart reste actif quand R2 n'est
+  pas configuré, donc le développement local est inchangé.
+  Ce dépôt direct exige une **règle CORS sur le bucket R2** (Cloudflare → R2 →
+  Settings → CORS Policy) autorisant `PUT` depuis le domaine Vercel. Sans
+  elle, le navigateur bloque le dépôt et le formulaire le dit explicitement.
 
 ## Conventions
 
