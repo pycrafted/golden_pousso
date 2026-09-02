@@ -28,15 +28,25 @@ import Reveal from './Reveal';
  */
 
 /**
- * Image du fond, en deux largeurs.
+ * Les pièces détourées, posées sur l'aplat indigo.
  *
- * Le rapport est de 2,9:1 et non celui du bandeau (4,5:1) : le calque de
- * parallaxe déborde de 28 % en haut ET en bas, il lui faut donc 56 % de hauteur
- * en plus que la partie visible. Une image au format du bandeau se ferait
- * recadrer et le sujet sortirait du champ.
+ * ── Pourquoi pas une photographie de fond ───────────────────────────────────
+ * Il n'en existe aucune qui convienne. Les 278 clichés de la maison sont du
+ * catalogue produit : bijoux sur présentoirs, sacs sur étagères, clientes
+ * photographiées de près. Recadrés au format du bandeau, les visages se
+ * coupent à la bouche et le texte tombe sur la poitrine.
+ *
+ * Une pièce détourée règle les deux problèmes d'un coup : elle montre
+ * l'article, et elle laisse le centre libre pour la parole.
+ *
+ * `cote` place la pièce à gauche ou à droite ; `hauteur` est un pourcentage de
+ * la hauteur du bandeau, supérieur à 100 pour que la pièce DÉBORDE — on la
+ * découvre de la tête à mi-jambe, le reste coupé par le bas de la bande, ce qui
+ * suggère qu'elle continue.
  */
-const PHOTO = '/images/promo/bande-promo.webp';
-const PHOTO_PETIT = '/images/promo/bande-promo-1200.webp';
+const PIECES = [
+  { src: '/images/promo/piece-peche.webp', cote: 'gauche', hauteur: 168, decalage: 3 },
+];
 
 const MOIS = [
   'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
@@ -58,7 +68,7 @@ const enClair = (iso) => {
    pour les révélations : celui-ci ne révèle rien, il coupe le calcul quand la
    bande sort du champ. `useInView` se débranche définitivement à la première
    vue, ce qui donnerait exactement l'inverse. */
-const FondQuiSeDecouvre = ({ vitesse = 0.42, zoom = 0.09, marge = 0.28, children }) => {
+const FondQuiSeDecouvre = ({ vitesse = 0.22, zoom = 0.05, marge = 0.14, children }) => {
   const cadre = useRef(null);
   const calque = useRef(null);
 
@@ -175,24 +185,27 @@ const BandePromo = () => {
   // n'aurait rien à dire et occuperait pourtant un écran entier.
   if (!promo || !promo.titre) return null;
 
+  const cotes = new Set(PIECES.map((p) => p.cote));
+
   return (
-    <section className="bp">
+    <section className={`bp ${cotes.has('gauche') ? 'bp--g' : ''} ${cotes.has('droite') ? 'bp--d' : ''}`}>
       <FondQuiSeDecouvre>
-        {/* Pas de voile ni d'aplat sombre sur la photo elle-même, comme dans
-            la source : la lisibilité du texte tient au dégradé posé juste en
-            dessous, qui n'assombrit que ce qu'il faut. */}
-        <img
-          src={PHOTO}
-          srcSet={`${PHOTO_PETIT} 1200w, ${PHOTO} 2400w`}
-          sizes="100vw"
-          alt=""
-          className="bp-photo"
-          loading="lazy"
-          decoding="async"
-        />
+        {PIECES.map((piece) => (
+          <img
+            key={piece.src}
+            src={piece.src}
+            alt=""
+            className={`bp-piece bp-piece--${piece.cote}`}
+            style={{ height: `${piece.hauteur}%`, [piece.cote === 'gauche' ? 'left' : 'right']: `${piece.decalage}%` }}
+            loading="lazy"
+            decoding="async"
+          />
+        ))}
       </FondQuiSeDecouvre>
 
-      <div className="bp-ombre" aria-hidden />
+      {/* Une lueur chaude derrière les pièces : sans elle, une silhouette
+          découpée posée sur un aplat uni a l'air collée. */}
+      <div className="bp-lueur" aria-hidden />
 
       <Reveal className="bp-corps" variant="blur">
         <span className="bp-surtitre">
@@ -234,19 +247,41 @@ const BandePromo = () => {
           isolation: isolate;
           overflow: hidden;
           margin-top: var(--section-y);
+          /* L'indigo de la bande de coordonnées et du footer : la bande de
+             promotion est du même chrome, pas une section de contenu. */
+          background: var(--surface-chrome);
           color: #fff;
           font-family: var(--font-display);
         }
         .bp-cadre { position: absolute; inset: 0; overflow: hidden; z-index: -2; }
         .bp-calque { position: absolute; left: 0; right: 0; will-change: transform; }
-        .bp-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; display: block; }
 
-        /* Assombrit le bas plus que le haut : le texte descend vers le bas de
-           la bande, et un voile uniforme aurait éteint la photo entière pour
-           rien. */
-        .bp-ombre {
-          position: absolute; inset: 0; z-index: -1;
-          background: linear-gradient(180deg, rgba(15,19,32,.30) 0%, rgba(15,19,32,.62) 100%);
+        /* Ancrée en HAUT et plus haute que le cadre : la pièce déborde par le
+           BAS. On la découvre donc de la tête à mi-jambe — le visage, le
+           plastron brodé et les manches, c'est-à-dire tout ce qui se regarde.
+           Ancrée en bas, on n'aurait vu que l'ourlet de la jupe : le bandeau
+           fait moins d'un tiers de la hauteur du vêtement.
+
+           Le -4 % rogne le vide laissé au-dessus de la coiffe par le
+           détourage. */
+        .bp-piece {
+          position: absolute;
+          top: -4%;
+          width: auto;
+          display: block;
+          /* L'ombre portée la pose sur le fond au lieu de la laisser flotter.
+             Deux passes : une proche et dure, une lointaine et douce. */
+          filter: drop-shadow(0 2px 6px rgba(0,0,0,.45)) drop-shadow(0 24px 48px rgba(0,0,0,.5));
+        }
+
+        /* Lueur chaude derrière les pièces, décentrée du côté où elles se
+           tiennent. Sans elle, un détourage sur aplat uni fait autocollant. */
+        .bp-lueur {
+          position: absolute; inset: 0; z-index: -1; pointer-events: none;
+          background:
+            radial-gradient(30% 90% at 12% 44%, rgba(214,138,74,.13) 0%, transparent 74%),
+            radial-gradient(30% 90% at 88% 44%, rgba(214,138,74,.13) 0%, transparent 74%),
+            linear-gradient(180deg, transparent 40%, rgba(8,10,18,.55) 100%);
         }
 
         .bp-corps {
@@ -256,6 +291,18 @@ const BandePromo = () => {
           max-width: 1400px;
           padding: 3.4rem 2rem;
           text-align: center;
+        }
+        /* Au-delà de cette largeur seulement, la pièce occupe un bord : le
+           texte s'en écarte pour ne jamais lui passer dessus. */
+        @media (min-width: 1000px) {
+          .bp--g .bp-corps { padding-left: 26%; }
+          .bp--d .bp-corps { padding-right: 26%; }
+        }
+        /* En dessous, le bandeau est trop étroit pour porter les deux : la
+           pièce s'efface plutôt que d'écraser la parole. */
+        @media (max-width: 780px) {
+          .bp-piece { display: none; }
+          .bp-lueur { background: linear-gradient(180deg, transparent 40%, rgba(8,10,18,.55) 100%); }
         }
 
         .bp-surtitre {
