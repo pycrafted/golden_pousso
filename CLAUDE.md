@@ -279,16 +279,27 @@ cliquables, ce qu'elles ne pouvaient pas être en mouvement.
 | 2 | En mouvement | `components/VideoCardsSection.jsx` | ⚠ voir ci-dessous |
 | 3 | Catégories | `home/UniversGrid.jsx` | ⚠ voir ci-dessous — rayons structurels |
 | 4 | Nos créations | `components/CategoryGrid.jsx` | écru |
-| 5 | La sélection | `HomePage.jsx` (local) | écru |
+| 5 | Promotion | `components/BandePromo.jsx` | ⚠ transfert — photo pleine largeur |
+| 6 | La sélection | `HomePage.jsx` (local) | écru |
 | 6 | L'atelier | `home/AtelierSection.jsx` | écru |
 | 7 | Avis | `components/TestimonialsSection.jsx` | écru |
 
-**La promotion est passée dans le hero.** `FullWidthBanner` — la bande
-photo pleine largeur qui portait « Bientôt la Tabaski / −15 % sur les
-boubous » au milieu de la page — a été supprimée, son offre reprise par
-`components/Hero.jsx`. Le même rabais annoncé deux fois sur une page se lit
-comme deux offres différentes. La page ne presse donc plus en son milieu :
-elle presse d'entrée.
+**La promotion s'annonce à deux endroits.** `FullWidthBanner` avait été
+supprimée et son offre reprise par `components/Hero.jsx` ; `BandePromo` a
+depuis repris sa place en 5. Les deux lisent `/hero-promotion/`, donc il n'y a
+qu'**une** campagne, réglée une seule fois dans l'admin — mais elle est
+**énoncée deux fois sur la même page**, ce qui se lit facilement comme deux
+offres différentes. Si l'on veut n'en garder qu'une, c'est `OFFRE` dans
+`Hero.jsx` qu'il faut retirer : le hero retrouve alors son message d'accueil
+permanent et la page presse en son milieu, comme avant.
+
+`BandePromo` est un **transfert de `Redesign_mcommaman.com`**, au même titre
+que `UniversGrid` et `VideoCardsSection` — palette rose/or et photo de la
+source, redéclarées sur `.bp`, hors du système Or & Indigo. Sa photo
+(`public/images/promo/bande-promo.webp`) montre des **pyjamas d'enfants** :
+c'est le média de la source, à remplacer. Le fond se découvre au défilement
+(calque en débord translaté + zoom), et la bande ne rend **rien** hors
+campagne.
 
 ⚠ **Le hero est daté.** Sa parole vit dans deux constantes en tête de
 `Hero.jsx` : `OFFRE` (la campagne) et `PERMANENT` (la promesse de la maison).
