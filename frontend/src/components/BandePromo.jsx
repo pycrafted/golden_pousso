@@ -238,7 +238,7 @@ const BandePromo = () => {
           margin: 0 auto;
           width: 100%;
           max-width: 1400px;
-          padding: 5.6rem 2rem;
+          padding: 3.4rem 2rem;
           text-align: center;
         }
 
@@ -251,9 +251,9 @@ const BandePromo = () => {
         .bp-filet { display: block; height: 1px; width: 3.6rem; background: rgba(217,180,91,.55); }
 
         .bp-titre {
-          margin: 1.6rem auto 0;
-          max-width: 16ch;
-          font-size: clamp(2.6rem, 5.4vw, 4.4rem);
+          margin: 1.1rem auto 0;
+          max-width: 22ch;
+          font-size: clamp(2.1rem, 4vw, 3.2rem);
           font-weight: 800;
           line-height: 1.05;
           letter-spacing: -.035em;
@@ -270,36 +270,36 @@ const BandePromo = () => {
           color: transparent;
         }
 
-        .bp-zone-decompte { display: flex; justify-content: center; margin-top: 2.4rem; }
+        .bp-zone-decompte { display: flex; justify-content: center; margin-top: 1.6rem; }
         .bp-decompte { display: flex; gap: 1rem; }
         .bp-cellule {
-          min-width: 7.8rem;
-          padding: 1rem;
+          min-width: 6.6rem;
+          padding: .7rem .9rem;
           text-align: center;
           border-radius: var(--r-3);
           background: rgba(255,255,255,.10);
           backdrop-filter: blur(6px);
         }
         .bp-nombre {
-          font-size: 3rem; font-weight: 800; line-height: 1;
+          font-size: 2.3rem; font-weight: 800; line-height: 1;
           /* Fraunces n'a pas de chiffres tabulaires par défaut : sans ceci,
              la largeur du décompte danse à chaque seconde. */
           font-variant-numeric: tabular-nums;
         }
         .bp-unite {
-          margin-top: .6rem;
-          font-size: 1.05rem; font-weight: 600;
+          margin-top: .35rem;
+          font-size: 1rem; font-weight: 600;
           text-transform: uppercase; letter-spacing: .1em;
           opacity: .6;
         }
 
         .bp-pied {
-          margin-top: 2.8rem;
-          display: flex; flex-direction: column; align-items: center; gap: 1.2rem;
+          margin-top: 1.9rem;
+          display: flex; flex-direction: column; align-items: center; gap: .9rem;
         }
         .bp-bouton {
           display: inline-flex; align-items: center; gap: 1rem;
-          padding: 1.4rem 3.2rem;
+          padding: 1.1rem 2.8rem;
           border-radius: var(--r-pill);
           background: #E0417F;
           color: #fff;
@@ -315,10 +315,10 @@ const BandePromo = () => {
         .bp-mention { font-size: 1.25rem; color: rgba(255,255,255,.6); }
 
         @media (max-width: 640px) {
-          .bp-corps { padding: 4rem 1.6rem; }
+          .bp-corps { padding: 2.6rem 1.6rem; }
           .bp-cellule { min-width: 0; flex: 1; padding: .9rem .4rem; }
           .bp-decompte { gap: .6rem; width: 100%; }
-          .bp-nombre { font-size: 2.4rem; }
+          .bp-nombre { font-size: 2rem; }
         }
 
         @media (prefers-reduced-motion: reduce) {
