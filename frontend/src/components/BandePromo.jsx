@@ -46,6 +46,15 @@ import Reveal from './Reveal';
  */
 const PIECES = [
   { src: '/images/promo/piece-peche.webp', cote: 'gauche', hauteur: 168, decalage: 3 },
+  // Le MÊME mannequin, dans une autre pièce : ChatGPT l'a rhabillé à partir
+  // du premier détourage, si bien que les deux ont la même matière dorée, la
+  // même pose et le même éclairage. La répétition est voulue — c'est une paire
+  // de vitrines, pas deux photos rapprochées par hasard.
+  //
+  // Elle n'est PAS retournée : sa tête est tournée vers la gauche, donc posée
+  // à droite elle regarde vers le texte. La retourner la ferait regarder
+  // dehors, et le lecteur suit toujours le regard.
+  { src: '/images/promo/piece-blanche.webp', cote: 'droite', hauteur: 168, decalage: 3 },
 ];
 
 const MOIS = [
