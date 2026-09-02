@@ -131,10 +131,34 @@ TEMPLATES = [
 WSGI_APPLICATION = 'goldenpousso_backend.wsgi.application'
 
 # Base de données : SQLite en dev, PostgreSQL en prod (via DATABASE_URL)
-if os.environ.get('DATABASE_URL'):
+#
+# `.strip()` n'est pas de la coquetterie : une URL copiée depuis un tableau de bord
+# emporte souvent un espace ou un retour à la ligne. La valeur passait alors le test
+# ci-dessous — elle n'est pas vide — puis `dj_database_url` échouait sur
+# « No support for '' », en parlant du schéma, ce qui n'aide personne à comprendre
+# qu'il s'agit d'un espace en trop.
+_database_url = (os.environ.get('DATABASE_URL') or '').strip()
+
+if _database_url:
     import dj_database_url
+    from django.core.exceptions import ImproperlyConfigured
+
+    if '://' not in _database_url:
+        raise ImproperlyConfigured(
+            "DATABASE_URL ne ressemble pas à une URL de connexion : "
+            f"« {_database_url[:24]}… ». Attendu une adresse complète commençant par "
+            "postgresql:// — sur Render, c'est l'« Internal Database URL » de la base, "
+            "à copier avec le bouton prévu."
+        )
+
     DATABASES = {
-        'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
+        'default': dj_database_url.config(
+            default=_database_url,
+            # La connexion est réutilisée dix minutes au lieu d'être rouverte à chaque
+            # requête : sur une instance à 0,1 CPU, l'ouverture coûte plus cher que la
+            # requête elle-même.
+            conn_max_age=600,
+        )
     }
 else:
     DATABASES = {
