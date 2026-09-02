@@ -156,20 +156,44 @@ def construire_variantes(champ_image):
     try:
         champ_image.open('rb')
         with Image.open(champ_image.file) as source:
-            source = ImageOps.exif_transpose(source)
-            if source.mode not in ('RGB', 'L'):
-                source = source.convert('RGB')
+            # La taille RÉELLE se lit dans l'en-tête, avant tout décodage. Il
+            # faut la retenir maintenant : `draft` va changer `source.size`, et
+            # on ne saurait plus si une largeur demandée dépasse l'original.
+            largeur_origine = source.width
+
+            # ── LE POINT CRITIQUE : redimensionner PENDANT le décodage ──
+            #
+            # `draft` demande au décodeur JPEG de ne restituer qu'une fraction
+            # des pixels (1/2, 1/4, 1/8). Appelé AVANT que le moindre pixel ne
+            # soit lu, il évite d'allouer l'image pleine taille.
+            #
+            # Sur une photo d'atelier de 4016 × 6016, la différence n'est pas
+            # cosmétique : 72 Mo décompressés contre environ 5. C'est ce qui
+            # faisait tuer le processus sur une instance de 512 Mo, et donc
+            # échouer l'envoi depuis l'Espace Gestion, sans message clair.
+            #
+            # Sans effet sur les formats autres que JPEG — Pillow l'ignore
+            # alors silencieusement, et le reste du code ne change pas.
+            source.draft('RGB', (MAX_COTE, MAX_COTE))
+
+            base = ImageOps.exif_transpose(source)
+            if base.mode not in ('RGB', 'L'):
+                base = base.convert('RGB')
 
             sorties = {}
-            for largeur in LARGEURS_WEB:
-                if largeur > source.width and largeur != LARGEUR_DEFAUT:
+            # De la plus grande à la plus petite, et `thumbnail` réduit SUR
+            # PLACE : chaque tour part du résultat du précédent, déjà plus
+            # petit. L'ancienne version repartait de l'original avec un
+            # `copy()` par largeur — trois fois le coût mémoire, pour un
+            # résultat identique.
+            for largeur in sorted(LARGEURS_WEB, reverse=True):
+                if largeur > largeur_origine and largeur != LARGEUR_DEFAUT:
                     continue
-                img = source.copy()
-                img.thumbnail((largeur, largeur * 4), Image.LANCZOS)
+                base.thumbnail((largeur, largeur * 4), Image.LANCZOS)
 
                 tampon = BytesIO()
-                img.save(tampon, format='JPEG', quality=QUALITE,
-                         optimize=True, progressive=True)
+                base.save(tampon, format='JPEG', quality=QUALITE,
+                          optimize=True, progressive=True)
                 sorties[largeur] = ContentFile(
                     tampon.getvalue(), name=nom_variante(champ_image.name, largeur)
                 )
