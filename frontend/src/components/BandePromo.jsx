@@ -314,6 +314,11 @@ const BandePromo = () => {
         .bp-filet { display: block; height: 1px; width: 3.6rem; background: rgba(217,180,91,.55); }
 
         .bp-titre {
+          /* Explicite, et non hérité de « .bp » : styles.css pose
+             « h1, h2, h3, h4 { color: var(--text) } », et un sélecteur
+             d'élément bat l'héritage. Sans cette ligne, le titre s'affiche en
+             encre sombre sur l'indigo — pratiquement illisible. */
+          color: #fff;
           margin: 1.1rem auto 0;
           max-width: 22ch;
           font-size: clamp(2.1rem, 4vw, 3.2rem);
