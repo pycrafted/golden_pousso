@@ -12,6 +12,10 @@ const VideoForm = ({ video, produits, onClose, onSaved }) => {
     ? { title: video.title, order: video.order, is_active: video.is_active, product: video.product ?? '' }
     : { title: '', order: 0, is_active: true, product: '' });
   const [saving, setSaving] = useState(false);
+  /* Une vidéo met des minutes à partir depuis une connexion sénégalaise. Sans
+     ce compteur, le bouton dit « Envoi en cours… » sans bouger et on ne peut
+     pas distinguer un envoi qui avance d'un envoi bloqué. */
+  const [avancement, setAvancement] = useState(0);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleFileChange = (e) => {
@@ -35,15 +39,22 @@ const VideoForm = ({ video, produits, onClose, onSaved }) => {
       // Chaîne vide = « aucune pièce » : le champ est facultatif côté
       // modèle, il faut donc envoyer un vide explicite pour le détacher.
       fd.append('product', form.product || '');
+      const options = {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: ({ loaded, total }) => {
+          if (total) setAvancement(Math.round((loaded / total) * 100));
+        },
+      };
       const res = video
-        ? await apiClient.patch(`/gestion/videos/${video.id}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-        : await apiClient.post('/gestion/videos/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        ? await apiClient.patch(`/gestion/videos/${video.id}/`, fd, options)
+        : await apiClient.post('/gestion/videos/', fd, options);
       toast.success(video ? 'Vidéo mise à jour' : 'Vidéo ajoutée');
       onSaved(res.data);
     } catch (err) {
       toast.error(err.response?.data?.video?.[0] || 'Erreur lors de l’envoi — le fichier est peut-être trop volumineux.');
     } finally {
       setSaving(false);
+      setAvancement(0);
     }
   };
 
@@ -103,7 +114,11 @@ const VideoForm = ({ video, produits, onClose, onSaved }) => {
             <input type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} style={{ accentColor: COLORS.gold, width: '1.6rem', height: '1.6rem' }} />
             Visible sur le site
           </label>
-          <GestionButton type="submit" disabled={saving}>{saving ? 'Envoi en cours…' : 'Enregistrer'}</GestionButton>
+          <GestionButton type="submit" disabled={saving}>{saving
+              // 100 % ne veut pas dire fini : le fichier est arrivé au serveur,
+              // qui doit encore le repousser vers le stockage. D'où « Traitement ».
+              ? (avancement >= 100 ? 'Traitement…' : `Envoi ${avancement} %`)
+              : 'Enregistrer'}</GestionButton>
         </form>
       </div>
     </div>
