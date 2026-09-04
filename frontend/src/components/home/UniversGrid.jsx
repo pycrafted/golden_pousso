@@ -4,6 +4,7 @@ import apiClient from '../../api/client';
 import Reveal from '../Reveal';
 import useTexteSection from '../../hooks/useTexteSection';
 import { RAYONS, imageRayon, srcSetRayon } from '../../constants/rayons';
+import { RAYONS_DETOURES, PIECES_RAYON, FOND_RAYON } from '../../constants/rayonsDetoures';
 
 /**
  * « Catégories » — les rayons de la maison.
@@ -76,11 +77,15 @@ const UniversGrid = () => {
             const nom = noms[rayon.slug] ?? rayon.nom;
             /* La première tuile occupe 2 x 2, les quatre autres une case. */
             const grande = i === 0;
+            // Un rayon sans piece garde sa photographie : la table n'a pas a
+            // etre complete pour que la grille tienne.
+            const piece = RAYONS_DETOURES ? PIECES_RAYON[rayon.slug] : null;
             return (
               <Link
                 key={rayon.slug}
                 to={`/categorie/${rayon.slug}`}
-                className={`uv-tuile ${grande ? 'uv-tuile--large' : ''}`}
+                className={`uv-tuile ${grande ? 'uv-tuile--large' : ''} ${piece ? 'uv-tuile--detouree' : ''}`}
+                style={piece ? { background: FOND_RAYON } : undefined}
               >
                 <div className="uv-photo">
                   {/* Un img nu et non CldImg : la photo n'est plus un média du
@@ -96,16 +101,23 @@ const UniversGrid = () => {
                       annoncer deux fois la même chose à un lecteur d'écran,
                       une fois pour l'image et une fois pour le titre. La photo
                       est décorative, le nom vient du <h3>. */}
-                  <img
-                    src={imageRayon(rayon.slug, 800)}
-                    srcSet={srcSetRayon(rayon.slug)}
-                    sizes={grande
-                      ? '(max-width: 1024px) 50vw, 50vw'
-                      : '(max-width: 1024px) 50vw, 25vw'}
-                    alt=""
-                    loading={grande ? 'eager' : 'lazy'}
-                    decoding="async"
-                  />
+                  {piece ? (
+                    /* Essai : la piece detouree remplace la photographie.
+                       Pas de srcSet — un seul fichier, deja dimensionne.
+                       Voir constants/rayonsDetoures.js. */
+                    <img src={piece} alt="" loading={grande ? 'eager' : 'lazy'} decoding="async" />
+                  ) : (
+                    <img
+                      src={imageRayon(rayon.slug, 800)}
+                      srcSet={srcSetRayon(rayon.slug)}
+                      sizes={grande
+                        ? '(max-width: 1024px) 50vw, 50vw'
+                        : '(max-width: 1024px) 50vw, 25vw'}
+                      alt=""
+                      loading={grande ? 'eager' : 'lazy'}
+                      decoding="async"
+                    />
+                  )}
                 </div>
 
                 {/* Le voile n'est pas un effet de style : il garantit que
@@ -196,6 +208,36 @@ const UniversGrid = () => {
           transition: transform 1100ms var(--uv-ease);
         }
         .uv-tuile:hover .uv-photo img { transform: scale(1.05); }
+
+        /* La piece detouree : entiere, jamais rognee, posee sur le bas.
+           « contain » et non « cover » — rogner un detourage perdrait ce
+           qu'on cherche a montrer. Calee en bas et non centree : centrees, une
+           paire de chaussures large flotterait au milieu de sa tuile pendant
+           qu'un boubou haut la remplirait, et la grille perdrait sa ligne.
+           La reserve du bas laisse la place a l'etiquette. */
+        .uv-tuile--detouree .uv-photo img {
+          object-fit: contain;
+          object-position: center bottom;
+          /* Reserve reduite au strict minimum. Les petites tuiles font 180 px
+             de haut pour pres de 600 de large : chaque pixel rendu a la piece
+             compte, sinon un sac carre finit en vignette perdue au milieu d'un
+             aplat. La reserve du bas est celle de l'etiquette, pas un pouce de
+             plus. */
+          padding: 8px 12px 44px;
+        }
+        .uv-tuile--large.uv-tuile--detouree .uv-photo img {
+          /* La grande tuile est deux fois plus haute : elle peut s'offrir de
+             l'air sans que la piece devienne minuscule. */
+          padding: 16px 16px 56px;
+        }
+        /* Le zoom au survol part du bas, sinon la piece decolle du sol en
+           grandissant. */
+        .uv-tuile--detouree .uv-photo img { transform-origin: center bottom; }
+
+        /* Le voile existe pour detacher l'etiquette d'une photographie dont on
+           ne sait rien. Sur l'aplat indigo il n'a plus rien a corriger, et il
+           ne ferait que ternir le bas de la piece. */
+        .uv-tuile--detouree .uv-voile { display: none; }
 
         .uv-voile {
           position: absolute;
