@@ -293,13 +293,25 @@ offres différentes. Si l'on veut n'en garder qu'une, c'est `OFFRE` dans
 `Hero.jsx` qu'il faut retirer : le hero retrouve alors son message d'accueil
 permanent et la page presse en son milieu, comme avant.
 
-`BandePromo` est un **transfert de `Redesign_mcommaman.com`**, au même titre
-que `UniversGrid` et `VideoCardsSection` — palette rose/or et photo de la
-source, redéclarées sur `.bp`, hors du système Or & Indigo. Sa photo
-(`public/images/promo/bande-promo.webp`) montre des **pyjamas d'enfants** :
-c'est le média de la source, à remplacer. Le fond se découvre au défilement
-(calque en débord translaté + zoom), et la bande ne rend **rien** hors
-campagne.
+`BandePromo` descend d'un transfert de `Redesign_mcommaman.com`, mais il n'en
+reste que le **mécanisme de dérive** (calque en débord translaté + zoom au
+défilement). Elle montre aujourd'hui **deux pièces détourées sur l'aplat
+indigo** — `piece-peche.webp` à gauche, `piece-blanche.webp` à droite — avec la
+parole au centre.
+
+Pas de photographie de fond, et ce n'est pas un oubli : aucun des 278 clichés
+de la maison ne convient. Ce sont des vues de catalogue ; recadrées au format
+du bandeau, elles coupent les visages à la bouche et posent le texte sur la
+poitrine. Une pièce détourée montre l'article **et** laisse le centre libre.
+
+Les deux pièces sont le **même mannequin**, rhabillé par ChatGPT à partir du
+premier détourage : même matière dorée, même pose, même éclairage. La
+répétition est voulue. Celle de droite n'est **pas retournée** — sa tête est
+tournée vers la gauche, donc elle regarde vers le texte.
+
+Pour ajouter ou retirer une pièce : la table `PIECES` en tête du composant.
+La marge du texte suit les côtés réellement occupés. La bande ne rend **rien**
+hors campagne.
 
 ⚠ **Le hero est daté.** Sa parole vit dans deux constantes en tête de
 `Hero.jsx` : `OFFRE` (la campagne) et `PERMANENT` (la promesse de la maison).

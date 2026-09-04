@@ -5,22 +5,21 @@ import Reveal from './Reveal';
 import { DEMONSTRATION, CAMPAGNE_DEMO } from '../constants/demonstration';
 
 /**
- * La bande de promotion — transfert de `Redesign_mcommaman.com`.
+ * La bande de promotion.
  * ===========================================================================
- * Une photo pleine largeur qui se DÉCOUVRE au défilement : le calque de fond
- * glisse plus lentement que la page et grossit à mesure qu'il s'en approche.
- * L'œil lit ça comme de la profondeur, et la bande cesse d'être une image
- * posée là.
+ * Deux pièces détourées sur un aplat indigo, la parole au centre. Les pièces
+ * DÉRIVENT au défilement — elles glissent un peu plus lentement que la page et
+ * grossissent en approchant du centre de l'écran. L'œil lit ça comme de la
+ * profondeur, et la bande cesse d'être une image posée là.
  *
- * ⚠ Comme `UniversGrid` et `VideoCardsSection`, cette section est HORS du
- * système de design, volontairement : palette et médias de la source,
- * redéclarés en local sur `.bp`. Elle ne lit aucun token Or & Indigo. Ne pas
- * l'« harmoniser » sans demande explicite. Seule la police suit le site —
- * Fraunces partout, comme les deux autres transferts.
- *
- * ⚠ La photo transférée montre des pyjamas d'enfants : c'est le média de la
- * source, pas du vêtement sénégalais. À remplacer par une photo de la maison
- * dans `frontend/public/images/promo/bande-promo.webp`.
+ * ── Ce qu'elle a été ────────────────────────────────────────────────────────
+ * Un transfert de `Redesign_mcommaman.com` : une photo pleine largeur, palette
+ * rose et médias de la source. Le mécanisme de dérive en vient et n'a pas
+ * bougé ; tout le reste a été remplacé. La photo transférée montrait des
+ * pyjamas d'enfants, et aucun des 278 clichés de la maison ne pouvait la
+ * remplacer — ce sont des vues de catalogue, qui recadrées au format du
+ * bandeau coupent les visages à la bouche et posent le texte sur la poitrine.
+ * Voir `PIECES` juste en dessous.
  *
  * ── D'où vient la parole ────────────────────────────────────────────────────
  * De `/hero-promotion/`, la MÊME source que le hero. Il n'y a donc qu'une
