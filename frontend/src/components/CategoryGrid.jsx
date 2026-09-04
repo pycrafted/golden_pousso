@@ -4,6 +4,7 @@ import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 import CldImg from './CldImg';
 import useTexteSection from '../hooks/useTexteSection';
+import { CATALOGUE_DETOURE, PIECES_CATALOGUE, FOND_DETOURE } from '../constants/catalogue';
 
 const SPEED = 1.0;
 const GAP_REM = 2.4;
@@ -152,8 +153,16 @@ const ProductsCarousel = ({ categorySlug }) => {
      une vidéo ; ici le média est déjà la photo principale, donc y remettre la
      même image ne dirait rien. Repli sur la principale si la pièce n'a qu'une
      seule photo. */
-  const renderCard = (p, key) => {
+  const renderCard = (p, key, index) => {
     const vignette = p.secondary_image || p.primary_image;
+
+    // Distribuees dans l'ordre, et repetees quand il y a plus de produits que
+    // d'images. `index` et non l'identifiant du produit : deux produits voisins
+    // doivent recevoir deux pieces differentes, ce qu'un modulo sur un id ne
+    // garantit pas.
+    const detouree = CATALOGUE_DETOURE && PIECES_CATALOGUE.length
+      ? PIECES_CATALOGUE[index % PIECES_CATALOGUE.length]
+      : null;
 
     return (
       <Link
@@ -162,8 +171,22 @@ const ProductsCarousel = ({ categorySlug }) => {
         className="np-carte"
         style={{ width: `${cardWidth}px` }}
       >
-        <div className="np-media">
-          {p.primary_image ? (
+        <div className="np-media" style={detouree ? { background: FOND_DETOURE } : undefined}>
+          {/* Essai de rendu : une piece detouree a la place de la photo du
+              produit. `contain` et non `cover` — un detourage recadre perdrait
+              justement ce qu'on cherche a montrer, la piece entiere. Le bas est
+              cale sur le panneau plutot que centre : sans cela, une piece large
+              flotte au milieu du cadre pendant qu'une piece haute le remplit,
+              et le rail perd sa ligne. Voir constants/catalogue.js. */}
+          {detouree ? (
+            <img
+              src={detouree}
+              alt={p.name}
+              loading="lazy"
+              decoding="async"
+              className="np-detouree"
+            />
+          ) : p.primary_image ? (
             <CldImg
               src={p.primary_image}
               alt={p.name}
@@ -289,8 +312,8 @@ const ProductsCarousel = ({ categorySlug }) => {
                 willChange: 'transform', paddingLeft: '2.4rem',
               }}
             >
-              {products.map((p, i) => renderCard(p, `a-${i}`))}
-              {products.map((p, i) => renderCard(p, `b-${i}`))}
+              {products.map((p, i) => renderCard(p, `a-${i}`, i))}
+              {products.map((p, i) => renderCard(p, `b-${i}`, i))}
             </div>
           )}
         </div>
@@ -321,6 +344,22 @@ const ProductsCarousel = ({ categorySlug }) => {
         }
         .np-media img { transition: transform 1200ms var(--ease); }
         .np-carte:hover .np-media img { transform: scale(1.05); }
+
+        /* La piece detouree : entiere, jamais recadree, calee sur le bas.
+           Le padding du bas laisse la place au panneau — sans lui, l'ourlet
+           passe derriere le verre depoli et la piece a l'air tronquee. */
+        .np-detouree {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          object-position: center bottom;
+          padding: 12px 12px 68px;
+          /* Le zoom au survol part du bas : centre, la piece decollerait du
+             sol en grandissant. */
+          transform-origin: center bottom;
+        }
 
         .np-vide {
           position: absolute;
