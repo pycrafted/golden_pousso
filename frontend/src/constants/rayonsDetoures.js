@@ -17,38 +17,107 @@
  * vraie boutique derrière le site. D'où l'essai avant la décision.
  *
  * ── L'état de l'essai ───────────────────────────────────────────────────────
- * Quatre rayons sur cinq. Il n'existe aucune découpe de cosmétique dans le
- * fonds — les images de pots et de tubes n'ont jamais eu de couche alpha. Ce
- * rayon garde donc sa photographie, ce qui montre au passage à quoi ressemble
- * un mélange des deux partis.
+ * Les cinq rayons. La cosmétique a longtemps gardé sa photographie faute de
+ * découpe disponible ; elle montre maintenant ses deux familles côte à côte,
+ * le parfum et le soin.
+ *
+ * `chaussures` ne montre plus qu'UNE chaussure. Sa première découpe portait
+ * une mule et un sac doré, le sac occupant la moitié de la tuile : la tuile
+ * voisine vend déjà les sacs, et celle-ci en annonçait un de plus, dans une
+ * cinquième couleur, sous l'étiquette « chaussures ». Une tuile de rayon
+ * montre ce que le rayon vend, et rien d'autre.
  *
  * ── Comment revenir en arrière ──────────────────────────────────────────────
  * Passer `RAYONS_DETOURES` à `false` : les cinq tuiles retrouvent leur
  * photographie. Rien d'autre à toucher.
  *
  * ── Comment compléter ───────────────────────────────────────────────────────
- * Déposer le PNG détouré, l'exporter en WebP dans
- * `frontend/public/images/catalogue/`, et ajouter son slug ici. Un rayon absent
- * de cette table garde simplement sa photo.
+ * Déposer l'original détouré à la racine du dépôt, l'ajouter à `PIECES` dans
+ * `outils/exporter_pieces.py`, lancer le script, puis ajouter le slug ici. Un
+ * rayon absent de cette table garde simplement sa photo.
+ *
+ * Le script porte la recette : reconstruction de la couche alpha par
+ * contiguïté depuis les bords, retrait du liseré de sélection s'il y en a un,
+ * rognage de l'ourlet de ré-encodage — invisible sur blanc, il se lit comme
+ * une auréole sur l'indigo — et mise à l'échelle sur 900 px de haut, pour que
+ * deux pièces côte à côte aient le même grain.
+ *
+ * Il découpe de deux façons selon ce qu'il y a autour de la pièce dans le
+ * fichier reçu : sur un noir plat, par la luminance ; sur une lueur cuite
+ * dans l'image, par la netteté, parce qu'aucun niveau de gris ne sépare un
+ * dégradé de ce qu'il entoure. Le champ `fond` de la table le dit, et le seuil
+ * n'a pas la même unité dans les deux cas. Si le contour d'une nouvelle pièce
+ * bave ou se déchire en dents de scie, c'est la voie qui est en cause, pas le
+ * réglage.
  */
 
 /** L'interrupteur. `false` rend aux tuiles leurs photographies. */
 export const RAYONS_DETOURES = true;
 
 /**
- * Slug du rayon vers sa pièce. Un rayon absent garde sa photo.
+ * Slug du rayon vers ses pièces. Un rayon absent garde sa photo.
  *
- * `boubous` occupe la grande tuile, deux fois plus haute que les autres : elle
- * reçoit la pièce la plus élancée du fonds, qui y tient sans être réduite à
- * une vignette.
+ * La valeur est TOUJOURS un tableau : une tuile peut montrer une pièce ou
+ * deux, et un seul format évite d'avoir à tester le type à l'affichage.
+ *
+ * `boubous` occupe la grande tuile, deux fois plus haute et deux fois plus
+ * large que les autres : elle a la place de montrer une PAIRE — une tenue de
+ * femme et une tenue d'homme, toutes deux en blanc brodé d'or, posées sur la
+ * même ligne de sol. Le rayon s'appelle « Yéré jiguen » mais ne vend pas que
+ * du féminin, et une tuile sur deux du site le laissait croire.
+ *
+ * L'homme est à GAUCHE parce que sa tête est tournée vers la droite : placé à
+ * droite, il regarderait hors de la tuile. La femme regarde l'objectif, elle
+ * tient les deux côtés.
+ *
+ * `cosmetique` porte l'autre paire, dans une tuile simple cette fois : le
+ * flacon de parfum et le pot de savon noir. Le rayon vend deux choses qui
+ * n'ont rien à voir l'une avec l'autre, et la nature morte qu'il montrait
+ * jusqu'ici — une dizaine de pots empilés sur un fond doré — ne disait ni
+ * l'une ni l'autre. Le flacon est étroit, le pot large : à hauteur égale, ils
+ * remplissent la tuile presque exactement.
+ *
+ * Le parfum est à GAUCHE, le plus petit objet en premier : posés dans l'autre
+ * sens, le pot mangeait le côté par lequel on entre dans la tuile.
  */
 export const PIECES_RAYON = {
-  boubous: '/images/catalogue/boubou-blanc.webp',
-  chaussures: '/images/catalogue/chaussures.webp',
-  sacs: '/images/catalogue/sacs.webp',
-  bijoux: '/images/catalogue/parure-longue.webp',
-  // cosmetique : aucune découpe disponible, la photo est conservée.
+  boubous: ['/images/catalogue/homme-blanc.webp', '/images/catalogue/boubou-blanc.webp'],
+  chaussures: ['/images/catalogue/chaussures.webp'],
+  sacs: ['/images/catalogue/sacs.webp'],
+  bijoux: ['/images/catalogue/parure-longue.webp'],
+  cosmetique: ['/images/catalogue/parfum-abraj.webp', '/images/catalogue/savon-noir.webp'],
 };
 
 /** Le fond des tuiles détourées. Le même indigo que la barre et le pied. */
 export const FOND_RAYON = '#161B2D';
+
+/**
+ * Le rattrapage de cadrage des pièces COUCHÉES. Un rayon absent n'en prend
+ * aucun, et c'est le cas normal.
+ *
+ * La tuile est en portrait, et « contain » cale la pièce sur la dimension qui
+ * manque le plus. Une pièce debout ou carrée est limitée par la HAUTEUR : elle
+ * garde de l'air sur les côtés toute seule et vient se poser au bas de sa
+ * tuile. Une pièce couchée est limitée par la LARGEUR : elle touche les deux
+ * bords, et il lui reste au-dessus d'elle une hauteur qu'elle n'occupe pas.
+ * Les mêmes règles ne donnent donc pas du tout le même cadrage aux deux.
+ *
+ * `reserve` — retrait latéral supplémentaire, en pourcentage de la largeur de
+ * la tuile. La chaussure fait presque deux fois plus large que haut : elle
+ * occupait 93 % de la largeur de sa tuile quand le sac et la parure en
+ * occupent le tiers de moins. Ce n'est pas une échelle mais une réserve : la
+ * pièce ne décolle pas en rétrécissant.
+ *
+ * `assise` — où la pièce se pose, en pourcentage de la course verticale qui
+ * lui reste. 100 signifie tout en bas, contre la réserve de l'étiquette, et
+ * c'est ce que fait une pièce sans réglage. Une pièce couchée y était collée
+ * à l'étiquette avec tout le vide au-dessus d'elle.
+ *
+ * ⚠ Remonter une pièce la sort de la ligne de sol commune aux tuiles — le
+ * parti pris expliqué plus bas dans le CSS de `UniversGrid`. C'est voulu et
+ * réservé aux pièces couchées, qui ne tenaient pas cette ligne de toute façon :
+ * posées au fond, elles laissaient une tuile à moitié vide.
+ */
+export const CADRAGE_PIECE = {
+  chaussures: { reserve: 4, assise: 70 },
+};

@@ -4,7 +4,7 @@ import apiClient from '../../api/client';
 import Reveal from '../Reveal';
 import useTexteSection from '../../hooks/useTexteSection';
 import { RAYONS, imageRayon, srcSetRayon } from '../../constants/rayons';
-import { RAYONS_DETOURES, PIECES_RAYON, FOND_RAYON } from '../../constants/rayonsDetoures';
+import { RAYONS_DETOURES, PIECES_RAYON, FOND_RAYON, CADRAGE_PIECE } from '../../constants/rayonsDetoures';
 
 /**
  * « Catégories » — les rayons de la maison.
@@ -42,6 +42,18 @@ import { RAYONS_DETOURES, PIECES_RAYON, FOND_RAYON } from '../../constants/rayon
  * Les deux rangées se remplissent exactement avec cinq rayons. La règle qui
  * étalait la deuxième tuile quand il n'y en avait que quatre a disparu avec
  * la grille dynamique.
+ *
+ * En dessous de 1024 px la grille tombe à deux colonnes et la grande tuile
+ * garde son 2 × 2, donc toute la largeur :
+ *
+ *   [ grande  grande ]
+ *   [ grande  grande ]
+ *   [ petite ][ petite ]
+ *   [ petite ][ petite ]
+ *
+ * Elle porte une paire de pièces détourées, qui a besoin de cette largeur ;
+ * et les quatre autres se rangent en deux lignes pleines, là où cinq cases
+ * simples laissaient la dernière seule à côté d'un trou.
  */
 
 const UniversGrid = () => {
@@ -79,13 +91,27 @@ const UniversGrid = () => {
             const grande = i === 0;
             // Un rayon sans piece garde sa photographie : la table n'a pas a
             // etre complete pour que la grille tienne.
-            const piece = RAYONS_DETOURES ? PIECES_RAYON[rayon.slug] : null;
+            const pieces = RAYONS_DETOURES ? PIECES_RAYON[rayon.slug] : null;
+            // Une tuile peut porter une paire — voir constants/rayonsDetoures.
+            const paire = pieces && pieces.length > 1;
+            // Le rattrapage des pieces couchees — voir CADRAGE_PIECE. Les
+            // deux valeurs s'ajoutent aux regles du CSS au lieu de les
+            // remplacer : sans entree dans la table, la tuile garde le
+            // cadrage commun.
+            const cadrage = (pieces && !paire && CADRAGE_PIECE[rayon.slug]) || null;
             return (
               <Link
                 key={rayon.slug}
                 to={`/categorie/${rayon.slug}`}
-                className={`uv-tuile ${grande ? 'uv-tuile--large' : ''} ${piece ? 'uv-tuile--detouree' : ''}`}
-                style={piece ? { background: FOND_RAYON } : undefined}
+                className={`uv-tuile ${grande ? 'uv-tuile--large' : ''}`
+                  + `${pieces ? ' uv-tuile--detouree' : ''}${paire ? ' uv-tuile--paire' : ''}`}
+                style={pieces
+                  ? {
+                      background: FOND_RAYON,
+                      ...(cadrage?.reserve ? { '--uv-reserve': `${cadrage.reserve}%` } : {}),
+                      ...(cadrage?.assise ? { '--uv-assise': `${cadrage.assise}%` } : {}),
+                    }
+                  : undefined}
               >
                 <div className="uv-photo">
                   {/* Un img nu et non CldImg : la photo n'est plus un média du
@@ -101,11 +127,14 @@ const UniversGrid = () => {
                       annoncer deux fois la même chose à un lecteur d'écran,
                       une fois pour l'image et une fois pour le titre. La photo
                       est décorative, le nom vient du <h3>. */}
-                  {piece ? (
-                    /* Essai : la piece detouree remplace la photographie.
-                       Pas de srcSet — un seul fichier, deja dimensionne.
-                       Voir constants/rayonsDetoures.js. */
-                    <img src={piece} alt="" loading={grande ? 'eager' : 'lazy'} decoding="async" />
+                  {pieces ? (
+                    /* Essai : la ou les pieces detourees remplacent la
+                       photographie. Pas de srcSet — un fichier par piece, deja
+                       dimensionne. Voir constants/rayonsDetoures.js. */
+                    pieces.map((src) => (
+                      <img key={src} src={src} alt=""
+                           loading={grande ? 'eager' : 'lazy'} decoding="async" />
+                    ))
                   ) : (
                     <img
                       src={imageRayon(rayon.slug, 800)}
@@ -181,12 +210,35 @@ const UniversGrid = () => {
           font-family: var(--font-display);
         }
 
+        /* La hauteur de rang decide de la FORME de la grande tuile, et donc
+           du cadrage de la paire : la tuile fait deux rangs, les quatre autres
+           un seul, il n'y a pas moyen de les regler separement.
+
+           Sur deux colonnes la grande tuile prend toute la largeur du contenu.
+           Une hauteur fixe la laissait en bandeau — 836 x 456 a 900 px de
+           fenetre — et deux silhouettes debout, calees sur la hauteur, y
+           tenaient dans 46 % de la largeur : deux figurines au milieu d'un
+           aplat. Le rang suit donc la largeur de la fenetre pour que la tuile
+           reste a peu pres carree d'un bout a l'autre de la plage.
+
+           45vw ~= (1,05 x largeur du contenu - gouttiere) / 2. Le plancher de
+           180 px tient les tres petits ecrans, ou la tuile est deja carree ;
+           le plafond de 470 px arrete la croissance juste avant le passage a
+           quatre colonnes. */
         .uv-grille {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          grid-auto-rows: 180px;
+          grid-auto-rows: clamp(180px, 45vw, 470px);
           gap: 12px;
         }
+
+        /* La grande tuile occupe 2 x 2 A TOUTES LES LARGEURS, et plus seulement
+           au-dela de 1024 px. Deux raisons : elle porte une paire de pieces,
+           qui n'a pas la place de tenir dans une case simple sans reduire les
+           deux silhouettes a des vignettes ; et sur deux colonnes, cinq tuiles
+           d'une case laissaient la derniere seule sur sa ligne, avec un trou a
+           cote. En 2 x 2 la grille se remplit exactement aux deux largeurs. */
+        .uv-tuile--large { grid-column: span 2; grid-row: span 2; }
 
         .uv-tuile {
           position: relative;
@@ -212,27 +264,86 @@ const UniversGrid = () => {
         /* La piece detouree : entiere, jamais rognee, posee sur le bas.
            « contain » et non « cover » — rogner un detourage perdrait ce
            qu'on cherche a montrer. Calee en bas et non centree : centrees, une
-           paire de chaussures large flotterait au milieu de sa tuile pendant
-           qu'un boubou haut la remplirait, et la grille perdrait sa ligne.
-           La reserve du bas laisse la place a l'etiquette. */
-        .uv-tuile--detouree .uv-photo img {
+           piece haute remplirait sa tuile pendant qu'une piece basse
+           flotterait au milieu de la sienne, et la grille perdrait sa ligne.
+           La reserve du bas laisse la place a l'etiquette.
+
+           Une piece COUCHEE fait exception et remonte, parce qu'elle ne tenait
+           pas cette ligne de toute facon : trop large pour etre calee sur la
+           hauteur, elle se posait au fond en laissant la tuile vide au-dessus
+           d'elle. Voir CADRAGE_PIECE dans constants/rayonsDetoures. */
+        .uv-tuile--detouree:not(.uv-tuile--paire) .uv-photo img {
           object-fit: contain;
-          object-position: center bottom;
+          object-position: center var(--uv-assise, 100%);
           /* Reserve reduite au strict minimum. Les petites tuiles font 180 px
              de haut pour pres de 600 de large : chaque pixel rendu a la piece
              compte, sinon un sac carre finit en vignette perdue au milieu d'un
              aplat. La reserve du bas est celle de l'etiquette, pas un pouce de
-             plus. */
-          padding: 8px 12px 44px;
+             plus.
+
+             Seules les pieces couchees ajoutent aux 12 px des cotes, que
+             « contain » cale sur la largeur et qui viennent donc toucher les
+             deux bords ; zero pour toutes les autres — voir CADRAGE_PIECE dans
+             constants/rayonsDetoures. Un pourcentage de padding se lit sur la
+             LARGEUR du conteneur, la reserve suit donc la tuile. */
+          padding: 8px calc(12px + var(--uv-reserve, 0px)) 44px;
         }
-        .uv-tuile--large.uv-tuile--detouree .uv-photo img {
+        .uv-tuile--large.uv-tuile--detouree:not(.uv-tuile--paire) .uv-photo img {
           /* La grande tuile est deux fois plus haute : elle peut s'offrir de
              l'air sans que la piece devienne minuscule. */
-          padding: 16px 16px 56px;
+          padding: 16px calc(16px + var(--uv-reserve, 0px)) 56px;
         }
         /* Le zoom au survol part du bas, sinon la piece decolle du sol en
            grandissant. */
         .uv-tuile--detouree .uv-photo img { transform-origin: center bottom; }
+
+        /* ── La paire ────────────────────────────────────────────────────────
+           Deux pieces cote a cote dans la meme tuile. La reserve passe de
+           l'image au conteneur : deux images ne peuvent pas se partager une
+           largeur si chacune porte son propre padding.
+
+           « flex-end » pose les deux silhouettes sur la MEME ligne de sol —
+           l'ourlet de la robe et les chaussures de l'homme a la meme hauteur.
+           Sans ca, deux detourages de proportions differentes flotteraient
+           chacun a son niveau.
+
+           Largeur « auto » et non 50 % : chaque image prend sa largeur naturelle
+           a hauteur pleine, donc les deux silhouettes se tiennent au centre au
+           lieu d'etre centrees chacune dans sa moitie, ce qui les aurait
+           laissees a un ecran l'une de l'autre. Le retrait ne joue que quand
+           la tuile devient trop etroite pour les deux. */
+        .uv-tuile--paire .uv-photo {
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          gap: 8px;
+          /* La reserve du bas est plus large que celle d'une piece seule : deux
+             pieces posees au sol occupent toute la largeur de la tuile, et
+             l'etiquette est centree — elle tomberait sur l'une des deux. Une
+             piece seule, elle, laisse toujours ses coins libres.
+             Ces valeurs sont celles d'une tuile SIMPLE ; la grande tuile les
+             reprend en plus large juste en dessous. */
+          padding: 8px 12px 46px;
+          box-sizing: border-box;
+        }
+        .uv-tuile--large.uv-tuile--paire .uv-photo { padding: 16px 12px 64px; }
+        .uv-tuile--paire .uv-photo img {
+          flex: 0 1 auto;
+          width: auto;
+          height: 100%;
+          min-width: 0;
+          padding: 0;
+          /* « contain » ne sert qu'au retrait : tant que les deux tiennent
+             cote a cote, l'image est deja a son rapport et remplit sa boite.
+             Quand la tuile devient trop etroite, la boite se comprime et
+             « contain » redescend la piece au lieu de l'ecraser. */
+          object-fit: contain;
+          object-position: center bottom;
+        }
+        @media (min-width: 1024px) {
+          .uv-tuile--paire .uv-photo { gap: 10px; padding: 8px 16px 48px; }
+          .uv-tuile--large.uv-tuile--paire .uv-photo { gap: 20px; padding: 20px 20px 72px; }
+        }
 
         /* Le voile existe pour detacher l'etiquette d'une photographie dont on
            ne sait rien. Sur l'aplat indigo il n'a plus rien a corriger, et il
@@ -305,7 +416,7 @@ const UniversGrid = () => {
 
 
         @media (min-width: 640px) {
-          .uv-grille { grid-auto-rows: 220px; gap: 16px; }
+          .uv-grille { gap: 16px; }
         }
 
         @media (min-width: 768px) {
@@ -314,8 +425,17 @@ const UniversGrid = () => {
 
         @media (min-width: 1024px) {
           .uv-shell { padding: 0 40px; }
-          .uv-grille { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-          .uv-tuile--large { grid-column: span 2; grid-row: span 2; }
+          /* Sur quatre colonnes la grande tuile ne prend plus que la moitie de
+             la largeur : elle cesse de suivre la fenetre et se fixe. 300 px de
+             rang la posent a 616 px de haut pour 652 de large au maximum de la
+             coque — la paire y remplit 86 % de la largeur, contre 61 % quand le
+             rang valait 220. Les quatre petites tuiles heritent des memes
+             300 px : un sac ou une parure, tous deux a peu pres carres, y
+             gagnent autant que la paire. */
+          .uv-grille {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-auto-rows: 300px;
+          }
         }
       `}</style>
     </section>
