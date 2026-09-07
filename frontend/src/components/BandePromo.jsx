@@ -253,12 +253,28 @@ const BandePromo = () => {
       <style>{`
         /* Bande pleine largeur : l'écart se prend en marge, jamais en padding.
            Un padding creuserait l'espace DANS le visuel au lieu de l'en
-           séparer — la photo remonterait sous la section précédente. */
+           séparer — la photo remonterait sous la section précédente.
+
+           ⚠ D'où la remise à zéro du padding du haut, et elle est
+           indispensable. styles.css pose « padding-top: var(--section-y) »
+           sur TOUTES les sections : sans elle, la bande prenait l'écart deux
+           fois — une fois en marge, dehors, comme voulu, et une fois en
+           padding, à l'intérieur de l'indigo. Le second creusait 80 px
+           au-dessus de la parole quand elle n'en avait que 34 en dessous :
+           toute la colonne, du sur-titre à la mention, se retrouvait posée
+           bas dans son fond, décentrée de la moitié de cet écart.
+
+           C'est l'exception que le rythme vertical prévoit pour une bande
+           pleine largeur, pas une entorse : la section ne se redonne pas un
+           espace à sa façon, elle refuse celui qu'elle prend déjà en marge.
+           Le contenu est alors centré par le padding symétrique de
+           « .bp-corps », sans qu'il y ait rien d'autre à régler. */
         .bp {
           position: relative;
           isolation: isolate;
           overflow: hidden;
           margin-top: var(--section-y);
+          padding-top: 0;
           /* L'indigo de la bande de coordonnées et du footer : la bande de
              promotion est du même chrome, pas une section de contenu. */
           background: var(--surface-chrome);
@@ -296,12 +312,29 @@ const BandePromo = () => {
             linear-gradient(180deg, transparent 40%, rgba(8,10,18,.55) 100%);
         }
 
+        /* C'EST ICI QUE SE REGLE LA HAUTEUR DE LA BANDE. Rien d'autre ne la
+           donne : le cadre, les pieces et la lueur sont tous en position
+           absolue, la section fait donc exactement la hauteur de ce bloc.
+
+           Le padding reste SYMETRIQUE, sinon la parole se decentre — c'est
+           tout le probleme que la remise a zero du padding de section a
+           corrige. Pour une bande plus haute ou plus basse, changer la borne
+           haute du clamp, jamais l'un des deux cotes.
+
+           10 rem au large. La bande est passee par deux etapes avant d'y
+           arriver : d'abord la hauteur qu'elle avait quand l'ecart de section
+           se creusait tout entier au-dessus de la parole, puis celle-ci, plus
+           haute encore, a la demande. Elle respire donc davantage qu'aucune
+           des versions precedentes.
+
+           La borne basse tient le petit ecran, ou 100 px de vide en haut ET
+           en bas repousseraient le bouton sous la ligne de flottaison. */
         .bp-corps {
           position: relative;
           margin: 0 auto;
           width: 100%;
           max-width: 1400px;
-          padding: 3.4rem 2rem;
+          padding: clamp(5.6rem, 7vw, 10rem) 2rem;
           text-align: center;
         }
         /* Au-delà de cette largeur seulement, la pièce occupe un bord : le
@@ -395,7 +428,9 @@ const BandePromo = () => {
         .bp-mention { font-size: 1.25rem; color: rgba(255,255,255,.6); }
 
         @media (max-width: 640px) {
-          .bp-corps { padding: 2.6rem 1.6rem; }
+          /* Seuls les cotes se resserrent : la hauteur reste celle du clamp,
+             qui est deja a sa borne basse a cette largeur. */
+          .bp-corps { padding-inline: 1.6rem; }
           .bp-cellule { min-width: 0; flex: 1; padding: .9rem .4rem; }
           .bp-decompte { gap: .6rem; width: 100%; }
           .bp-nombre { font-size: 2rem; }
