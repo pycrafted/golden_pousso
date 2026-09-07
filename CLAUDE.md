@@ -284,14 +284,17 @@ cliquables, ce qu'elles ne pouvaient pas être en mouvement.
 | 6 | L'atelier | `home/AtelierSection.jsx` | écru |
 | 7 | Avis | `components/TestimonialsSection.jsx` | écru |
 
-**La promotion s'annonce à deux endroits.** `FullWidthBanner` avait été
-supprimée et son offre reprise par `components/Hero.jsx` ; `BandePromo` a
-depuis repris sa place en 5. Les deux lisent `/hero-promotion/`, donc il n'y a
-qu'**une** campagne, réglée une seule fois dans l'admin — mais elle est
-**énoncée deux fois sur la même page**, ce qui se lit facilement comme deux
-offres différentes. Si l'on veut n'en garder qu'une, c'est `OFFRE` dans
-`Hero.jsx` qu'il faut retirer : le hero retrouve alors son message d'accueil
-permanent et la page presse en son milieu, comme avant.
+**La promotion ne s'annonce plus qu'à un endroit**, `BandePromo` en 5. Elle a
+été énoncée deux fois sur la même page — `FullWidthBanner` avait été supprimée
+et son offre reprise par le hero, puis `BandePromo` a repris sa place — et
+deux formulations d'une seule campagne se lisaient comme deux offres. Le hero
+a donc été rendu muet sur ce point, à la demande.
+
+Conséquence à connaître : **rien ne presse au-dessus de la ligne de
+flottaison**. Un visiteur qui ne descend pas ne saura pas qu'il y a une
+promotion en cours. Pour la remettre dans le hero, la mécanique complète
+(lecture de `/hero-promotion/`, bascule à l'échéance, décompte) vit encore
+dans `BandePromo` — c'est là qu'il faut la relire.
 
 `BandePromo` descend d'un transfert de `Redesign_mcommaman.com`, mais il n'en
 reste que le **mécanisme de dérive** (calque en débord translaté + zoom au
@@ -313,16 +316,17 @@ Pour ajouter ou retirer une pièce : la table `PIECES` en tête du composant.
 La marge du texte suit les côtés réellement occupés. La bande ne rend **rien**
 hors campagne.
 
-⚠ **Le hero est daté.** Sa parole vit dans deux constantes en tête de
-`Hero.jsx` : `OFFRE` (la campagne) et `PERMANENT` (la promesse de la maison).
-`OFFRE.fin` est une date ISO relue toutes les heures ; le jour de l'échéance
-passé, le hero bascule seul sur `PERMANENT` — il n'y a rien à débrancher en
-urgence. `fin` et `finLisible` doivent dire la même date : l'une est lue par
-la machine, l'autre par le client. La Tabaski suit le calendrier lunaire, sa
-date se vérifie, elle ne se calcule pas.
+**Le hero ne dit qu'une chose, et elle ne bouge pas.** Sa parole tient dans la
+constante `ACCUEIL` en tête de `Hero.jsx` — « Bienvenue chez Golden Pousso »,
+le filet doré, le bouton vers la boutique. Écrite là et non en base : elle ne
+change pas d'une saison à l'autre, et une valeur qui ne bouge jamais n'a pas
+besoin d'un formulaire dans l'Espace Gestion.
 
-Un décompte (« Plus que N jours ») s'ajoute au sur-titre dans les quinze
-derniers jours seulement — deux mois à l'avance il ne presse personne.
+Il n'y a donc plus ni requête, ni horloge, ni date d'échéance dans ce
+composant : il rend la même chose au premier octet et six mois plus tard, et
+il ne peut plus rouiller faute d'avoir quoi que ce soit à périmer. Le seul
+mouvement qui subsiste est le défilé des tableaux de fond, toutes les six
+secondes, coupé si le visiteur demande moins d'animations.
 
 ### Les cinq rayons sont structurels
 

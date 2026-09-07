@@ -1,16 +1,32 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import apiClient from '../api/client';
 import { TABLEAUX_HERO, LARGEUR_TABLEAU } from '../constants/hero';
-import { DEMONSTRATION, CAMPAGNE_DEMO } from '../constants/demonstration';
 
 /**
- * Hero — la campagne, en pleine largeur.
+ * Hero — l'accueil, en pleine largeur.
  * ===========================================================================
  * C'est le dessin de la bande promotionnelle (`FullWidthBanner`, supprimée),
  * porté à l'échelle du hero : la photo occupe TOUTE la surface, les deux
  * silhouettes détourées se tiennent à gauche et à droite, la parole se pose
  * au centre entre elles.
+ *
+ * ⚠ LE HERO N'ANNONCE PLUS DE PROMOTION. Il salue, et rien d'autre. Il a
+ * porté la campagne du moment — titre, occasion, rabais, décompte des
+ * derniers jours — lue sur `/hero-promotion/` ; retiré à la demande.
+ *
+ * La conséquence est que la campagne n'est plus annoncée qu'à UN endroit de
+ * la page d'accueil, `components/BandePromo.jsx`, qui lit la même source.
+ * C'était le but : les deux la disaient chacune à sa façon sur le même écran,
+ * et deux formulations d'une seule offre se lisent comme deux offres.
+ *
+ * Le corollaire, lui, est à connaître : plus rien ne presse au-dessus de la
+ * ligne de flottaison. Un visiteur qui ne descend pas ne saura pas qu'il y a
+ * une promotion en cours.
+ *
+ * Pour la remettre : le hero lisait `/hero-promotion/`, gardait la réponse en
+ * état, et basculait sur le texte ci-dessous quand elle était vide ou la date
+ * de fin passée. `BandePromo` fait encore tout cela — c'est là qu'il faut
+ * relire la mécanique, pas dans l'historique de ce fichier.
  *
  * ⚠ Ce n'est PAS la mise en page de l'ancien hero. Celui-ci partageait
  * l'écran en deux colonnes — parole à gauche sur fond indigo, photo à droite —
@@ -24,10 +40,9 @@ import { DEMONSTRATION, CAMPAGNE_DEMO } from '../constants/demonstration';
  * deux recadrées sous les mains, jamais en pied — à cette taille, une
  * silhouette entière devient minuscule.
  *
- * Elle est publiée dans l'Espace Gestion → Contenu, section « promotion ».
- * À défaut, le hero retombe sur la bannière du hero, qui est toujours une
- * photo de la maison. Sans ni l'une ni l'autre, il reste l'indigo plein : la
- * parole tient seule, elle ne dépend pas de l'image.
+ * Les tableaux sont des fichiers du front, listés dans `constants/hero.js`.
+ * Sans eux il reste l'indigo plein : la parole tient seule, elle ne dépend
+ * pas de l'image.
  *
  * ── La photo disparaît sous 768 px, et c'est voulu ─────────────────────────
  * Le hero y devient un portrait étroit. Un recadrage cover sur une image
@@ -36,20 +51,14 @@ import { DEMONSTRATION, CAMPAGNE_DEMO } from '../constants/demonstration';
  * des deux côtés. Mieux vaut l'indigo franc qu'un fond amputé de son sujet.
  *
  * ── La parole ──────────────────────────────────────────────────────────────
- * Quatre niveaux, du plus fort au plus discret, comme dans la bande :
- *   1. « Promotion » — le titre, souligné du filet doré ;
- *   2. l'offre, dont la seconde ligne passe en dégradé écru → laiton → écru ;
- *   3. l'action ;
- *   4. la mention en petit.
+ * Trois niveaux, du plus fort au plus discret :
+ *   1. l'emblème de la maison ;
+ *   2. le salut, en dégradé écru → laiton → écru, souligné du filet doré ;
+ *   3. l'action.
  *
- * ⚠ LE HERO NE ROUILLE PAS. Passée la Tabaski, un visiteur tomberait sur
- * « −15 % » et une date échue. OFFRE.fin est une date ISO relue toutes les
- * heures ; l'échéance passée, le hero bascule seul sur PERMANENT — la
- * promesse permanente de la maison. Rien à débrancher en urgence.
- *
- * ⚠ OFFRE.fin n'est plus affichée nulle part depuis le retrait de la mention :
- * elle ne sert qu'à la bascule et au décompte. La Tabaski suit le calendrier
- * lunaire — sa date se vérifie, elle ne se calcule pas.
+ * Elle ne dépend plus de rien : ni requête, ni horloge, ni date. Le hero rend
+ * la même chose au premier octet et six mois plus tard, et il ne peut plus
+ * rouiller faute d'avoir quoi que ce soit à périmer.
  */
 
 /* Emblème de la maison, en tête du hero. Redimensionné à 240 px depuis
@@ -57,16 +66,12 @@ import { DEMONSTRATION, CAMPAGNE_DEMO } from '../constants/demonstration';
    fichier source auraient pesé sur la ligne de flottaison. */
 const LOGO = '/logo-embleme.png';
 
-/* Ce que le hero dit quand aucune campagne n'est programmee.
+/* Ce que le hero dit. Tout ce qu'il dit.
    ---------------------------------------------------------------------------
-   C'est l'etat NORMAL du hero, pas un repli : la maison accueille, et la
-   promotion n'est que l'exception d'une saison. Ce texte reste ecrit ici et
-   non en base — contrairement a une campagne, il ne change pas d'une Tabaski
-   a l'autre, et une valeur qui ne bouge jamais n'a pas besoin d'un
-   formulaire.
-
-   Deux niveaux seulement, la ou une promotion en a trois. Le hero s'y adapte
-   de lui-meme : voir `.hero-offre` et la classe `hero-contenu--accueil`. */
+   Ce texte est ecrit ici et non en base : il ne change pas d'une saison a
+   l'autre, et une valeur qui ne bouge jamais n'a pas besoin d'un formulaire
+   dans l'Espace Gestion. C'etait deja le cas quand il n'etait que l'etat de
+   repos du hero ; c'est maintenant son seul etat. */
 const ACCUEIL = {
   /* ⚠ UNE SEULE LIGNE. La promesse « L'élégance africaine, réinventée pour
      vous » a été retirée : le hero d'accueil ne dit donc plus ce que fait la
@@ -80,15 +85,6 @@ const ACCUEIL = {
   libelleLien: 'Découvrir la boutique',
 };
 
-const JOUR_MS = 86400000;
-const JOURS_AVANT_DECOMPTE = 15;
-
-/* La date de fin arrive du serveur au format AAAA-MM-JJ. `T23:59:59` fait
-   courir la campagne jusqu'au BOUT du jour annonce, pas jusqu'a son premier
-   instant — c'est aussi ce que dit l'admin : la date de fin est incluse. */
-const joursAvantFin = (fin) =>
-  Math.ceil((new Date(fin + 'T23:59:59') - Date.now()) / JOUR_MS);
-
 const Hero = () => {
   /* Les tableaux ne sont plus chargés : ce sont des fichiers du front, servis
      par le CDN de Vercel, listés dans constants/hero.js. Un seul élément
@@ -98,11 +94,6 @@ const Hero = () => {
      ne sert que par son adresse r2.dev, que Cloudflare bride volontairement :
      un tableau sur cinq n'arrivait pas et le hero affichait un carré cassé. */
   const [tableau, setTableau] = useState(0);
-  /* `null` tant que le serveur n'a pas repondu, `{}` ou la campagne ensuite.
-     On ne montre donc pas l'accueil puis la promotion coup sur coup : le hero
-     attend la reponse plutot que de clignoter d'un message a l'autre. */
-  const [promo, setPromo] = useState(null);
-  const [maintenant, setMaintenant] = useState(0);
 
   /* Le défilé. Un tableau toutes les six secondes — assez pour lire la
      parole posée dessus, assez court pour qu'on voie que ça bouge.
@@ -124,32 +115,6 @@ const Hero = () => {
     );
     return () => clearInterval(horloge);
   }, []);
-
-  /* La campagne du jour, s'il y en a une. L'API repond {} le reste de
-     l'annee : c'est l'etat normal, pas une erreur. */
-  useEffect(() => {
-    // Le repli de demonstration ne sert QUE si l'API ne renvoie aucune
-    // campagne : une vraie promotion saisie dans l'admin reprend la main.
-    // Voir constants/demonstration.js — a retirer apres la presentation.
-    const repli = DEMONSTRATION ? CAMPAGNE_DEMO : {};
-    apiClient.get('/hero-promotion/')
-      .then(({ data }) => setPromo(data && data.titre ? data : repli))
-      .catch(() => setPromo(repli));
-  }, []);
-
-  /* Un onglet laisse ouvert une nuit doit voir la campagne expirer. Une heure
-     suffit : le hero ne compte que des jours. Le compteur ne sert qu'a forcer
-     un rendu — l'horloge est lue dans le calcul juste en dessous. */
-  useEffect(() => {
-    const battement = setInterval(() => setMaintenant((n) => n + 1), 60 * 60 * 1000);
-    return () => clearInterval(battement);
-  }, []);
-
-  const enCampagne = Boolean(promo && promo.titre);
-  const parole = enCampagne ? promo : ACCUEIL;
-  const joursRestants = enCampagne ? joursAvantFin(promo.fin) : 0;
-  const compteAffiche = enCampagne && joursRestants > 0 && joursRestants <= JOURS_AVANT_DECOMPTE;
-  void maintenant;   // dependance de rendu, pas une valeur lue
 
   return (
     <section className="hero">
@@ -188,7 +153,7 @@ const Hero = () => {
           cassure avec l'écru serait la plus franche. */}
       <span className="hero-fondu-bas" aria-hidden="true" />
 
-      <div className={enCampagne ? 'hero-contenu' : 'hero-contenu hero-contenu--accueil'}>
+      <div className="hero-contenu">
         {/* Attribut alt vide : le nom de la maison est déjà annoncé par la
             barre de navigation et par le titre de la page — le répéter ferait
             une troisième annonce au lecteur d'écran. width/height sont posés
@@ -196,62 +161,24 @@ const Hero = () => {
             vers le haut à l'arrivée de l'image. */}
         <img className="hero-logo" src={LOGO} alt="" width="110" height="110" />
 
-        {/* `.wonk` seulement en campagne. L'axe WONK de Fraunces n'a de sens
-            qu'au-delà de 40 px ; le titre d'accueil est en `--t-h2`, qui
-            descend à 28 px en petit écran, où l'irrégularité se lirait comme
-            un défaut de rendu. Le titre de section du bas ne le porte pas non
-            plus : les deux se ressemblent donc vraiment. */}
-        {/* ↓ L'ORDRE DES DEUX LIGNES CHANGE, PAS LEUR DESSIN.
-            Chaque emplacement garde son habit : la ligne « titre » reste en
-            grand écru, la ligne « accroche » reste en dégradé doré. C'est
-            leur position qui s'inverse d'un état à l'autre.
+        {/* Un <h1> et non un <p> : c'est la seule parole du hero, la page
+            doit avoir un titre pour un moteur de recherche comme pour un
+            lecteur d'écran. Le dégradé vit sur le <span>, le <h1> ne porte
+            que la mise en page — l'habit ne change pas parce que la balise
+            change.
 
-            En campagne : « Promotion » en grand, puis l'occasion et le rabais.
-            À l'accueil : le salut doré d'abord, la promesse en grand ensuite.
+            Pas de classe `.wonk` ici. L'axe WONK de Fraunces n'a de sens
+            au-delà de 40 px seulement ; ce titre part de 2,2 rem, soit 35 px
+            en petit écran, où l'irrégularité se lirait comme un défaut de
+            rendu plutôt que comme un parti pris. */}
+        <h1 className="hero-offre">
+          <span className="hero-accroche">{ACCUEIL.accroche}</span>
+        </h1>
+        <span className="filet-titre" aria-hidden="true" />
 
-            Une campagne a trois niveaux (titre, occasion, rabais) là où
-            l'accueil n'en a que deux : la ligne d'occasion n'est donc rendue
-            qu'en campagne, sinon elle laisserait un blanc d'une ligne. */}
-        {enCampagne ? (
-          <>
-            <h1 className="hero-titre wonk">{parole.titre}</h1>
-            <span className="filet-titre" aria-hidden="true" />
-            <p className="hero-offre">
-              {parole.offre}
-              <span className="hero-accroche">{parole.accroche}</span>
-            </p>
-          </>
-        ) : (
-          <>
-            {/* Un <h1> et non un <p> : c'est la seule parole de l'accueil, la
-                page doit avoir un titre pour un moteur de recherche comme
-                pour un lecteur d'écran. Le dégradé vit sur le <span>, le
-                <h1> ne porte que la mise en page — l'habit ne change pas
-                parce que la balise change. */}
-            <h1 className="hero-offre hero-offre--seule hero-offre--avant">
-              <span className="hero-accroche">{parole.accroche}</span>
-            </h1>
-            <span className="filet-titre" aria-hidden="true" />
-          </>
-        )}
-
-        <Link to={parole.lien} className="btn btn--accent btn--auto hero-action">
-          {enCampagne ? parole.libelle_lien : parole.libelleLien}
+        <Link to={ACCUEIL.lien} className="btn btn--accent btn--auto hero-action">
+          {ACCUEIL.libelleLien}
         </Link>
-
-        {/* ⚠ La mention « Jusqu'au 31 mai, dans la limite des stocks » a été
-            retirée à la demande. L'échéance et la réserve de stock ne sont donc
-            plus écrites nulle part sur le parcours — à savoir si un client
-            conteste l'offre.
-
-            Ne reste que le décompte, et seulement dans les quinze derniers
-            jours : deux mois à l'avance, « plus que 58 jours » ne presse
-            personne et occupe la place. */}
-        {compteAffiche && (
-          <p className="hero-mention">
-            Plus que {joursRestants} jour{joursRestants > 1 ? 's' : ''}
-          </p>
-        )}
       </div>
 
       <style>{`
@@ -367,10 +294,13 @@ const Hero = () => {
         }
 
         /* La parole se pose entre les deux silhouettes. Bornée en largeur pour
-           qu'elle ne vienne toucher ni l'une ni l'autre. */
+           qu'elle ne vienne toucher ni l'une ni l'autre.
+
+           38ch et non 30 : « Bienvenue chez Golden Pousso » tomberait sur
+           quatre lignes dans la largeur qui suffisait au mot « Promotion ». */
         .hero-contenu {
           text-align: center;
-          max-width: 30ch;
+          max-width: 38ch;
         }
 
         /* Le filet doit virer au laiton clair ici : sur fond sombre, la
@@ -390,24 +320,14 @@ const Hero = () => {
           margin: 0 auto var(--s-5);
         }
 
-        /* Le titre s'ajuste au nombre de mots. Une campagne dit « Promotion »,
-           l'accueil « Bienvenue chez Golden Pousso » : quatre fois plus long.
-           À taille fixe, le second remplissait quatre lignes et écrasait tout
-           ce qui suit. La borne haute du clamp descend donc pour l'accueil,
-           règle plus bas. */
-        .hero-titre {
-          font-size: clamp(4rem, 7vw, 7.2rem);
-          font-weight: 800;
-          line-height: 1.02;
-          letter-spacing: -0.035em;
-          color: var(--gp-ecru-50);
-        }
+        /* Le salut. Il suit l'emblème, et le filet le suit.
 
-        /* L'offre, sous le titre. Plus petite que lui mais plus forte que la
-           mention : c'est elle qu'on doit lire en deuxième. */
+           Le nom de classe date de l'époque où cette ligne portait l'offre
+           d'une campagne, sous un titre qui n'existe plus. Elle a gardé son
+           habit — le dégradé doré — en devenant la seule parole du hero. */
         .hero-offre {
-          max-width: 20ch;
-          margin: var(--s-7) auto 0;
+          max-width: 26ch;
+          margin: var(--s-4) auto 0;
           font-family: var(--font-display);
           font-size: clamp(2.2rem, 3.6vw, 3.6rem);
           font-weight: 700;
@@ -422,7 +342,6 @@ const Hero = () => {
            transparent, donc invisible. */
         .hero-accroche {
           display: block;
-          margin-top: var(--s-2);
           color: var(--gp-brass-400);
         }
         @supports (-webkit-background-clip: text) or (background-clip: text) {
@@ -439,46 +358,9 @@ const Hero = () => {
           }
         }
 
-        /* ── L'ÉTAT D'ACCUEIL ──
-           Deux niveaux au lieu de trois, et un titre bien plus long : sans ces
-           trois réglages, le hero d'accueil n'est pas le hero de campagne à
-           une ligne près, c'est une autre page. */
-
-        /* Le bloc s'élargit : « Bienvenue chez Golden Pousso » tomberait sur
-           quatre lignes dans les 30ch prévus pour « Promotion ». */
-        .hero-contenu--accueil { max-width: 38ch; }
-
-        /* Le titre d'accueil prend « --t-h2 », la taille des titres de
-           section — celle de « Bienvenue à Golden Pousso » plus bas dans la
-           page. Les deux accueils se lisent donc au même corps.
-
-           ⚠ IL Y A EU ICI UN ÉCHANGE DE PEINTURE : le <h1> portait le dégradé
-           doré de l'accroche et l'accroche portait le grand écru du titre,
-           pour que les deux paroles apparaissent inversées sans toucher au
-           balisage. Ce n'est plus nécessaire : ce sont les TEXTES qui ont
-           échangé de place dans « ACCUEIL », chacun retrouvant l'habit de son
-           emplacement. Une règle de moins, et le <h1> redevient ce qu'il
-           annonce. */
-        /* La parole d'accueil suit l'emblème, et le filet la suit. Les règles
-           qui la séparaient d'un second titre sont parties avec lui. */
-        .hero-offre--avant { margin-top: var(--s-4); }
-        .hero-offre--avant + .filet-titre { margin-top: var(--s-4); }
-
-        /* L'accroche est seule sous le filet : elle reprend l'écart que la
-           ligne d'occasion portait, et s'élargit pour tenir sur deux lignes
-           plutôt que trois. */
-        .hero-offre--seule {
-          max-width: 26ch;
-        }
-        .hero-offre--seule .hero-accroche { margin-top: 0; }
+        .hero-offre + .filet-titre { margin-top: var(--s-4); }
 
         .hero-action { margin-top: var(--s-7); }
-
-        .hero-mention {
-          margin-top: var(--s-4);
-          font-size: var(--t-xs);
-          color: var(--text-on-dark-muted);
-        }
 
         @media (max-width: 768px) {
           .hero { padding: var(--s-8) var(--s-4); }
