@@ -5,7 +5,12 @@ import Reveal from './Reveal';
 import useTexteSection from '../hooks/useTexteSection';
 
 /**
- * « Nos créations en mouvement »
+ * « Aperçu de la boutique »
+ * ---------------------------------------------------------------------------
+ * Le titre est réglable dans l'Espace Gestion → Textes des sections (clé
+ * `accueil-mouvement`). La valeur écrite plus bas n'est qu'un repli ; celle
+ * qui fait foi en production est dans `sync_contenu.py`, rejouée à chaque mise
+ * en ligne. Renommer ici seulement ne change rien au site déployé.
  * ---------------------------------------------------------------------------
  * Les séquences viennent de l'API (`/videos/`), donc de l'Espace Gestion →
  * Vidéos. La version précédente embarquait en dur quatre plans du dépôt
@@ -59,7 +64,7 @@ const VideoCardsSection = () => {
   /* Le titre vient du back-office (Espace Gestion → Textes des sections) ; la
      valeur écrite ici n'est qu'un repli, pour que la section ne perde jamais
      son intitulé si l'API ne répond pas. */
-  const textes = useTexteSection('accueil-mouvement', { titre: 'Le tissu en mouvement' });
+  const textes = useTexteSection('accueil-mouvement', { titre: 'Aperçu de la boutique' });
   const [bande, setBande] = useState([]);
   const [son, setSon] = useState(null);
   const lecteurs = useRef([]);
@@ -187,21 +192,20 @@ const VideoCardsSection = () => {
              celle du site : « tous les écrits, vraiment tous ». */
           --em-font:  var(--font-display);
 
-          /* ↓ LA HAUTEUR DES TUILES SE RÈGLE ICI.
+          /* L'écart du haut est celui de toute la page (--section-y), posé
+             par la règle générale — rien à redéclarer ici.
 
-             L'écart suivait --section-y, le rythme de toute la page. Il a été
-             resserré : cette section n'en a plus besoin, pour deux raisons qui
-             se cumulent.
-
-             D'abord le titre a été retiré — il portait 36 px de marge sous
-             lui, et l'espace du haut servait à le poser. Ensuite le hero finit
-             maintenant en dégradé vers le fond de la page, dont le dernier
-             tiers est un aplat d'écru franc : cette zone vide EST déjà la
-             séparation. La reprendre en padding la comptait deux fois, et les
-             vidéos tombaient bien trop bas.
+             Il a été resserré à var(--s-6) tant que cette section suivait
+             directement le hero : celui-ci finit en dégradé vers un aplat
+             d'écru franc, et cette zone vide faisait DÉJÀ la séparation ; la
+             reprendre en padding la comptait deux fois et les vidéos
+             tombaient bien trop bas. La section ne suit plus le hero — c'est
+             « Le mot de la maison » qui l'a précédée, et qui porte désormais
+             ce resserrement. Sans ce retour au rythme commun, le titre venait
+             se coller à 32 px du filet de laiton qui ferme le panneau
+             au-dessus.
 
              Le reste du dessin de cette section reste celui de la source. */
-          padding: var(--s-6) 0 0;
           font-family: var(--em-font);
           overflow: visible;
         }

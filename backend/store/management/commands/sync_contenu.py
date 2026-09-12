@@ -29,7 +29,7 @@ TEXTES = {
     'accueil-categories': 'Notre catalogue',
     'accueil-contact':    'Parlons de votre pièce',
     'accueil-creations':  'En vitrine',
-    'accueil-mouvement':  'Le tissu en mouvement',
+    'accueil-mouvement':  'Aperçu de la boutique',
     'accueil-promotion':  'Promotion',
     'accueil-selection':  'Nos plus belles pièces',
 }

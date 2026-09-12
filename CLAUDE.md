@@ -246,8 +246,8 @@ de la fonte : les 79 usages en dur ont déjà été convertis une fois.
 ## Page d'accueil
 
 Composée dans `frontend/src/pages/HomePage.jsx`, sections dans
-`frontend/src/components/home/`. L'ordre suit une progression : orienter,
-montrer, presser, raconter, prouver, ouvrir la conversation.
+`frontend/src/components/home/`. L'ordre suit une progression : on accueille,
+on **dit qui l'on est**, puis on montre, on oriente, on presse et on prouve.
 
 ⚠ La rangée de réassurance (livraison, paiement, retouches, WhatsApp) a été
 retirée, et la bande qui portait ses arguments ne les porte plus non plus :
@@ -276,13 +276,41 @@ cliquables, ce qu'elles ne pouvaient pas être en mouvement.
 | # | Section | Fichier | Fond |
 |---|---------|---------|------|
 | 1 | Hero | `components/Hero.jsx` | indigo |
-| 2 | En mouvement | `components/VideoCardsSection.jsx` | ⚠ voir ci-dessous |
-| 3 | Catégories | `home/UniversGrid.jsx` | ⚠ voir ci-dessous — rayons structurels |
-| 4 | Nos créations | `components/CategoryGrid.jsx` | écru |
-| 5 | Promotion | `components/BandePromo.jsx` | ⚠ transfert — photo pleine largeur |
-| 6 | La sélection | `HomePage.jsx` (local) | écru |
-| 6 | L'atelier | `home/AtelierSection.jsx` | écru |
-| 7 | Avis | `components/TestimonialsSection.jsx` | écru |
+| 2 | Le mot de la maison | `home/AtelierSection.jsx` | écru — panneau pleine largeur, filets de laiton |
+| 3 | Aperçu de la boutique | `components/VideoCardsSection.jsx` | ⚠ voir ci-dessous |
+| 4 | Catégories | `home/UniversGrid.jsx` | ⚠ voir ci-dessous — rayons structurels |
+| 5 | Nos créations | `components/CategoryGrid.jsx` | écru |
+| 6 | Promotion | `components/BandePromo.jsx` | ⚠ transfert — photo pleine largeur |
+| 7 | La sélection | `HomePage.jsx` (local) | écru |
+| 8 | Avis | `components/TestimonialsSection.jsx` | écru |
+
+**Le mot de la maison** (2) **ouvre la page**, juste après le hero : le
+visiteur sait chez qui il est avant qu'on lui montre quoi que ce soit.
+
+Le panneau va d'un bord à l'autre de la fenêtre (donc `--r-0`), sur le **même
+écru que la page** (`--surface`, #FAF6EE) : ce sont ses deux **filets de
+laiton**, en haut et en bas, qui le délimitent — pas un changement de fond. Il
+a été indigo un temps ; le fond a été ramené à l'écru à la demande.
+
+Son padding vertical est porté par le panneau, pas par la `<section>`. Ce
+padding est volontairement plus serré que du temps de l'indigo : un aplat
+sombre porte 128 px de vide sans qu'on les remarque, un écru continu les ajoute
+au rythme de section et ouvre un trou de près de 200 px au-dessus du titre.
+
+⚠ **Le resserrement du haut a suivi la section.** Le hero finit en dégradé vers
+un aplat d'écru franc : cette zone vide fait déjà la séparation, et la reprendre
+en entier par-dessus la compte deux fois. C'est « Aperçu de la boutique » qui portait ce
+resserrement tant qu'elle suivait le hero ; il est passé au panneau, écrit en
+`main > section:first-of-type + .man` — adossé au voisinage et non en dur, pour
+qu'un nouveau déplacement rende seul le rythme commun.
+
+Trois gestes : la **lettrine** de laiton en tête du premier paragraphe — seul
+usage de l'axe `WONK` hors du hero, à 72 px —, le **diptyque** (la seconde
+photo posée sur l'angle de la première, cadre de laiton décalé derrière elle)
+et la **signature** détachée sous son filet. Le texte est celui de la maison,
+repris à la virgule près : la refonte est de mise en page, pas d'écriture.
+Le lieu en sur-titre est la constante `LIEU` du composant — le champ `surtitre`
+de la clé `accueil-atelier` reste, comme avant, sans effet.
 
 **La promotion ne s'annonce plus qu'à un endroit**, `BandePromo` en 5. Elle a
 été énoncée deux fois sur la même page — `FullWidthBanner` avait été supprimée

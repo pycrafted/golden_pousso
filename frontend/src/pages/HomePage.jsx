@@ -226,14 +226,17 @@ const Selection = () => {
 };
 
 /* ── Page d'accueil ─────────────────────────────────────────────────────────
-   L'ordre suit une progression : on oriente, on montre, on presse, on raconte,
-   on prouve, on ouvre la conversation. Les fonds alternent — indigo pour le
-   hero et la bande promotionnelle ; écru partout ailleurs — pour que la page
-   respire au lieu de dérouler un seul aplat.
+   L'ordre suit une progression : on accueille, on DIT QUI L'ON EST, puis on
+   montre, on oriente, on presse et on prouve. La parole de la maison vient
+   juste après le seuil : le visiteur sait chez qui il est avant qu'on lui
+   montre quoi que ce soit.
+   Les fonds alternent — indigo pour le hero et la bande promotionnelle, écru
+   partout ailleurs — pour que la page respire au lieu de dérouler un seul
+   aplat.
 
    La bande de coordonnées qui suivait le hero est remontée au-dessus de la
    barre de navigation (`components/BandeCoordonnees.jsx`, posée par le
-   `Layout`) : le hero enchaîne donc directement sur « En mouvement ».
+   `Layout`) : le hero enchaîne donc directement sur le mot de la maison.
 
    ⚠ La bande promotionnelle du milieu de page (`FullWidthBanner`) a été
    supprimée : son offre — « Bientôt la Tabaski », « −15 % sur les boubous » —
@@ -253,25 +256,27 @@ const HomePage = () => (
     {/* ── 1. Le seuil ── */}
     <Hero />
 
-    {/* ── 2. Les pièces en mouvement ── */}
+    {/* ── 2. Raconter : qui parle, avant de montrer quoi que ce soit ──
+        Le seul actif incopiable de la maison, et le seul endroit de la page
+        où elle s'exprime en son nom. */}
+    <AtelierSection />
+
+    {/* ── 3. Les pièces en mouvement ── */}
     <VideoCardsSection />
 
-    {/* ── 3. Orienter : la seule entrée par rayon de la page ── */}
+    {/* ── 4. Orienter : la seule entrée par rayon de la page ── */}
     <UniversGrid />
 
-    {/* ── 4. Montrer : le catalogue ── */}
+    {/* ── 5. Montrer : le catalogue ── */}
     <CategoryGrid />
 
-    {/* ── 5. Presser : la campagne du moment, s'il y en a une ──
+    {/* ── 6. Presser : la campagne du moment, s'il y en a une ──
         Elle ne rend rien hors campagne, et le reste de la page se referme
         dessus sans laisser de trou. */}
     <BandePromo />
 
-    {/* ── 6. La sélection filtrable ── */}
+    {/* ── 7. La sélection filtrable ── */}
     <Selection />
-
-    {/* ── 7. Raconter : l'atelier, le seul actif incopiable ── */}
-    <AtelierSection />
 
     {/* ── 8. Prouver ── */}
     <TestimonialsSection />
