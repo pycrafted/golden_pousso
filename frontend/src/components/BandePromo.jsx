@@ -321,20 +321,29 @@ const BandePromo = () => {
            corrige. Pour une bande plus haute ou plus basse, changer la borne
            haute du clamp, jamais l'un des deux cotes.
 
-           10 rem au large. La bande est passee par deux etapes avant d'y
+           16 rem au large. La bande est passee par quatre etapes avant d'y
            arriver : d'abord la hauteur qu'elle avait quand l'ecart de section
-           se creusait tout entier au-dessus de la parole, puis celle-ci, plus
-           haute encore, a la demande. Elle respire donc davantage qu'aucune
-           des versions precedentes.
+           se creusait tout entier au-dessus de la parole, puis 10, puis 13,
+           puis 16 rem, chaque fois a la demande.
 
-           La borne basse tient le petit ecran, ou 100 px de vide en haut ET
-           en bas repousseraient le bouton sous la ligne de flottaison. */
+           Le terme intermediaire suit a chaque fois, et ce n'est pas
+           cosmetique : c'est lui qui tient la valeur tant que l'ecran n'est
+           pas assez large pour atteindre la borne haute. A 7 vw, celle-ci
+           n'etait atteinte qu'au dela de 1 430 px, et la relever seule
+           n'aurait rien change sur un portable de 1 366 px. A 11 vw la borne
+           est atteinte des 1 455 px, et l'augmentation se voit partout.
+
+           La borne basse ne bouge pas : elle tient le petit ecran, ou 160 px
+           de vide en haut ET en bas repousseraient le bouton sous la ligne de
+           flottaison. Sur un telephone, 11 vw vaut 43 px et c'est donc elle
+           qui s'applique — la bande y garde la hauteur qu'elle a toujours eue,
+           et l'ecart entre petit et grand ecran se creuse a chaque hausse. */
         .bp-corps {
           position: relative;
           margin: 0 auto;
           width: 100%;
           max-width: 1400px;
-          padding: clamp(5.6rem, 7vw, 10rem) 2rem;
+          padding: clamp(5.6rem, 11vw, 16rem) 2rem;
           text-align: center;
         }
         /* Au-delà de cette largeur seulement, la pièce occupe un bord : le
