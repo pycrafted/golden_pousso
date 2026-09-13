@@ -14,19 +14,17 @@ import { TABLEAUX_HERO, LARGEUR_TABLEAU } from '../constants/hero';
  * porté la campagne du moment — titre, occasion, rabais, décompte des
  * derniers jours — lue sur `/hero-promotion/` ; retiré à la demande.
  *
- * La conséquence est que la campagne n'est plus annoncée qu'à UN endroit de
- * la page d'accueil, `components/BandePromo.jsx`, qui lit la même source.
- * C'était le but : les deux la disaient chacune à sa façon sur le même écran,
- * et deux formulations d'une seule offre se lisent comme deux offres.
- *
- * Le corollaire, lui, est à connaître : plus rien ne presse au-dessus de la
- * ligne de flottaison. Un visiteur qui ne descend pas ne saura pas qu'il y a
- * une promotion en cours.
+ * La campagne n'a d'abord plus été annoncée qu'à un autre endroit,
+ * `components/BandePromo.jsx` — deux formulations d'une seule offre sur le
+ * même écran se lisaient comme deux offres. Cette bande est depuis devenue
+ * une vitrine sans texte, à la demande. ⚠ LE SITE N'ANNONCE DONC PLUS AUCUNE
+ * PROMOTION : une campagne saisie dans l'admin ne s'affiche nulle part.
  *
  * Pour la remettre : le hero lisait `/hero-promotion/`, gardait la réponse en
  * état, et basculait sur le texte ci-dessous quand elle était vide ou la date
- * de fin passée. `BandePromo` fait encore tout cela — c'est là qu'il faut
- * relire la mécanique, pas dans l'historique de ce fichier.
+ * de fin passée. La mécanique complète — lecture, échéance, décompte — se
+ * relit dans l'historique git :
+ * `git show 5f67b1d:frontend/src/components/BandePromo.jsx`.
  *
  * ⚠ Ce n'est PAS la mise en page de l'ancien hero. Celui-ci partageait
  * l'écran en deux colonnes — parole à gauche sur fond indigo, photo à droite —

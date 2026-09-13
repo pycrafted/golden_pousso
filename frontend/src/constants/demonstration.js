@@ -4,23 +4,26 @@
  * ⚠ TEMPORAIRE — À SUPPRIMER APRÈS LA PRÉSENTATION AU CLIENT.
  *
  * ── Pourquoi ce fichier existe ──────────────────────────────────────────────
- * La base de production est vide : aucune campagne, aucun avis. Deux sections
- * de la page d'accueil disparaissent donc entièrement du site en ligne — la
- * bande de promotion et « Elles nous font confiance » — alors qu'elles
- * s'affichent en développement, où la base est peuplée. Impossible de montrer
- * la page au client dans cet état.
+ * La base de production est vide : aucun avis. « Elles nous font confiance »
+ * disparaît donc entièrement du site en ligne alors qu'elle s'affiche en
+ * développement, où la base est peuplée. Impossible de montrer la page au
+ * client dans cet état.
+ *
+ * Le fichier a aussi servi une fausse campagne à la bande de promotion
+ * (« Bientôt la Tabaski, −15 % »). Elle a été retirée à la demande, et la
+ * bande est depuis devenue une vitrine sans texte.
  *
  * ── Comment ça marche ───────────────────────────────────────────────────────
  * C'est un REPLI, pas un remplacement. Les composants interrogent l'API comme
  * avant ; ils ne retombent ici que si elle ne répond rien. Le jour où le
- * propriétaire saisit une vraie campagne ou reçoit un vrai avis, son contenu
- * reprend la main tout seul, sans qu'on touche au code.
+ * propriétaire reçoit un vrai avis, son contenu reprend la main tout seul,
+ * sans qu'on touche au code.
  *
  * ── Comment le retirer ──────────────────────────────────────────────────────
- * Passer `DEMONSTRATION` à `false` ci-dessous suffit à tout éteindre : les deux
- * sections redeviennent invisibles tant que la base est vide. Pour un retrait
- * définitif, supprimer ce fichier et les trois lignes qui l'importent
- * (`Hero.jsx`, `BandePromo.jsx`, `TestimonialsSection.jsx`).
+ * Passer `DEMONSTRATION` à `false` ci-dessous suffit à tout éteindre : la
+ * section redevient invisible tant que la base est vide. Pour un retrait
+ * définitif, supprimer ce fichier et la ligne qui l'importe
+ * (`TestimonialsSection.jsx`).
  *
  * ⚠ LES AVIS CI-DESSOUS SONT INVENTÉS. Ils viennent des données de
  * démonstration et ne correspondent à aucune cliente réelle. Ils doivent
@@ -31,27 +34,6 @@
 
 /** L'interrupteur unique. `false` éteint tout le contenu de démonstration. */
 export const DEMONSTRATION = true;
-
-/**
- * La campagne de repli.
- *
- * Même forme que `/hero-promotion/` — `titre`, `offre`, `accroche`, `lien`,
- * `libelle_lien`, `fin` — pour que le hero et la bande la consomment sans
- * distinguer sa provenance.
- *
- * ⚠ `fin` est une date réelle, relue à chaque heure : passée l'échéance, le
- * hero revient à son message d'accueil et la bande disparaît, exactement comme
- * avec une vraie campagne. La Tabaski suit le calendrier lunaire — cette date
- * se vérifie, elle ne se calcule pas.
- */
-export const CAMPAGNE_DEMO = {
-  titre: 'Promotion',
-  offre: 'Bientôt la Tabaski',
-  accroche: '−15 % sur les boubous',
-  lien: '/categorie/boubous',
-  libelle_lien: 'Voir la sélection',
-  fin: '2026-09-14',
-};
 
 /**
  * Les avis de repli.

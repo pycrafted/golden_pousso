@@ -1,456 +1,194 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import apiClient from '../api/client';
-import Reveal from './Reveal';
-import { DEMONSTRATION, CAMPAGNE_DEMO } from '../constants/demonstration';
-
 /**
- * La bande de promotion.
+ * La vitrine.
  * ===========================================================================
- * Deux pièces détourées sur un aplat indigo, la parole au centre. Les pièces
- * DÉRIVENT au défilement — elles glissent un peu plus lentement que la page et
- * grossissent en approchant du centre de l'écran. L'œil lit ça comme de la
- * profondeur, et la bande cesse d'être une image posée là.
+ * Quatre pièces détourées sur un aplat indigo, entières, de la coiffe à
+ * l'ourlet, en rangée : les deux tenues de femme aux bords, les deux tenues
+ * d'homme au centre. Pas de texte. Pour ajouter ou retirer une pièce, c'est la
+ * table `PIECES` juste en dessous — la rangée se recompose seule.
  *
  * ── Ce qu'elle a été ────────────────────────────────────────────────────────
- * Un transfert de `Redesign_mcommaman.com` : une photo pleine largeur, palette
- * rose et médias de la source. Le mécanisme de dérive en vient et n'a pas
- * bougé ; tout le reste a été remplacé. La photo transférée montrait des
- * pyjamas d'enfants, et aucun des 278 clichés de la maison ne pouvait la
- * remplacer — ce sont des vues de catalogue, qui recadrées au format du
- * bandeau coupent les visages à la bouche et posent le texte sur la poitrine.
- * Voir `PIECES` juste en dessous.
+ * La bande de promotion. Elle portait au centre la campagne du moment, lue
+ * sur `/hero-promotion/` : sur-titre, offre, décompte, bouton, mention de
+ * fin. Ce texte a été retiré à la demande, avec toute la mécanique qui le
+ * servait — lecture de l'API, décompte, message hors campagne.
  *
- * ── D'où vient la parole ────────────────────────────────────────────────────
- * De `/hero-promotion/`, la MÊME source que le hero. Il n'y a donc qu'une
- * campagne, réglée une seule fois dans l'admin. Sans campagne en cours, la
- * bande ne rend rien du tout : mieux vaut pas de bande qu'une bande vide.
+ * ⚠ CONSÉQUENCE : LE SITE N'ANNONCE PLUS AUCUNE PROMOTION. Le hero avait déjà
+ * été rendu muet sur ce point ; cette bande était le dernier endroit. Une
+ * campagne saisie dans l'admin (`HeroPromotion`) ne s'affiche donc nulle part.
+ * Pour la faire revenir, la mécanique complète est dans l'historique git :
+ * `git show 5f67b1d:frontend/src/components/BandePromo.jsx`.
+ *
+ * Avant encore, c'était un transfert de `Redesign_mcommaman.com` : une photo
+ * pleine largeur, puis des pièces qui dérivaient au défilement. Il n'en reste
+ * rien — le composant garde seulement son nom de fichier.
  */
 
 /**
- * Les pièces détourées, posées sur l'aplat indigo.
+ * Les pièces, dans l'ordre de la rangée, de gauche à droite.
  *
- * ── Pourquoi pas une photographie de fond ───────────────────────────────────
- * Il n'en existe aucune qui convienne. Les 278 clichés de la maison sont du
- * catalogue produit : bijoux sur présentoirs, sacs sur étagères, clientes
- * photographiées de près. Recadrés au format du bandeau, les visages se
- * coupent à la bouche et le texte tombe sur la poitrine.
+ * ── Pourquoi des détourages et pas une photographie ─────────────────────────
+ * Aucun des 278 clichés de la maison ne convient en fond : ce sont des vues de
+ * catalogue — bijoux sur présentoirs, sacs sur étagères, clientes de près —
+ * qui recadrées au format de la bande coupent les visages à la bouche. Une
+ * pièce détourée montre l'article entier et laisse le reste de l'aplat libre.
  *
- * Une pièce détourée règle les deux problèmes d'un coup : elle montre
- * l'article, et elle laisse le centre libre pour la parole.
+ * ── largeur, hauteur ────────────────────────────────────────────────────────
+ * Les dimensions du FICHIER, en pixels. Elles servent deux fois : posées en
+ * attributs, elles donnent au navigateur le ratio de l'image avant son
+ * chargement — la rangée ne saute pas quand les fichiers arrivent ; additionnées
+ * en ratios, elles bornent la hauteur de la bande pour que la rangée tienne
+ * dans la largeur (voir LARGEUR_RANGEE). Une pièce ajoutée sans ses vraies
+ * dimensions déborde ou se tasse.
  *
- * `cote` place la pièce à gauche ou à droite ; `hauteur` est un pourcentage de
- * la hauteur du bandeau, supérieur à 100 pour que la pièce DÉBORDE — on la
- * découvre de la tête à mi-jambe, le reste coupé par le bas de la bande, ce qui
- * suggère qu'elle continue.
+ * Toutes prennent la même hauteur — celle de la bande moins l'air — et
+ * partagent donc la même ligne de coiffe et la même ligne de sol.
  */
 const PIECES = [
-  { src: '/images/promo/piece-peche.webp', cote: 'gauche', hauteur: 168, decalage: 3 },
-  // Le MÊME mannequin, dans une autre pièce : ChatGPT l'a rhabillé à partir
-  // du premier détourage, si bien que les deux ont la même matière dorée, la
-  // même pose et le même éclairage. La répétition est voulue — c'est une paire
-  // de vitrines, pas deux photos rapprochées par hasard.
+  { src: '/images/promo/piece-peche.webp', largeur: 700, hauteur: 1504 },
+  // Les deux tenues d'homme du hero — le troisième tableau, mêmes mannequins
+  // dorés — mais ENTIÈRES, jusqu'aux pieds : le hero les coupe à mi-cuisse.
+  // Les détourages viennent du catalogue (outils/exporter_pieces.py), mis à
+  // l'échelle sur 900 px de haut : un peu plus doux que les pièces de femme
+  // (1 448 et 1 504 px) sur un écran haute densité.
+  { src: '/images/catalogue/homme-bleu.webp', largeur: 344, hauteur: 900 },
+  { src: '/images/catalogue/homme-taupe.webp', largeur: 320, hauteur: 900 },
+  // Le MÊME mannequin que la pièce pêche, rhabillé par ChatGPT à partir du
+  // premier détourage : même matière dorée, même pose, même éclairage. La
+  // répétition est voulue — une paire de vitrines, pas deux photos
+  // rapprochées par hasard.
   //
   // Elle n'est PAS retournée : sa tête est tournée vers la gauche, donc posée
-  // à droite elle regarde vers le texte. La retourner la ferait regarder
-  // dehors, et le lecteur suit toujours le regard.
-  { src: '/images/promo/piece-blanche.webp', cote: 'droite', hauteur: 168, decalage: 3 },
+  // à droite elle regarde vers le centre de la vitrine. La retourner la ferait
+  // regarder dehors, et l'œil suit toujours le regard.
+  { src: '/images/promo/piece-blanche.webp', largeur: 700, hauteur: 1448 },
 ];
 
-const MOIS = [
-  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
-];
+/* La largeur de la rangée pour des pièces d'une unité de haut : la somme de
+   leurs ratios. Passée au CSS en --bp-rangee, elle borne la hauteur de la
+   bande — voir « LA HAUTEUR ». */
+const LARGEUR_RANGEE = PIECES.reduce((somme, p) => somme + p.largeur / p.hauteur, 0);
 
-/** « 2026-05-31 » donne « 31 mai ». Lu par le client, pas par la machine. */
-const enClair = (iso) => {
-  if (!iso) return '';
-  const [, mois, jour] = iso.slice(0, 10).split('-');
-  return `${Number(jour)} ${MOIS[Number(mois) - 1]}`;
-};
-
-/* ── Le fond qui se découvre ────────────────────────────────────────────────
-   Le calque déborde de `marge` en haut et en bas, puis se translate à
-   l'intérieur de ce débord : il glisse sans jamais laisser voir de vide.
-
-   L'observateur local n'est PAS une entorse à la règle qui impose `useInView`
-   pour les révélations : celui-ci ne révèle rien, il coupe le calcul quand la
-   bande sort du champ. `useInView` se débranche définitivement à la première
-   vue, ce qui donnerait exactement l'inverse. */
-const FondQuiSeDecouvre = ({ vitesse = 0.22, zoom = 0.05, marge = 0.14, children }) => {
-  const cadre = useRef(null);
-  const calque = useRef(null);
-
-  useEffect(() => {
-    const boite = cadre.current;
-    const mobile = calque.current;
-    if (!boite || !mobile) return;
-    // Le mouvement est un ornement : qui l'a refusé dans son système ne le
-    // subit pas, et la photo reste simplement fixe.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    let raf = 0;
-    let visible = true;
-
-    const placer = () => {
-      raf = 0;
-      const r = boite.getBoundingClientRect();
-      const centre = r.top + r.height / 2 - window.innerHeight / 2;
-      // Borné au débord disponible : sur un grand écran, le décalage calculé
-      // dépasserait la marge et découvrirait un bord vide.
-      const limite = r.height * marge;
-      const y = Math.max(-limite, Math.min(limite, -centre * vitesse));
-      const loin = Math.min(1, Math.abs(centre) / (window.innerHeight / 2 + r.height / 2));
-      mobile.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0) scale(${(1 + zoom * loin).toFixed(4)})`;
-    };
-
-    const auDefilement = () => {
-      if (!visible || raf) return;
-      raf = requestAnimationFrame(placer);
-    };
-
-    const io = new IntersectionObserver(
-      ([entree]) => {
-        visible = entree.isIntersecting;
-        if (visible) auDefilement();
-      },
-      { rootMargin: '150px' },
-    );
-    io.observe(boite);
-
-    placer();
-    window.addEventListener('scroll', auDefilement, { passive: true });
-    window.addEventListener('resize', auDefilement, { passive: true });
-    return () => {
-      io.disconnect();
-      window.removeEventListener('scroll', auDefilement);
-      window.removeEventListener('resize', auDefilement);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [vitesse, zoom, marge]);
-
-  return (
-    <div ref={cadre} className="bp-cadre">
-      <div ref={calque} className="bp-calque" style={{ top: `${-marge * 100}%`, bottom: `${-marge * 100}%` }}>
-        {children}
-      </div>
-    </div>
-  );
-};
-
-/* ── Le décompte ────────────────────────────────────────────────────────────
-   Passée l'échéance, il disparaît au lieu d'afficher 00:00:00:00.
-
-   L'heure est lue dès l'état initial, et non dans un effet comme dans la
-   source : là-bas le rendu serveur de Next.js imposait d'attendre le client,
-   au prix d'une réserve vide pour que rien ne saute à l'arrivée. Ici le rendu
-   est entièrement côté navigateur — attendre ne servirait qu'à provoquer le
-   rendu en cascade que le compilateur React refuse. */
-const deuxChiffres = (n) => String(n).padStart(2, '0');
-
-const Decompte = ({ fin }) => {
-  const [maintenant, setMaintenant] = useState(() => Date.now());
-
-  useEffect(() => {
-    const t = setInterval(() => setMaintenant(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  // `fin` est une date sans heure et la journée est INCLUSE : on compte
-  // jusqu'à son dernier instant, pas jusqu'à son premier.
-  const reste = new Date(`${fin}T23:59:59`).getTime() - maintenant;
-  if (reste <= 0) return null;
-
-  const cellules = [
-    { valeur: deuxChiffres(Math.floor(reste / 86400000)), libelle: 'Jours' },
-    { valeur: deuxChiffres(Math.floor(reste / 3600000) % 24), libelle: 'Heures' },
-    { valeur: deuxChiffres(Math.floor(reste / 60000) % 60), libelle: 'Min' },
-    { valeur: deuxChiffres(Math.floor(reste / 1000) % 60), libelle: 'Sec' },
-  ];
-
-  return (
-    <div className="bp-decompte">
-      {cellules.map((c) => (
-        <div key={c.libelle} className="bp-cellule">
-          <div className="bp-nombre">{c.valeur}</div>
-          <div className="bp-unite">{c.libelle}</div>
-        </div>
+const BandePromo = () => (
+  <section className="bp" style={{ '--bp-rangee': LARGEUR_RANGEE.toFixed(4) }}>
+    {/* Les pièces, fixes. Masquées aux lecteurs d'écran : sans nom de pièce
+        ni lien, une description n'apprendrait rien de plus que « des
+        boubous ». Quand la vitrine portera des pièces nommées, il faudra leur
+        donner un texte. */}
+    <div className="bp-cadre" aria-hidden="true">
+      {PIECES.map((piece) => (
+        <img
+          key={piece.src}
+          src={piece.src}
+          alt=""
+          width={piece.largeur}
+          height={piece.hauteur}
+          className="bp-piece"
+          loading="lazy"
+          decoding="async"
+        />
       ))}
     </div>
-  );
-};
 
-const BandePromo = () => {
-  const [promo, setPromo] = useState(null);
+    {/* Une lueur chaude derrière la rangée : sans elle, une silhouette
+        découpée posée sur un aplat uni a l'air collée. */}
+    <div className="bp-lueur" aria-hidden="true" />
 
-  useEffect(() => {
-    // L'API répond {} hors campagne : c'est l'état normal, pas une erreur.
-    // Le repli de démonstration ne sert QUE dans ce cas — une vraie campagne
-    // saisie dans l'admin reprend toujours la main. Voir constants/demonstration.js.
-    const repli = DEMONSTRATION ? CAMPAGNE_DEMO : {};
-    apiClient.get('/hero-promotion/')
-      .then(({ data }) => setPromo(data && data.titre ? data : repli))
-      .catch(() => setPromo(repli));
-  }, []);
+    <style>{`
+      /* Bande pleine largeur : l'écart avec la section précédente se prend en
+         marge, jamais en padding — un padding creuserait l'espace DANS
+         l'indigo au lieu de l'en séparer. D'où la remise à zéro du
+         « padding-top: var(--section-y) » que styles.css pose sur toutes les
+         sections : c'est l'exception que le rythme vertical prévoit pour une
+         bande pleine largeur, pas une entorse. */
+      .bp {
+        /* L'air laissé au-dessus des coiffes et sous les ourlets. */
+        --bp-air: var(--s-6);
 
-  // Pas de campagne, pas de bande. Un bandeau promotionnel sans promotion
-  // n'aurait rien à dire et occuperait pourtant un écran entier.
-  if (!promo || !promo.titre) return null;
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        margin-top: var(--section-y);
+        padding-top: 0;
+        /* L'indigo de la bande de coordonnées et du footer : la vitrine est
+           du même chrome, pas une section de contenu. */
+        background: var(--surface-chrome);
 
-  const cotes = new Set(PIECES.map((p) => p.cote));
+        /* ── LA HAUTEUR ─────────────────────────────────────────────────────
+           Tout l'écran sous la bande de coordonnées et la barre de
+           navigation : la hauteur maximale utile — au-delà, on ne verrait plus
+           la vitrine en entier. --bande-h et --nav-h sont publiées par ces
+           deux barres, jamais écrites en dur.
 
-  return (
-    <section className={`bp ${cotes.has('gauche') ? 'bp--g' : ''} ${cotes.has('droite') ? 'bp--d' : ''}`}>
-      <FondQuiSeDecouvre>
-        {PIECES.map((piece) => (
-          <img
-            key={piece.src}
-            src={piece.src}
-            alt=""
-            className={`bp-piece bp-piece--${piece.cote}`}
-            style={{ height: `${piece.hauteur}%`, [piece.cote === 'gauche' ? 'left' : 'right']: `${piece.decalage}%` }}
-            loading="lazy"
-            decoding="async"
-          />
-        ))}
-      </FondQuiSeDecouvre>
+           Bornée par la LARGEUR : la rangée entière doit tenir dans 90 vw.
+           Les pièces prenant la hauteur de la bande, une bande trop haute pour
+           sa largeur ferait déborder la rangée — sur un téléphone, ou une
+           fenêtre étroite et haute. --bp-rangee est la largeur de la rangée
+           pour des pièces d'une unité de haut (la somme de leurs ratios,
+           calculée dans le JS) : 90 vw divisés par elle donnent la plus
+           grande hauteur de pièce qui tienne. Les 10 vw restants se partagent
+           entre les cinq espaces de la rangée.
 
-      {/* Une lueur chaude derrière les pièces : sans elle, une silhouette
-          découpée posée sur un aplat uni a l'air collée. */}
-      <div className="bp-lueur" aria-hidden />
+           « height » et non « min-height » : la bande n'a pas de contenu qui
+           puisse la pousser.
 
-      <Reveal className="bp-corps" variant="blur">
-        <span className="bp-surtitre">
-          <span aria-hidden className="bp-filet" />
-          {promo.titre}
-          <span aria-hidden className="bp-filet" />
-        </span>
+           Deux déclarations : 100vh pour les navigateurs qui ignorent svh,
+           puis 100svh — la plus petite hauteur de fenêtre, barres du
+           navigateur déployées : la bande n'y dépasse jamais du bord. */
+        height: min(calc(100vh - var(--bande-h, 0px) - var(--nav-h, 0px)), calc(90vw / var(--bp-rangee) + 2 * var(--bp-air)));
+        height: min(calc(100svh - var(--bande-h, 0px) - var(--nav-h, 0px)), calc(90vw / var(--bp-rangee) + 2 * var(--bp-air)));
+      }
 
-        <h2 className="bp-titre">
-          {promo.offre}
-          <span className="bp-accroche">{promo.accroche}</span>
-        </h2>
+      /* La rangée. Espaces égaux sur toute la largeur, bords compris
+         (« space-evenly ») : quatre pièces, ou trois, ou six, se répartissent
+         sans qu'on ait à placer chacune. L'air du haut et du bas est un
+         padding ; les pièces, à 100 % de hauteur, prennent ce qui reste.
 
-        {promo.fin && (
-          <div className="bp-zone-decompte">
-            <Decompte fin={promo.fin} />
-          </div>
-        )}
+         Elle remplace un placement pièce par pièce — « gauche » ou « droite »
+         et un décalage en pourcentage de la largeur — qui ne tenait qu'à deux
+         pièces : la largeur d'une pièce suit la HAUTEUR de l'écran, et des
+         positions en pourcentage de sa largeur se chevauchaient dès que la
+         fenêtre devenait étroite. */
+      .bp-cadre {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        z-index: -2;
+        display: flex;
+        justify-content: space-evenly;
+        align-items: center;
+        padding-block: var(--bp-air);
+      }
 
-        <div className="bp-pied">
-          <Link to={promo.lien || '/boutique'} className="bp-bouton">
-            {promo.libelle_lien || 'Voir la sélection'}
-            <span aria-hidden className="bp-fleche">&#8594;</span>
-          </Link>
-          {promo.fin && (
-            <span className="bp-mention">
-              Jusqu&apos;au {enClair(promo.fin)}, dans la limite des stocks.
-            </span>
-          )}
-        </div>
-      </Reveal>
+      /* La pièce ENTIÈRE, de la coiffe à l'ourlet : toute la hauteur de la
+         rangée, largeur déduite du ratio.
 
-      <style>{`
-        /* Bande pleine largeur : l'écart se prend en marge, jamais en padding.
-           Un padding creuserait l'espace DANS le visuel au lieu de l'en
-           séparer — la photo remonterait sous la section précédente.
+         Les détourages n'ont AUCUNE marge transparente en haut : la silhouette
+         commence à la première ligne de pixels (mesuré sur les quatre). Un
+         ancien décalage de −4 % « pour rogner le vide au-dessus de la coiffe »
+         rognait donc la coiffe.
 
-           ⚠ D'où la remise à zéro du padding du haut, et elle est
-           indispensable. styles.css pose « padding-top: var(--section-y) »
-           sur TOUTES les sections : sans elle, la bande prenait l'écart deux
-           fois — une fois en marge, dehors, comme voulu, et une fois en
-           padding, à l'intérieur de l'indigo. Le second creusait 80 px
-           au-dessus de la parole quand elle n'en avait que 34 en dessous :
-           toute la colonne, du sur-titre à la mention, se retrouvait posée
-           bas dans son fond, décentrée de la moitié de cet écart.
+         « height: 100% » bat le « height: auto » que styles.css pose sur
+         toutes les images : la classe l'emporte sur l'élément. */
+      .bp-piece {
+        flex: none;
+        height: 100%;
+        width: auto;
+        display: block;
+        /* L'ombre portée la pose sur le fond au lieu de la laisser flotter.
+           Deux passes : une proche et dure, une lointaine et douce. */
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,.45)) drop-shadow(0 24px 48px rgba(0,0,0,.5));
+      }
 
-           C'est l'exception que le rythme vertical prévoit pour une bande
-           pleine largeur, pas une entorse : la section ne se redonne pas un
-           espace à sa façon, elle refuse celui qu'elle prend déjà en marge.
-           Le contenu est alors centré par le padding symétrique de
-           « .bp-corps », sans qu'il y ait rien d'autre à régler. */
-        .bp {
-          position: relative;
-          isolation: isolate;
-          overflow: hidden;
-          margin-top: var(--section-y);
-          padding-top: 0;
-          /* L'indigo de la bande de coordonnées et du footer : la bande de
-             promotion est du même chrome, pas une section de contenu. */
-          background: var(--surface-chrome);
-          color: #fff;
-          font-family: var(--font-display);
-        }
-        .bp-cadre { position: absolute; inset: 0; overflow: hidden; z-index: -2; }
-        .bp-calque { position: absolute; left: 0; right: 0; will-change: transform; }
-
-        /* Ancrée en HAUT et plus haute que le cadre : la pièce déborde par le
-           BAS. On la découvre donc de la tête à mi-jambe — le visage, le
-           plastron brodé et les manches, c'est-à-dire tout ce qui se regarde.
-           Ancrée en bas, on n'aurait vu que l'ourlet de la jupe : le bandeau
-           fait moins d'un tiers de la hauteur du vêtement.
-
-           Le -4 % rogne le vide laissé au-dessus de la coiffe par le
-           détourage. */
-        .bp-piece {
-          position: absolute;
-          top: -4%;
-          width: auto;
-          display: block;
-          /* L'ombre portée la pose sur le fond au lieu de la laisser flotter.
-             Deux passes : une proche et dure, une lointaine et douce. */
-          filter: drop-shadow(0 2px 6px rgba(0,0,0,.45)) drop-shadow(0 24px 48px rgba(0,0,0,.5));
-        }
-
-        /* Lueur chaude derrière les pièces, décentrée du côté où elles se
-           tiennent. Sans elle, un détourage sur aplat uni fait autocollant. */
-        .bp-lueur {
-          position: absolute; inset: 0; z-index: -1; pointer-events: none;
-          background:
-            radial-gradient(30% 90% at 12% 44%, rgba(214,138,74,.13) 0%, transparent 74%),
-            radial-gradient(30% 90% at 88% 44%, rgba(214,138,74,.13) 0%, transparent 74%),
-            linear-gradient(180deg, transparent 40%, rgba(8,10,18,.55) 100%);
-        }
-
-        /* C'EST ICI QUE SE REGLE LA HAUTEUR DE LA BANDE. Rien d'autre ne la
-           donne : le cadre, les pieces et la lueur sont tous en position
-           absolue, la section fait donc exactement la hauteur de ce bloc.
-
-           Le padding reste SYMETRIQUE, sinon la parole se decentre — c'est
-           tout le probleme que la remise a zero du padding de section a
-           corrige. Pour une bande plus haute ou plus basse, changer la borne
-           haute du clamp, jamais l'un des deux cotes.
-
-           16 rem au large. La bande est passee par quatre etapes avant d'y
-           arriver : d'abord la hauteur qu'elle avait quand l'ecart de section
-           se creusait tout entier au-dessus de la parole, puis 10, puis 13,
-           puis 16 rem, chaque fois a la demande.
-
-           Le terme intermediaire suit a chaque fois, et ce n'est pas
-           cosmetique : c'est lui qui tient la valeur tant que l'ecran n'est
-           pas assez large pour atteindre la borne haute. A 7 vw, celle-ci
-           n'etait atteinte qu'au dela de 1 430 px, et la relever seule
-           n'aurait rien change sur un portable de 1 366 px. A 11 vw la borne
-           est atteinte des 1 455 px, et l'augmentation se voit partout.
-
-           La borne basse ne bouge pas : elle tient le petit ecran, ou 160 px
-           de vide en haut ET en bas repousseraient le bouton sous la ligne de
-           flottaison. Sur un telephone, 11 vw vaut 43 px et c'est donc elle
-           qui s'applique — la bande y garde la hauteur qu'elle a toujours eue,
-           et l'ecart entre petit et grand ecran se creuse a chaque hausse. */
-        .bp-corps {
-          position: relative;
-          margin: 0 auto;
-          width: 100%;
-          max-width: 1400px;
-          padding: clamp(5.6rem, 11vw, 16rem) 2rem;
-          text-align: center;
-        }
-        /* Au-delà de cette largeur seulement, la pièce occupe un bord : le
-           texte s'en écarte pour ne jamais lui passer dessus. */
-        @media (min-width: 1000px) {
-          .bp--g .bp-corps { padding-left: 26%; }
-          .bp--d .bp-corps { padding-right: 26%; }
-        }
-        /* En dessous, le bandeau est trop étroit pour porter les deux : la
-           pièce s'efface plutôt que d'écraser la parole. */
-        @media (max-width: 780px) {
-          .bp-piece { display: none; }
-          .bp-lueur { background: linear-gradient(180deg, transparent 40%, rgba(8,10,18,.55) 100%); }
-        }
-
-        .bp-surtitre {
-          display: inline-flex; align-items: center; gap: 1.2rem;
-          font-size: 1.1rem; font-weight: 700;
-          text-transform: uppercase; letter-spacing: .16em;
-          color: #D9B45B;
-        }
-        .bp-filet { display: block; height: 1px; width: 3.6rem; background: rgba(217,180,91,.55); }
-
-        .bp-titre {
-          /* Explicite, et non hérité de « .bp » : styles.css pose
-             « h1, h2, h3, h4 { color: var(--text) } », et un sélecteur
-             d'élément bat l'héritage. Sans cette ligne, le titre s'affiche en
-             encre sombre sur l'indigo — pratiquement illisible. */
-          color: #fff;
-          margin: 1.1rem auto 0;
-          max-width: 22ch;
-          font-size: clamp(2.1rem, 4vw, 3.2rem);
-          font-weight: 800;
-          line-height: 1.05;
-          letter-spacing: -.035em;
-          text-wrap: balance;
-        }
-        /* Le rabais lui-même passe en dégradé doré : c'est le seul mot de la
-           bande qui doit se lire avant tous les autres. */
-        .bp-accroche {
-          display: block;
-          margin-top: .4rem;
-          background: linear-gradient(90deg, #fff, #D9B45B, #fff);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-        }
-
-        .bp-zone-decompte { display: flex; justify-content: center; margin-top: 1.6rem; }
-        .bp-decompte { display: flex; gap: 1rem; }
-        .bp-cellule {
-          min-width: 6.6rem;
-          padding: .7rem .9rem;
-          text-align: center;
-          border-radius: var(--r-3);
-          background: rgba(255,255,255,.10);
-          backdrop-filter: blur(6px);
-        }
-        .bp-nombre {
-          font-size: 2.3rem; font-weight: 800; line-height: 1;
-          /* Fraunces n'a pas de chiffres tabulaires par défaut : sans ceci,
-             la largeur du décompte danse à chaque seconde. */
-          font-variant-numeric: tabular-nums;
-        }
-        .bp-unite {
-          margin-top: .35rem;
-          font-size: 1rem; font-weight: 600;
-          text-transform: uppercase; letter-spacing: .1em;
-          opacity: .6;
-        }
-
-        .bp-pied {
-          margin-top: 1.9rem;
-          display: flex; flex-direction: column; align-items: center; gap: .9rem;
-        }
-        .bp-bouton {
-          display: inline-flex; align-items: center; gap: 1rem;
-          padding: 1.1rem 2.8rem;
-          border-radius: var(--r-pill);
-          background: #E0417F;
-          color: #fff;
-          font-family: var(--font-display);
-          font-size: 1.45rem; font-weight: 700;
-          text-decoration: none;
-          box-shadow: 0 18px 42px -16px rgba(224,65,127,.9);
-          transition: transform .3s ease, box-shadow .3s ease;
-        }
-        .bp-bouton:hover { transform: translateY(-2px); box-shadow: 0 22px 50px -16px rgba(224,65,127,1); }
-        .bp-fleche { transition: transform .3s ease; }
-        .bp-bouton:hover .bp-fleche { transform: translateX(4px); }
-        .bp-mention { font-size: 1.25rem; color: rgba(255,255,255,.6); }
-
-        @media (max-width: 640px) {
-          /* Seuls les cotes se resserrent : la hauteur reste celle du clamp,
-             qui est deja a sa borne basse a cette largeur. */
-          .bp-corps { padding-inline: 1.6rem; }
-          .bp-cellule { min-width: 0; flex: 1; padding: .9rem .4rem; }
-          .bp-decompte { gap: .6rem; width: 100%; }
-          .bp-nombre { font-size: 2rem; }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .bp-bouton, .bp-fleche { transition: none; }
-        }
-      `}</style>
-    </section>
-  );
-};
+      /* Lueur chaude, une seule et large, derrière toute la rangée — il y en
+         avait deux, calées sur une pièce à chaque bord. Sous le cadre
+         (z-index −3 contre −2) : elle éclaire le fond, pas les tissus. Pas de
+         voile sombre sur le bas : il aurait éteint les ourlets. */
+      .bp-lueur {
+        position: absolute; inset: 0; z-index: -3; pointer-events: none;
+        background: radial-gradient(70% 85% at 50% 46%, rgba(214,138,74,.12) 0%, transparent 72%);
+      }
+    `}</style>
+  </section>
+);
 
 export default BandePromo;

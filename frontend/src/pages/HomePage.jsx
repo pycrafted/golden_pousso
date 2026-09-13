@@ -227,10 +227,10 @@ const Selection = () => {
 
 /* ── Page d'accueil ─────────────────────────────────────────────────────────
    L'ordre suit une progression : on accueille, on DIT QUI L'ON EST, puis on
-   montre, on oriente, on presse et on prouve. La parole de la maison vient
+   montre, on oriente, on expose et on prouve. La parole de la maison vient
    juste après le seuil : le visiteur sait chez qui il est avant qu'on lui
    montre quoi que ce soit.
-   Les fonds alternent — indigo pour le hero et la bande promotionnelle, écru
+   Les fonds alternent — indigo pour le hero et la vitrine, écru
    partout ailleurs — pour que la page respire au lieu de dérouler un seul
    aplat.
 
@@ -238,12 +238,11 @@ const Selection = () => {
    barre de navigation (`components/BandeCoordonnees.jsx`, posée par le
    `Layout`) : le hero enchaîne donc directement sur le mot de la maison.
 
-   ⚠ La bande promotionnelle du milieu de page (`FullWidthBanner`) a été
-   supprimée : son offre — « Bientôt la Tabaski », « −15 % sur les boubous » —
-   est passée dans le HERO. Le même rabais annoncé deux fois sur une page se
-   lit comme deux offres différentes. La page ne « presse » donc plus en son
-   milieu : elle presse d'entrée. Si une seconde relance est voulue plus bas,
-   c'est une nouvelle section, pas la reprise de celle-ci.
+   ⚠ LA PAGE N'ANNONCE PLUS AUCUNE PROMOTION. L'offre est passée de
+   `FullWidthBanner` (supprimée) au hero, puis du hero à `BandePromo`, devenue
+   depuis une vitrine sans texte, à la demande. Une campagne saisie dans
+   l'admin ne s'affiche donc nulle part. La mécanique complète se relit dans
+   l'historique git : `git show 5f67b1d:frontend/src/components/BandePromo.jsx`.
 
    ⚠ La rangée de réassurance (livraison, paiement, retouches, WhatsApp) a été
    retirée, et la bande qui portait ses arguments ne porte plus que les
@@ -270,9 +269,9 @@ const HomePage = () => (
     {/* ── 5. Montrer : le catalogue ── */}
     <CategoryGrid />
 
-    {/* ── 6. Presser : la campagne du moment, s'il y en a une ──
-        Elle ne rend rien hors campagne, et le reste de la page se referme
-        dessus sans laisser de trou. */}
+    {/* ── 6. Exposer : la vitrine ──
+        Quatre pièces détourées sur l'indigo, entières : les deux tenues de
+        femme aux bords, les deux tenues d'homme du hero au centre. */}
     <BandePromo />
 
     {/* ── 7. La sélection filtrable ── */}

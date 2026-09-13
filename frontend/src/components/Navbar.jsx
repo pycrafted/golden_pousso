@@ -156,6 +156,32 @@ const Navbar = () => {
   const [navOpen, setNavOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [sticky, setSticky] = useState(false);
+  const conteneur = useRef(null);
+
+  /* Publie la hauteur de la barre dans --nav-h, sur le modèle de --bande-h
+     (voir BandeCoordonnees) : BandePromo en a besoin pour occuper exactement
+     l'écran sous les deux barres collantes. Une hauteur écrite en dur
+     périmerait au premier passage à la ligne des liens. ResizeObserver et non
+     un relevé au montage, pour la même raison.
+
+     Arrondi VERS LE HAUT, à l'inverse de --bande-h. Ici l'erreur dans ce sens
+     coûte un pixel de vitrine en moins, invisible ; dans l'autre,
+     son bas passerait sous le bord de l'écran. */
+  useEffect(() => {
+    const el = conteneur.current;
+    if (!el) return undefined;
+    const publier = () => {
+      const hauteur = Math.ceil(el.getBoundingClientRect().height);
+      document.documentElement.style.setProperty('--nav-h', `${hauteur}px`);
+    };
+    publier();
+    const observateur = new ResizeObserver(publier);
+    observateur.observe(el);
+    return () => {
+      observateur.disconnect();
+      document.documentElement.style.removeProperty('--nav-h');
+    };
+  }, []);
   const navigate = useNavigate();
 
   const items = useCartStore((s) => s.items);
@@ -250,7 +276,7 @@ const Navbar = () => {
        `top: var(--bande-h)` : la barre se pose sous la bande de coordonnées,
        qui reste visible en permanence et publie sa hauteur (voir
        `BandeCoordonnees`). Repli 0px si la bande n'est pas montée. */
-    <div style={{
+    <div ref={conteneur} style={{
       position: 'sticky',
       top: 'var(--bande-h, 0px)',
       zIndex: 1000,

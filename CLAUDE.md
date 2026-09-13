@@ -247,7 +247,7 @@ de la fonte : les 79 usages en dur ont déjà été convertis une fois.
 
 Composée dans `frontend/src/pages/HomePage.jsx`, sections dans
 `frontend/src/components/home/`. L'ordre suit une progression : on accueille,
-on **dit qui l'on est**, puis on montre, on oriente, on presse et on prouve.
+on **dit qui l'on est**, puis on montre, on oriente, on expose et on prouve.
 
 ⚠ La rangée de réassurance (livraison, paiement, retouches, WhatsApp) a été
 retirée, et la bande qui portait ses arguments ne les porte plus non plus :
@@ -269,7 +269,9 @@ piste que la hauteur de ce div. La barre passait auparavant de `relative` à
 `fixed` au-delà de 80 px de défilement ; pendant ces 80 px elle remontait avec
 la page pendant que la bande restait collée, et un écart s'ouvrait entre les
 deux. L'état `sticky` du composant ne décide plus que de l'apparence (filet et
-flou), plus de la position. Elle ne porte que l'adresse, le téléphone et l'e-mail,
+flou), plus de la position. Elle publie à son tour sa hauteur dans
+`--nav-h`, sur le même modèle — `BandePromo` s'en sert pour occuper exactement
+l'écran sous les deux barres. Elle ne porte que l'adresse, le téléphone et l'e-mail,
 séparés par des ciseaux, et **ne défile plus** — ses valeurs sont donc
 cliquables, ce qu'elles ne pouvaient pas être en mouvement.
 
@@ -280,7 +282,7 @@ cliquables, ce qu'elles ne pouvaient pas être en mouvement.
 | 3 | Aperçu de la boutique | `components/VideoCardsSection.jsx` | ⚠ voir ci-dessous |
 | 4 | Catégories | `home/UniversGrid.jsx` | ⚠ voir ci-dessous — rayons structurels |
 | 5 | Nos créations | `components/CategoryGrid.jsx` | écru |
-| 6 | Promotion | `components/BandePromo.jsx` | ⚠ transfert — photo pleine largeur |
+| 6 | Vitrine | `components/BandePromo.jsx` | indigo — quatre pièces détourées, entières |
 | 7 | La sélection | `HomePage.jsx` (local) | écru |
 | 8 | Avis | `components/TestimonialsSection.jsx` | écru |
 
@@ -312,37 +314,55 @@ repris à la virgule près : la refonte est de mise en page, pas d'écriture.
 Le lieu en sur-titre est la constante `LIEU` du composant — le champ `surtitre`
 de la clé `accueil-atelier` reste, comme avant, sans effet.
 
-**La promotion ne s'annonce plus qu'à un endroit**, `BandePromo` en 5. Elle a
-été énoncée deux fois sur la même page — `FullWidthBanner` avait été supprimée
-et son offre reprise par le hero, puis `BandePromo` a repris sa place — et
-deux formulations d'une seule campagne se lisaient comme deux offres. Le hero
-a donc été rendu muet sur ce point, à la demande.
+**La vitrine** (6) est l'ancienne bande de promotion, devenue **une vitrine
+sans texte** à la demande : **quatre pièces détourées, entières**, en rangée
+sur l'aplat indigo — les deux tenues de femme aux bords (`piece-peche.webp`,
+`piece-blanche.webp`), les deux tenues d'homme du hero au centre
+(`catalogue/homme-bleu.webp`, `catalogue/homme-taupe.webp` : les mannequins
+dorés du troisième tableau, que le hero coupe à mi-cuisse). Pour ajouter ou
+retirer une pièce : la table `PIECES` en tête du composant, **avec les
+dimensions réelles du fichier** — elles bornent la hauteur de la bande. La
+rangée se recompose seule (flex, `space-evenly`). Le fichier garde son nom,
+`BandePromo.jsx`.
 
-Conséquence à connaître : **rien ne presse au-dessus de la ligne de
-flottaison**. Un visiteur qui ne descend pas ne saura pas qu'il y a une
-promotion en cours. Pour la remettre dans le hero, la mécanique complète
-(lecture de `/hero-promotion/`, bascule à l'échéance, décompte) vit encore
-dans `BandePromo` — c'est là qu'il faut la relire.
+⚠ **La page n'annonce plus aucune promotion.** L'offre est passée de
+`FullWidthBanner` (supprimée) au hero, puis du hero à cette bande, qui ne la
+porte plus. Une campagne saisie dans l'admin (`HeroPromotion`,
+`/hero-promotion/`) ne s'affiche donc **nulle part** : le modèle et l'endpoint
+existent toujours côté backend, mais plus rien ne les lit. La mécanique
+complète (lecture de l'API, bascule à l'échéance, décompte) se relit dans
+l'historique : `git show 5f67b1d:frontend/src/components/BandePromo.jsx`.
 
-`BandePromo` descend d'un transfert de `Redesign_mcommaman.com`, mais il n'en
-reste que le **mécanisme de dérive** (calque en débord translaté + zoom au
-défilement). Elle montre aujourd'hui **deux pièces détourées sur l'aplat
-indigo** — `piece-peche.webp` à gauche, `piece-blanche.webp` à droite — avec la
-parole au centre.
+La bande a porté tour à tour une photo pleine largeur transférée de
+`Redesign_mcommaman.com`, des pièces qui **dérivaient** au défilement (retiré à
+la demande), une fausse campagne de démonstration (« Bientôt la Tabaski,
+−15 % », retirée — `CAMPAGNE_DEMO` n'existe plus), puis un message d'attente
+hors campagne, parti avec le reste du texte.
 
 Pas de photographie de fond, et ce n'est pas un oubli : aucun des 278 clichés
 de la maison ne convient. Ce sont des vues de catalogue ; recadrées au format
-du bandeau, elles coupent les visages à la bouche et posent le texte sur la
-poitrine. Une pièce détourée montre l'article **et** laisse le centre libre.
+de la bande, elles coupent les visages à la bouche. Une pièce détourée montre
+l'article entier **et** laisse l'aplat libre.
 
-Les deux pièces sont le **même mannequin**, rhabillé par ChatGPT à partir du
+Les deux pièces de femme sont le **même mannequin**, rhabillé par ChatGPT à partir du
 premier détourage : même matière dorée, même pose, même éclairage. La
 répétition est voulue. Celle de droite n'est **pas retournée** — sa tête est
-tournée vers la gauche, donc elle regarde vers le texte.
+tournée vers la gauche, donc elle regarde vers le centre de la vitrine.
 
-Pour ajouter ou retirer une pièce : la table `PIECES` en tête du composant.
-La marge du texte suit les côtés réellement occupés. La bande ne rend **rien**
-hors campagne.
+**Sa hauteur est au maximum** : tout l'écran sous les deux barres collantes
+(`--bande-h` + `--nav-h`), bornée par la largeur pour que la rangée entière
+tienne dans 90 vw — la somme des ratios des pièces, `--bp-rangee`, calculée
+depuis `PIECES`. **Toutes les pièces s'y voient entières, de la coiffe à
+l'ourlet**, à la même hauteur : celle de la bande moins `--bp-air` (`--s-6`)
+en haut et en bas. Elles s'affichent à toutes les largeurs ; sur un téléphone,
+quatre silhouettes dans la largeur les rendent petites (~210 px de haut). Les
+détourages n'ont **aucune** marge transparente en haut : un ancien décalage de
+−4 % rognait la tête.
+
+⚠ Les détourages d'homme font **900 px** de haut (l'échelle du catalogue),
+contre ~1 500 pour les pièces de femme : à hauteur égale, ils sont un peu plus
+doux sur un écran haute densité. Un original plus grand passé par
+`outils/exporter_pieces.py` le réglerait.
 
 **Le hero ne dit qu'une chose, et elle ne bouge pas.** Sa parole tient dans la
 constante `ACCUEIL` en tête de `Hero.jsx` — « Bienvenue chez Golden Pousso »,
