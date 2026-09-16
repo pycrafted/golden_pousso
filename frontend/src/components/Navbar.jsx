@@ -19,6 +19,41 @@ import { useLienWhatsApp } from '../store/coordonneesStore';
    constante — il ne change pas d'une saison à l'autre. */
 const MESSAGE_WHATSAPP = 'Bonjour Golden Pousso, je souhaite des informations sur vos créations.';
 
+/* ── La commande, écrite en toutes lettres pour WhatsApp ───────────────────
+   Le bouton « Payer sur WhatsApp » du tiroir est le RELAIS du paiement en
+   ligne, à la demande : si PayDunya ne répond pas — instance endormie, carte
+   refusée, réseau qui lâche —, le client n'a pas à retaper sa commande, il
+   l'envoie telle quelle et la maison finit la vente à la main.
+
+   Le message porte donc TOUT ce qu'il faut pour préparer le colis : chaque
+   pièce, sa variante, sa quantité, son prix unitaire, son total de ligne, et
+   le total général.
+
+   ⚠ Les montants sont en FCFA, jamais dans la devise choisie à l'écran : le
+   panier est stocké en XOF et c'est en XOF que la maison facture. Un total en
+   euros dans le message obligerait à reconvertir, au taux de quel jour ? */
+const messagePanier = (items, total) => {
+  const lignes = items.map((item, i) => {
+    const variante = item.variant
+      ? [item.variant.size, item.variant.color].filter(Boolean).join(' · ')
+      : '';
+    const unite = formatPrice(item.price, 'XOF');
+    const ligne = formatPrice(item.price * item.quantity, 'XOF');
+    return `${i + 1}. ${item.product.name}${variante ? ` (${variante})` : ''}`
+      + `\n   ${item.quantity} × ${unite} = ${ligne}`;
+  });
+
+  return [
+    'Bonjour Golden Pousso, je souhaite commander :',
+    '',
+    lignes.join('\n'),
+    '',
+    `TOTAL : ${formatPrice(total, 'XOF')}`,
+    '',
+    'Pouvons-nous finaliser la commande ici ?',
+  ].join('\n');
+};
+
 const C = {
   dark: COLORS.ink,
   dark2: '#0F1320',
@@ -205,6 +240,8 @@ const Navbar = () => {
   const removeItem = useCartStore((s) => s.removeItem);
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  /* Le relais WhatsApp du tiroir : le panier entier, écrit dans le message. */
+  const lienCommandeWhatsApp = useLienWhatsApp(messagePanier(items, totalPrice));
 
   const currency    = useSettingsStore((s) => s.currency);
   const language    = useSettingsStore((s) => s.language);
@@ -658,6 +695,60 @@ const Navbar = () => {
                 >
                   Procéder au paiement
                 </button>
+
+                {/* Le relais, à la demande : si le paiement en ligne ne
+                    répond pas, la commande part sur WhatsApp, articles,
+                    quantités, prix et total compris. Un lien et non un
+                    bouton : c'est une sortie du site, et on doit pouvoir
+                    l'ouvrir dans un autre onglet.
+
+                    Il pèse moins que le bouton de paiement — contour contre
+                    aplat de laiton : le paiement en ligne reste le chemin
+                    principal. Au survol, écru plein sur encre, 17,05:1. */}
+                <a
+                  href={lienCommandeWhatsApp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="pan-whatsapp"
+                  onClick={() => setCartOpen(false)}
+                >
+                  <i className="bx bxl-whatsapp" aria-hidden="true" />
+                  Payer sur WhatsApp
+                </a>
+
+                <style>{`
+                  .pan-whatsapp {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.8rem;
+                    padding: 1.5rem;
+                    border: 1px solid rgba(250, 246, 238, 0.4);
+                    border-radius: var(--r-pill);
+                    background: transparent;
+                    color: var(--gp-ecru-50);
+                    font-family: var(--font-body);
+                    font-size: 1.2rem;
+                    font-weight: 600;
+                    letter-spacing: 0.2em;
+                    text-transform: uppercase;
+                    text-decoration: none;
+                    cursor: pointer;
+                    transition: background var(--dur-1) var(--ease),
+                                color var(--dur-1) var(--ease),
+                                border-color var(--dur-1) var(--ease);
+                  }
+                  .pan-whatsapp i { font-size: 1.9rem; }
+                  .pan-whatsapp:hover {
+                    background: var(--gp-ecru-50);
+                    border-color: var(--gp-ecru-50);
+                    color: var(--gp-ink);
+                  }
+                  .pan-whatsapp:focus-visible {
+                    outline: 2px solid var(--gp-brass-400);
+                    outline-offset: 0;
+                  }
+                `}</style>
               </div>
 
             </div>

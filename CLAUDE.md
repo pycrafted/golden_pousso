@@ -1145,6 +1145,20 @@ Si les paniers commencent à être abandonnés au moment de découvrir les frais
 c'est la première chose à remettre : les montants vivent dans
 `Order.DELIVERY_FEES`, les moyens de paiement dans `Order.PAYMENT_CHOICES`.
 
+**Le relais WhatsApp du panier.** Sous « Procéder au paiement », le tiroir du
+panier porte un second bouton, **« Payer sur WhatsApp »**, à la demande : il
+ouvre une conversation avec la maison où **toute la commande est écrite** —
+chaque pièce, sa variante, sa quantité, son prix unitaire, son total de ligne,
+puis le total général (`messagePanier`, `Navbar.jsx`). C'est le **relais du
+paiement en ligne** : si PayDunya ne répond pas (instance endormie, carte
+refusée, réseau coupé), le client n'a pas à retaper sa commande et la vente se
+finit à la main. Il pèse moins que le bouton de paiement — contour d'écru
+contre aplat de laiton, survol écru sur encre 17,05:1 : le paiement en ligne
+reste le chemin principal. ⚠ Les montants du message sont **toujours en FCFA**,
+jamais dans la devise choisie à l'écran : le panier est stocké en XOF et c'est
+en XOF que la maison facture. Le numéro est celui de l'Espace Gestion →
+Coordonnées (`useLienWhatsApp`), comme l'icône de la barre.
+
 **Pages d'aide : il n'en reste aucune.** Ni FAQ, ni page livraison. Les seules
 pages statiques sont `/mentions-legales` et le suivi de commande. Le support
 passe par **l'icône WhatsApp de la barre de navigation** (et l'entrée
