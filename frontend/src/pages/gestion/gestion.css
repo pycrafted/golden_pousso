@@ -1,0 +1,553 @@
+@charset "UTF-8";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ESPACE GESTION — la continuité du site
+   ---------------------------------------------------------------------------
+   À la demande, l'Espace Gestion se dessine comme le site public : indigo du
+   chrome #161B2D, laiton structurel, Fraunces, actions en pilule, grandes
+   surfaces à --r-3. Il était écru, avec ses propres boutons à angles de 2 px,
+   ses tableaux blancs et ses panneaux latéraux crème : on changeait de maison
+   en passant la porte.
+
+   Les valeurs viennent de trois dessins existants, pas d'ailleurs :
+     — le tiroir du panier et du formulaire produit (ProductForm, .pf-*) pour
+       les panneaux latéraux, les champs arrondis et la pilule de laiton ;
+     — la barre de filtres des catalogues (PlpFilterBar, .gp-pilule) pour les
+       filtres ;
+     — l'en-tête des catalogues (.catalogue-titre + .filet-titre) pour le
+       titre de page.
+
+   Chargée par ui.jsx, donc seulement avec le code d'administration : les
+   visiteurs ne la téléchargent pas.
+
+   Contrastes (WCAG 2.1) sur #161B2D : écru 15,85:1, écru à 62 % 6,79:1,
+   laiton clair 7,14:1, rouge clair 7,01:1, vert 8,84:1, bleu 8,24:1. Sur
+   l'indigo-700 #202742 (surfaces levées) : écru 13,62:1, 62 % 6,13:1, laiton
+   6,14:1.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* ── En-tête de page ─────────────────────────────────────────────────────── */
+
+.gx-entete {
+  margin-bottom: var(--s-6);
+  text-align: center;
+}
+.gx-entete .eyebrow { color: var(--gp-brass-400); }
+.gx-titre {
+  margin: var(--s-3) 0 0;
+  font-family: var(--font-display);
+  font-size: var(--t-h2);
+  font-weight: 600;
+  letter-spacing: var(--ls-tight);
+  line-height: var(--lh-head);
+}
+.gx-entete .filet-titre { margin-inline: auto; }
+.gx-compte {
+  margin-top: var(--s-4);
+  font-size: var(--t-sm);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* La barre d'outils sous le titre : recherche, filtres, action principale. */
+.gx-outils {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  margin-top: var(--s-5);
+}
+
+
+/* ── Boutons ───────────────────────────────────────────────────────────────
+   Principal : la pilule de laiton du tiroir (« Créer la pièce ») — indigo
+   dessus 7,74:1 ; au survol écru et encre, 17,05:1.
+   Contour : le bouton secondaire du tiroir — filet de laiton, texte écru.
+   Danger : rouge clair 7,01:1 ; plein au survol, encre dessus 7,54:1. */
+.gx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  min-height: 4.4rem;
+  padding: 0 2.2rem;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--dur-2) var(--ease),
+              color var(--dur-2) var(--ease),
+              border-color var(--dur-2) var(--ease);
+}
+.gx-btn .bx { font-size: 1.7rem; }
+.gx-btn[disabled] { opacity: 0.55; cursor: not-allowed; }
+.gx-btn--petit { min-height: 3.6rem; padding: 0 1.6rem; font-size: 1.1rem; letter-spacing: 0.1em; }
+
+.gx-btn--primary { background: var(--gp-brass-400); border-color: var(--gp-brass-400); color: var(--gp-indigo-900); }
+.gx-btn--primary:hover:not([disabled]) { background: var(--gp-ecru-50); border-color: var(--gp-ecru-50); color: var(--gp-ink); }
+
+.gx-btn--outline { background: transparent; border-color: rgba(198, 164, 61, 0.5); color: var(--gp-ecru-50); }
+.gx-btn--outline:hover:not([disabled]) { border-color: var(--gp-brass-400); background: rgba(198, 164, 61, 0.1); }
+
+.gx-btn--danger { background: transparent; border-color: rgba(239, 138, 128, 0.55); color: var(--gp-danger-300); }
+.gx-btn--danger:hover:not([disabled]),
+.gx-btn--dangerSolid { background: var(--gp-danger-300); border-color: var(--gp-danger-300); color: var(--gp-ink); }
+.gx-btn--dangerSolid:hover:not([disabled]) { background: var(--gp-ecru-50); border-color: var(--gp-ecru-50); }
+
+/* Bouton rond à icône — celui des photos du tiroir. Toujours un aria-label. */
+.gx-icone {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 3.6rem;
+  height: 3.6rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.7rem;
+  cursor: pointer;
+  transition: background var(--dur-2) var(--ease), color var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);
+}
+.gx-icone:hover:not([disabled]) { background: var(--gp-brass-400); border-color: var(--gp-brass-400); color: var(--gp-indigo-900); }
+.gx-icone--danger:hover:not([disabled]) { background: var(--gp-danger-300); border-color: var(--gp-danger-300); color: var(--gp-ink); }
+.gx-icone[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+
+/* ── Champs ── ceux du tiroir : .field, arrondis à 1,2 rem ───────────────── */
+
+.gx-champ { display: block; margin-bottom: 2rem; }
+.gx-label {
+  display: block;
+  margin-bottom: 0.8rem;
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.gx-aide {
+  display: block;
+  margin-top: 0.8rem;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.gl .field,
+.gx-tiroir .field,
+.gx-dialogue .field { font-size: 1.4rem; border-radius: 1.2rem; }
+.gl,
+.gx-tiroir,
+.gx-dialogue { color-scheme: dark; }
+
+/* La recherche : un champ en pilule, loupe de laiton à gauche. */
+.gx-recherche {
+  position: relative;
+  flex: 1 1 28rem;
+  max-width: 42rem;
+}
+.gx-recherche .bx {
+  position: absolute;
+  top: 50%;
+  left: 1.8rem;
+  transform: translateY(-50%);
+  font-size: 1.8rem;
+  color: var(--gp-brass-400);
+  pointer-events: none;
+}
+.gl .gx-recherche .field {
+  min-height: 4.4rem;
+  padding-left: 4.8rem;
+  border-radius: var(--r-pill);
+}
+
+/* Le choix d'un fichier : la vraie case est cachée, son libellé est la
+   pilule de contour. */
+.gx-fichier { position: relative; }
+.gx-fichier input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.gx-fichier:focus-within { outline: 2px solid var(--gp-brass-400); outline-offset: 0; }
+.gx-fichier[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
+.gx-fichier-nom {
+  display: block;
+  margin-top: 0.8rem;
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La case à cocher en interrupteur. */
+.gx-bascule {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+.gx-bascule input {
+  appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 4.4rem;
+  height: 2.4rem;
+  margin: 0;
+  border: 1px solid rgba(250, 246, 238, 0.4);
+  border-radius: var(--r-pill);
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);
+}
+.gx-bascule input::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0.3rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transform: translateY(-50%);
+  transition: transform var(--dur-2) var(--ease), background var(--dur-2) var(--ease);
+}
+.gx-bascule input:checked { background: var(--gp-brass-400); border-color: var(--gp-brass-400); }
+.gx-bascule input:checked::after { background: var(--gp-indigo-900); transform: translate(2rem, -50%); }
+
+
+/* ── Filtres ── les pilules des catalogues, version sombre ────────────────── */
+
+.gx-filtres {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s-2);
+}
+.gx-pilule {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 4.4rem;
+  padding: 0 1.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--t-sm);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--ease), background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.gx-pilule:hover { border-color: var(--line-accent); }
+/* Active : pleine, indigo sur laiton, 7,74:1 — comme « .on-dark .gp-pilule--actif ». */
+.gx-pilule[aria-pressed="true"],
+.gx-pilule[aria-checked="true"] {
+  background: var(--gp-brass-400);
+  border-color: var(--gp-brass-400);
+  color: var(--gp-indigo-900);
+}
+.gx-pilule-nb {
+  min-width: 2.2rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--r-pill);
+  background: rgba(250, 246, 238, 0.08);
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.gx-pilule[aria-pressed="true"] .gx-pilule-nb,
+.gx-pilule[aria-checked="true"] .gx-pilule-nb { background: rgba(15, 19, 32, 0.14); }
+
+
+/* ── Pastilles d'état ──────────────────────────────────────────────────────
+   Texte de la teinte sur un voile de 14 % de la même teinte : laiton 5,65:1,
+   vert 6,66:1, bleu 6,30:1, rouge 5,56:1 ; neutre, écru à 62 % sur écru à
+   8 %, 5,45:1. Un point devant : dans une colonne, l'œil cherche une forme
+   avant de lire un mot. */
+.gx-pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 1.2rem;
+  border-radius: var(--r-pill);
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  background: rgba(250, 246, 238, 0.08);
+  color: var(--text-muted);
+}
+.gx-pastille::before {
+  content: "";
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+.gx-pastille--warning { background: rgba(198, 164, 61, 0.14); color: var(--gp-brass-400); }
+.gx-pastille--success { background: rgba(123, 203, 155, 0.14); color: var(--gp-success-300); }
+.gx-pastille--info    { background: rgba(157, 180, 232, 0.14); color: var(--gp-info-300); }
+.gx-pastille--danger  { background: rgba(239, 138, 128, 0.14); color: var(--gp-danger-300); }
+
+
+/* ── Surfaces ──────────────────────────────────────────────────────────────
+   Un encadrement de laiton, pas un aplat : l'or est structurel. Le fond
+   reste celui de la page. */
+.gx-cadre {
+  border: 1px solid var(--line-dark-accent);
+  border-radius: var(--r-3);
+}
+.gx-panneau { padding: var(--s-5); }
+
+/* ── Tableaux ── */
+.gx-table-cadre { overflow-x: auto; }
+.gx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+}
+.gx-table th {
+  padding: 1.8rem 2rem 1.4rem;
+  border-bottom: 1px solid var(--line-dark-accent);
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--gp-brass-400);
+}
+.gx-table td {
+  padding: 1.6rem 2rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 1.4rem;
+  vertical-align: middle;
+}
+.gx-table tbody tr:last-child td { border-bottom: 0; }
+.gx-table tbody tr { transition: background var(--dur-1) var(--ease); }
+.gx-table tbody tr:hover { background: rgba(250, 246, 238, 0.04); }
+.gx-table tr[data-cliquable] { cursor: pointer; }
+.gx-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gx-droite { text-align: right; }
+.gx-table th.gx-droite { text-align: right; }
+.gx-attenue { color: var(--text-muted); }
+.gx-secondaire { display: block; margin-top: 0.3rem; font-size: 1.25rem; color: var(--text-muted); }
+.gx-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.8rem; }
+
+/* En petit écran, chaque ligne devient une carte : l'intitulé de la colonne
+   passe devant sa valeur (attribut data-intitule, posé par <Td>). */
+@media (max-width: 760px) {
+  .gx-table thead { display: none; }
+  .gx-table, .gx-table tbody, .gx-table tr, .gx-table td { display: block; width: 100%; }
+  .gx-table tbody tr { padding: 1.2rem 0; border-bottom: 1px solid var(--line-dark-accent); }
+  .gx-table tbody tr:last-child { border-bottom: 0; }
+  .gx-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.6rem;
+    padding: 0.8rem 1.8rem;
+    border: 0;
+    text-align: right;
+  }
+  .gx-table td[data-intitule]::before {
+    content: attr(data-intitule);
+    flex-shrink: 0;
+    font-size: 1.1rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gp-brass-400);
+    text-align: left;
+  }
+  .gx-actions { justify-content: flex-end; }
+}
+
+
+/* ── État vide ── le constat, la phrase, l'action ─────────────────────────── */
+
+.gx-vide {
+  padding: var(--s-9) var(--s-5);
+  text-align: center;
+}
+.gx-vide-icone {
+  display: inline-grid;
+  place-items: center;
+  width: 7.2rem;
+  height: 7.2rem;
+  margin-bottom: var(--s-5);
+  border: 1px solid var(--line-dark-accent);
+  border-radius: 50%;
+  font-size: 3rem;
+  color: var(--gp-brass-400);
+}
+.gx-vide-titre {
+  font-family: var(--font-display);
+  font-size: var(--t-h3);
+  font-weight: 600;
+}
+.gx-vide-texte {
+  max-width: 46rem;
+  margin: var(--s-3) auto 0;
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  color: var(--text-muted);
+}
+.gx-vide-action { margin-top: var(--s-6); }
+
+
+/* ── Chargement ── le squelette porte le rayon de ce qu'il remplace ───────── */
+
+.gx-squelette { display: grid; gap: var(--s-3); }
+.gx-squelette span {
+  display: block;
+  height: 6.4rem;
+  border-radius: var(--r-3);
+  background: var(--gp-indigo-700);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+
+/* ── Tiroir ── le panneau du panier et du formulaire produit (.pf-*) ─────── */
+
+.gx-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: gx-fondu 300ms ease both;
+}
+/* Ses propres tokens sombres : un tiroir peut s'ouvrir hors de l'Espace
+   Gestion. Mêmes valeurs que « .site-page.on-dark ». */
+.gx-tiroir.on-dark,
+.gx-dialogue.on-dark {
+  background: var(--surface-chrome);
+  --surface: var(--surface-chrome);
+  --surface-sunk: var(--gp-indigo-700);
+  --field-bord: rgba(250, 246, 238, 0.4);
+  --field-bord-survol: var(--gp-brass-400);
+  --field-bord-focus: var(--gp-brass-400);
+  --field-bord-erreur: var(--gp-danger-300);
+}
+.gx-tiroir.on-dark {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2001;
+  width: 52rem;
+  max-width: 100vw;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -12px 0 60px rgba(0, 0, 0, 0.6);
+  animation: gx-entree 380ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes gx-fondu { from { opacity: 0; } }
+@keyframes gx-entree { from { transform: translateX(100%); } }
+
+.gx-tiroir-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.6rem;
+  padding: 2.4rem;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+/* Préfixé : « .on-dark h2 » le repeindrait en écru. */
+.gx-tiroir .gx-tiroir-titre,
+.gx-dialogue .gx-tiroir-titre {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--gp-brass-400);
+}
+.gx-tiroir-sous-titre { margin-top: 0.4rem; font-size: 1.3rem; color: var(--text-muted); }
+.gx-tiroir-corps {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2.4rem;
+}
+.gx-tiroir-pied {
+  flex-shrink: 0;
+  display: flex;
+  gap: 1.2rem;
+  padding: 2rem 2.4rem calc(2rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+}
+.gx-tiroir-pied .gx-btn { flex: 1; min-height: 5rem; letter-spacing: 0.2em; }
+
+/* Un bloc du tiroir, séparé du précédent par un filet — les lignes du panier.
+   C'est une <section> : la règle globale du rythme vertical lui donnait
+   `--section-y` (64–80 px) en haut, soit un grand vide en tête de tiroir. */
+.gx-bloc { padding-top: 0; overflow: visible; }
+.gx-bloc + .gx-bloc {
+  margin-top: 2.8rem;
+  padding-top: 2.4rem;
+  border-top: 1px solid var(--line);
+}
+.gx-tiroir .gx-bloc-titre {
+  margin-bottom: 1.4rem;
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Boîte de confirmation ── */
+.gx-dialogue-cadre {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+.gx-dialogue-cadre .gx-voile { z-index: auto; position: absolute; }
+.gx-dialogue.on-dark {
+  position: relative;
+  width: 100%;
+  max-width: 48rem;
+  padding: 3.2rem;
+  border: 1px solid var(--line-dark-accent);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-overlay);
+  animation: revealScale var(--dur-3) var(--ease) backwards;
+}
+.gx-dialogue-texte {
+  margin: 1.2rem 0 2.8rem;
+  font-size: 1.45rem;
+  line-height: var(--lh-body);
+  color: var(--text-muted);
+}
+.gx-dialogue-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 1.2rem; }
+
+@media (max-width: 480px) {
+  .gx-tiroir-tete, .gx-tiroir-corps, .gx-tiroir-pied { padding-inline: 1.6rem; }
+  .gx-dialogue.on-dark { padding: 2.4rem; }
+  .gx-dialogue-actions .gx-btn { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gx-voile, .gx-tiroir.on-dark, .gx-dialogue.on-dark, .gx-squelette span { animation: none; }
+}

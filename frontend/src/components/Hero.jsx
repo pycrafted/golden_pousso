@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { TABLEAUX_HERO, LARGEUR_TABLEAU } from '../constants/hero';
 
 /**
@@ -17,7 +16,7 @@ import { TABLEAUX_HERO, LARGEUR_TABLEAU } from '../constants/hero';
  * La campagne n'a d'abord plus été annoncée qu'à un autre endroit,
  * `components/BandePromo.jsx` — deux formulations d'une seule offre sur le
  * même écran se lisaient comme deux offres. Cette bande est depuis devenue
- * une vitrine sans texte, à la demande. ⚠ LE SITE N'ANNONCE DONC PLUS AUCUNE
+ * une vitrine sans autre texte que son titre, à la demande. ⚠ LE SITE N'ANNONCE DONC PLUS AUCUNE
  * PROMOTION : une campagne saisie dans l'admin ne s'affiche nulle part.
  *
  * Pour la remettre : le hero lisait `/hero-promotion/`, gardait la réponse en
@@ -37,6 +36,9 @@ import { TABLEAUX_HERO, LARGEUR_TABLEAU } from '../constants/hero';
  * 22 % et 80 % de la largeur, le milieu laissé libre pour la parole. Toutes
  * deux recadrées sous les mains, jamais en pied — à cette taille, une
  * silhouette entière devient minuscule.
+ *
+ * Elle s'affiche ENTIÈRE, à ses proportions (« contain ») — voir
+ * « .hero-fond ».
  *
  * Les tableaux sont des fichiers du front, listés dans `constants/hero.js`.
  * Sans eux il reste l'indigo plein : la parole tient seule, elle ne dépend
@@ -73,14 +75,17 @@ const LOGO = '/logo-embleme.png';
 const ACCUEIL = {
   /* ⚠ UNE SEULE LIGNE. La promesse « L'élégance africaine, réinventée pour
      vous » a été retirée : le hero d'accueil ne dit donc plus ce que fait la
-     maison, il salue et il ouvre la boutique. La phrase vit encore dans la
-     section « L'élégance africaine réinventée », plus bas dans la page.
+     maison : il salue, rien de plus. La phrase vit encore dans la section
+     « L'élégance africaine réinventée », plus bas dans la page.
+
+     ⚠ Le bouton « Découvrir la boutique » a été RETIRÉ à la demande : le hero
+     n'a plus d'action du tout. On gagne la boutique par la barre de
+     navigation, ou par les rayons de « Notre catalogue ». Le hero ne porte
+     donc plus que l'emblème, une ligne et son filet.
 
      « accroche » désigne l'habit, pas le rang : c'est la ligne en dégradé
      écru → laiton → écru. Ici elle est SEULE, donc elle porte le <h1>. */
   accroche: 'Bienvenue chez Golden Pousso',
-  lien: '/boutique',
-  libelleLien: 'Découvrir la boutique',
 };
 
 const Hero = () => {
@@ -146,11 +151,6 @@ const Hero = () => {
         </span>
       ))}
 
-      {/* Le fondu du bas. Il est rendu MEME sans photo : sous 768 px le calque
-          d'image disparaît, l'aplat indigo reste, et c'est justement là que la
-          cassure avec l'écru serait la plus franche. */}
-      <span className="hero-fondu-bas" aria-hidden="true" />
-
       <div className="hero-contenu">
         {/* Attribut alt vide : le nom de la maison est déjà annoncé par la
             barre de navigation et par le titre de la page — le répéter ferait
@@ -173,10 +173,6 @@ const Hero = () => {
           <span className="hero-accroche">{ACCUEIL.accroche}</span>
         </h1>
         <span className="filet-titre" aria-hidden="true" />
-
-        <Link to={ACCUEIL.lien} className="btn btn--accent btn--auto hero-action">
-          {ACCUEIL.libelleLien}
-        </Link>
       </div>
 
       <style>{`
@@ -202,30 +198,38 @@ const Hero = () => {
              18vh et non une valeur fixe : sur un écran court, un décalage en
              pixels mangerait une part bien plus grande de la hauteur. */
           padding: var(--s-8) var(--s-5) calc(var(--s-8) + 18vh);
-          /* Le même indigo que la bande de coordonnées, la barre de
-             navigation et le pied de page. Il se voit là où la photo ne va
+          /* Le même indigo que la bande de coordonnées et la barre de
+             navigation. Il se voit là où la photo ne va
              pas : sous 768 px, où le calque est masqué, et tant que l'image
              n'est pas chargée — un fond qui change de ton au moment où la
              photo arrive se remarque. */
           background: var(--surface-chrome);
+
+          /* ↓ LE TABLEAU NE REMPLIT PLUS TOUT À FAIT SA PAGE, à la demande :
+             il est réduit d'un cran, ce qui décolle les pièces des bords — et
+             surtout de la parole, qu'elles venaient toucher. */
+          --hero-echelle: 0.92;
+
+          /* La largeur RÉELLEMENT AFFICHÉE du tableau, réduction comprise :
+             la plus petite de la largeur disponible (l'écran moins la place
+             réservée au sommaire) et de la hauteur utile × 2400/1037, puisque
+             l'image s'affiche entière (« contain »). Hors de l'accueil paginé,
+             --hp-utile manque et l'écran le remplace. */
+          --hero-tableau: calc(
+            min(100vw - var(--hp-reserve, 0px), var(--hp-utile, 100vh) * 2400 / 1037)
+            * var(--hero-echelle)
+          );
         }
 
-        /* AUCUN débord vertical. Le calque déborde-t-il en haut, et les
-           têtes — posées à 1 px du bord haut de l'image — passent hors cadre.
-           Elles doivent affleurer la barre de navigation : le bord haut de
-           l'image est donc collé au bord haut du hero.
-
-           « object-position: center top » va avec : en recadrage « cover »,
-           c'est
-           lui qui décide quel bord est sacrifié. Au centre, la coupe se
-           répartissait en haut ET en bas, et reprenait quelques pixels de
-           tête. Ancré en haut, tout le rognage vertical se fait par le bas,
-           où il n'y a que le bas des boubous — qui sort du cadre de toute
-           façon. */
+        /* Le calque couvre exactement le hero, sans débord : les têtes, posées à
+           1 px du bord haut du tableau, restent dans le cadre. */
         .hero-calque {
           position: absolute;
           inset: 0;
           z-index: -2;
+          /* Le tableau réduit se centre dans le calque, qui couvre tout. */
+          display: grid;
+          place-items: center;
           /* Invisible par défaut, et SANS pointer-events à gérer : les calques
              sont déjà sous la parole. La durée est longue — 1,2 s — parce
              qu'un fondu court sur une pleine page se lit comme un à-coup. */
@@ -237,52 +241,37 @@ const Hero = () => {
         @media (prefers-reduced-motion: reduce) {
           .hero-calque { transition: none; }
         }
+        /* ↓ LE TABLEAU ENTIER, À SES PROPORTIONS — « contain », à la demande.
+           En « cover », il devait couvrir toute la largeur : depuis que le
+           hero n'est plus qu'une page de la pagination (≈ 590 px de haut pour
+           1 880 de large sur un portable), il était agrandi d'un tiers et
+           perdait un quart de sa hauteur par le bas — les silhouettes
+           paraissaient énormes.
+
+           Aucune bande ne se voit sur les côtés : les cinq tableaux sont
+           composés sur un #161B2D exact (22, 27, 46, uniforme au pixel), le
+           fond même du hero. Centré dans les deux sens : quand la place
+           réservée au sommaire rend le hero plus étroit que le tableau, la
+           marge d'indigo se partage entre le haut et le bas. Ancré en haut
+           (« center top »), il laissait une bande vide sous les silhouettes. */
         .hero-fond {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          object-position: center top;
+          /* Réduit dans les deux sens du même facteur : « contain » garde les
+             proportions, la composition est donc simplement plus petite, pas
+             recadrée. */
+          width: calc(var(--hero-echelle) * 100%);
+          height: calc(var(--hero-echelle) * 100%);
+          object-fit: contain;
+          object-position: center;
         }
 
-        /* Le bas du hero se dissout dans la page.
-           ------------------------------------------------------------------
-           L'indigo s'arrêtait net contre l'écru de la section suivante : une
-           ligne horizontale en travers de l'écran, là où il n'y a rien à
-           séparer. Le dégradé va vers « --surface », le fond du document, et non
-           vers une couleur écrite en dur : le jour où la section suivante
-           change de fond, il suffira de faire pointer ce token.
-
-           z-index -1 : au-dessus de la photo (-2), sous la parole (flux
-           normal). Le texte est centré, il ne descend pas jusque-là — mais si
-           une campagne l'allongeait, il resterait lisible par-dessus.
-
-           ↓ L'INTENSITÉ SE RÈGLE SUR CES DEUX NOMBRES.
-           « height » dit où le fondu commence — 30 %, donc aux deux tiers de la
-           hauteur du hero. La position du premier « --surface » dit à quelle
-           vitesse il se ferme : à 70 %, l'écru est PLEIN bien avant le bord,
-           et le dernier tiers du calque est un aplat franc. C'est ce qui
-           donne un bas dense plutôt qu'une teinte qui s'éclaircit encore au
-           moment où elle touche la section suivante.
-
-           Deux stops de la même couleur et non un seul : entre le premier et
-           le second, il n'y a plus rien à interpoler, la bande reste opaque.
-           Avec un stop unique à 100 %, la montée est linéaire sur toute la
-           hauteur et le raccord reste visible. */
-        .hero-fondu-bas {
-          position: absolute;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          height: 30%;
-          z-index: -1;
-          pointer-events: none;
-          background: linear-gradient(
-            to bottom,
-            transparent 0%,
-            var(--surface) 70%,
-            var(--surface) 100%
-          );
-        }
+        /* Plus de fondu en bas du hero — retiré à la demande. Un calque
+           montait jusqu'à l'écru (« --surface ») sur le dernier tiers, parce que
+           l'indigo s'arrêtait net contre la section suivante, alors écrue. Elle
+           est désormais sombre, du même #161B2D : le hero s'y joint par un
+           filet de laiton posé sur la section qui suit (voir « .em.on-dark »
+           et « .man » juste après le hero). Si une section ÉCRUE revient juste
+           après, la cassure nette réapparaîtra — le calque est dans
+           l'historique git. */
 
         /* La photo est composée sur fond indigo plein : elle porte donc son
            propre contraste et n'a pas besoin d'un voile qui la ternirait. Une
@@ -291,14 +280,31 @@ const Hero = () => {
           text-shadow: 0 1px 10px rgba(15, 19, 32, 0.5);
         }
 
-        /* La parole se pose entre les deux silhouettes. Bornée en largeur pour
-           qu'elle ne vienne toucher ni l'une ni l'autre.
+        /* La parole se pose entre les deux sujets. Bornée en largeur pour
+           qu'elle ne vienne toucher ni l'un ni l'autre.
 
            38ch et non 30 : « Bienvenue chez Golden Pousso » tomberait sur
-           quatre lignes dans la largeur qui suffisait au mot « Promotion ». */
+           quatre lignes dans la largeur qui suffisait au mot « Promotion ».
+
+           ⚠ LA BORNE A ÉTÉ RAMENÉE DE 22 % À 17 %, à la demande : la parole
+           touchait les pièces. Le milieu libre avait été relevé à 23,5 %, mais
+           il faut mesurer la colonne libre CENTRÉE sur 50 % — la seule que la
+           parole occupe, puisqu'elle est centrée —, et non la largeur du trou,
+           qui n'est pas au milieu pile. Mesurée fichier par fichier
+           (2400 × 1037, fond #161B2D, écart > 18) : 36,4 % · 34,8 % · 31,0 % ·
+           21,0 % · 20,4 %. Le tableau 5 commandait donc 20,4 %, et 22 %
+           débordaient déjà des deux côtés. À 17 %, il reste ~1,7 point de
+           marge, soit une trentaine de pixels de part et d'autre sur un grand
+           écran. Refaire cette mesure avant de toucher à la borne, et à chaque
+           tableau ajouté.
+
+           Sous 768 px le tableau disparaît, et la borne avec lui. */
         .hero-contenu {
+          /* La largeur du milieu libre — voir ci-dessus. Le titre s'y règle
+             aussi (« .hero-offre »). */
+          --hero-col: calc(var(--hero-tableau) * 0.17);
           text-align: center;
-          max-width: 38ch;
+          max-width: min(38ch, var(--hero-col));
         }
 
         /* Le filet doit virer au laiton clair ici : sur fond sombre, la
@@ -327,7 +333,11 @@ const Hero = () => {
           max-width: 26ch;
           margin: var(--s-4) auto 0;
           font-family: var(--font-display);
-          font-size: clamp(2.2rem, 3.6vw, 3.6rem);
+          /* Bornée aussi par le milieu libre : « Bienvenue chez » mesure
+             ~7,3 fois la taille du texte (relevé à 36 px : 262 px). À 7,6, le
+             titre tient sur deux lignes — il en prenait trois quand la
+             réserve du sommaire rétrécissait le hero. */
+          font-size: clamp(2.2rem, min(3.6vw, var(--hero-col, 100vw) / 7.6), 3.6rem);
           font-weight: 700;
           line-height: 1.15;
           letter-spacing: -0.02em;
@@ -358,7 +368,8 @@ const Hero = () => {
 
         .hero-offre + .filet-titre { margin-top: var(--s-4); }
 
-        .hero-action { margin-top: var(--s-7); }
+        /* Sur une ligne : cassé en deux (« DÉCOUVRIR LA / BOUTIQUE »), le
+           libellé faisait bricolé. */
 
         @media (max-width: 768px) {
           .hero { padding: var(--s-8) var(--s-4); }

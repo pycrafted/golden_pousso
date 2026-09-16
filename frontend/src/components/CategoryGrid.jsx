@@ -1,304 +1,234 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../api/client';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 import CldImg from './CldImg';
 import useTexteSection from '../hooks/useTexteSection';
+import useInView from '../hooks/useInView';
+import usePrefersReducedMotion from '../hooks/usePrefersReducedMotion';
 
-const SPEED = 1.0;
-const GAP_REM = 2.4;
-
-/* ── Taille des cartes ───────────────────────────────────────────────────────
- * ↓ C'EST ICI QUE ÇA SE RÈGLE. Baisser un nombre = cartes plus grandes.
+/**
+ * « Nos produits » — un JEU DE CARTES.
+ * ---------------------------------------------------------------------------
+ * À la demande, le rail qui défilait sans fin a laissé place à un paquet : la
+ * pièce du dessus, droite et entière, et derrière elle les suivantes en
+ * éventail, comme une main de cartes. Toutes les ~3 s, la carte du dessus
+ * s'envole vers la droite et repasse sous le paquet ; la suivante se révèle.
+ * Un défilé continu se regarde passer ; une carte à la fois se regarde.
  *
- * Le rail n'est dans aucun `.container` : il occupe toute la largeur de la
- * fenêtre. L'ancien calcul divisait pourtant un conteneur figé de 1200 px par
- * 4 colonnes, alors que les cartes s'étalaient sur tout l'écran — on en voyait
- * donc 5 à 7, toutes petites, et le défaut s'aggravait à mesure que l'écran
- * s'élargissait.
+ *   • Le filet de laiton sous le paquet est le TEMPS qui reste avant la carte
+ *     suivante. C'est lui qui la déclenche (`onAnimationEnd`) : survoler ou
+ *     mettre le focus dans le jeu met l'animation en pause
+ *     (`animation-play-state`), donc le jeu s'arrête exactement où il en était
+ *     et reprend de là.
+ *   • Flèches et compteur « 03 / 08 » : on passe une carte, ou l'on revient.
+ *     Un clic sur une carte de l'éventail la fait passer devant ; seule celle
+ *     du dessus mène à la fiche.
+ *   • Rien ne bouge seul avant que la section soit vue, ni si le visiteur
+ *     demande moins d'animations — les flèches restent.
  *
- * On part maintenant du nombre de cartes que l'on veut VOIR. Les valeurs sont
- * fractionnaires à dessein : la carte suivante dépasse du bord, ce qui dit à
- * l'œil que le rail continue. Un compte entier laisse croire que tout est vu.
+ * TOUTES les pièces du catalogue, à la demande — le jeu s'arrêtait aux huit
+ * premières. L'API pagine par 24 et ignore `page_size` : les pages sont lues
+ * à la suite (`next`). Seules les cartes utiles sont dans le DOM — le dessus,
+ * l'éventail, et la dernière, qui reçoit la carte envolée : un paquet de
+ * cent pièces ne monte pas cent photos.
+ *
+ * Le dessin de la carte (photo 2/3, panneau vitré nom + prix) est celui de
+ * l'ancien rail, inchangé. Le rail débordait sous le sommaire de l'accueil
+ * (`.ev-rail`, marge négative de --hp-reserve) : le paquet tient dans la
+ * largeur utile, l'exception est partie avec lui.
  */
-const CARTES_VISIBLES = [
-  { jusqua:  480, nb: 1.6 },
-  { jusqua:  768, nb: 2.4 },
-  { jusqua: 1100, nb: 3.4 },
-  { jusqua: 1600, nb: 4.4 },
-  { jusqua: Infinity, nb: 5.5 },
-];
 
-/* Plafond. Sans lui, un très grand écran donnerait une carte occupant la
-   hauteur de la fenêtre. Au-delà, c'est le nombre de cartes visibles qui
-   augmente, pas leur taille. */
-const CARTE_MAX_PX = 360;
-
-const getCardWidth = () => {
-  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-  const gap = GAP_REM * rem;
-  const largeur = window.innerWidth;
-  const { nb } = CARTES_VISIBLES.find((p) => largeur <= p.jusqua);
-  // La gouttière est retirée après le partage : chaque carte cède la moitié
-  // d'un espacement à sa gauche et à sa droite.
-  return Math.min(largeur / nb - gap, CARTE_MAX_PX);
-};
-
-const useInView = () => {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
-      { threshold: 0.1 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return [ref, visible];
-};
+/* Cartes visibles derrière celle du dessus. Au-delà, elles attendent, cachées
+   sous la dernière. */
+const EVENTAIL = 4;
+/* Durée d'une carte à l'écran — c'est celle du filet de temps (voir la
+   feuille, « jeu-temps »). */
+const DUREE_MS = 3200;
+/* Le temps que la carte du dessus s'envole avant de passer sous le paquet. */
+const ENVOL_MS = 420;
 
 const ProductsCarousel = ({ categorySlug }) => {
-  const currency  = useSettingsStore((s) => s.currency);
-  const textes = useTexteSection('accueil-creations', { titre: 'En vitrine' });
+  const currency = useSettingsStore((s) => s.currency);
+  // « Nos produits », à la demande : « En vitrine » est passé à la vitrine
+  // des mannequins (BandePromo), juste au-dessus.
+  const textes = useTexteSection('accueil-creations', { titre: 'Nos produits' });
+  const [scene, vue] = useInView();
+  const reduit = usePrefersReducedMotion();
 
-  const [carouselRef, carouselVisible] = useInView();
-
-  const [products,        setProducts]        = useState([]);
-  const [carouselHovered, setCarouselHovered] = useState(false);
-  const [cardWidth,       setCardWidth]       = useState(getCardWidth);
+  const [products, setProducts] = useState([]);
+  const [courant, setCourant] = useState(0);
+  const [envol, setEnvol] = useState(false);
+  const [pause, setPause] = useState(false);
 
   useEffect(() => {
-    const onResize = () => setCardWidth(getCardWidth());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  const trackRef    = useRef(null);
-  const posRef      = useRef(0);
-  const rafRef      = useRef(null);
-  const pausedRef   = useRef(false);
-  const momentumRef = useRef(0);
-  const productsRef = useRef(products);
-
-  useEffect(() => { productsRef.current = products; }, [products]);
-
-  const calcCardW = useCallback(() => {
-    const cardW = getCardWidth();
-    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-    const gap = GAP_REM * rem;
-    return { cardW, gap, setW: productsRef.current.length * (cardW + gap) };
-  }, []);
-
-  /* ── API produits ───────────────────────────────────────── */
-  useEffect(() => {
+    let actif = true;
     const params = categorySlug ? { category: categorySlug } : {};
-    apiClient.get('/products/', { params })
-      .then((res) => {
-        const data = res.data.results ?? res.data;
-        /* Le rail repart du début : garder la position d'avant ferait
-           apparaître la nouvelle série au milieu, voire au-delà de sa fin. */
-        posRef.current = 0;
-        if (trackRef.current) trackRef.current.style.transform = 'translateX(0)';
-        setProducts(categorySlug ? data : data.slice(0, 8));
-      })
-      .catch(() => {});
+    (async () => {
+      const toutes = [];
+      // Garde-fou : vingt pages, 480 pièces — une boucle sur `next` ne doit
+      // jamais pouvoir tourner sans fin.
+      for (let page = 1; page <= 20; page += 1) {
+        const { data } = await apiClient.get('/products/', { params: { ...params, page } });
+        toutes.push(...(data.results ?? data));
+        if (!data.next) break;
+      }
+      if (!actif) return;
+      setCourant(0);
+      setProducts(toutes);
+    })().catch(() => {});
+    return () => { actif = false; };
   }, [categorySlug]);
 
-  /* ── Boucle d'animation ────────────────────────────────── */
-  const tick = useCallback(() => {
-    if (pausedRef.current || !trackRef.current) return;
+  const n = products.length;
 
-    const { setW } = calcCardW();
-    const speed = SPEED + momentumRef.current;
-    momentumRef.current *= 0.9;
-    if (Math.abs(momentumRef.current) < 0.1) momentumRef.current = 0;
-
-    posRef.current += speed;
-    if (posRef.current >= setW) posRef.current -= setW;
-    if (posRef.current < 0)     posRef.current += setW;
-
-    trackRef.current.style.transform = `translateX(-${posRef.current}px)`;
-    rafRef.current = requestAnimationFrame(tick);
-  }, [calcCardW]);
-
-  useEffect(() => {
-    if (!carouselVisible || products.length === 0) return;
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [carouselVisible, tick, products.length]);
-
-  /* ── Flèches ─────────────────────────────────────────────── */
-  const handleArrow = useCallback((direction) => {
-    const { cardW, gap } = calcCardW();
-    momentumRef.current = direction * (cardW + gap) * 0.18;
-  }, [calcCardW]);
-
-  /* ── Carte produit ───────────────────────────────────────────────────────
-     Traitement repris des tuiles « Nos pièces, filmées » : le nom et le prix
-     ne sont plus posés SOUS l'image mais DANS un panneau vitré à son pied.
-     La carte gagne toute la hauteur pour la pièce, et le bloc d'information
-     tient dans un objet dessiné au lieu de flotter dans le blanc.
-
-     Le flou d'arrière-plan n'est pas décoratif : un aplat fixe devient
-     illisible dès qu'une photo est claire en bas, ce qui arrive tout le temps
-     sur des tissus écrus. Le voile en dégradé garantit le contraste, le flou
-     garantit la lisibilité quel que soit le motif derrière.
-
-     La vignette montre `secondary_image` — la deuxième photo de la pièce.
-     Dans la source elle montrait le produit parce que le média derrière était
-     une vidéo ; ici le média est déjà la photo principale, donc y remettre la
-     même image ne dirait rien. Repli sur la principale si la pièce n'a qu'une
-     seule photo. */
-  const renderCard = (p, key) => {
-    const vignette = p.secondary_image || p.primary_image;
-
-    return (
-      <Link
-        key={key}
-        to={`/produit/${p.slug}`}
-        className="np-carte"
-        style={{ width: `${cardWidth}px` }}
-      >
-        <div className="np-media">
-          {p.primary_image ? (
-            <CldImg
-              src={p.primary_image}
-              alt={p.name}
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              widths={[300, 600]}
-              style={{
-                position: 'absolute', inset: 0,
-                width: '100%', height: '100%',
-                objectFit: 'cover', objectPosition: 'center top',
-              }}
-            />
-          ) : (
-            <div className="np-vide">
-              <span>Photo bientôt</span>
-            </div>
-          )}
-
-          {/* Pas de voile sur la photo : le panneau ci-dessous porte son propre
-              fond et son propre flou, il n'a besoin d'aucun assombrissement de
-              l'image pour rester lisible. Un dégradé posé ici ternissait le
-              bas de chaque pièce. */}
-
-          {/* Panneau présentationnel : c'est la carte entière qui est le lien,
-              pas ce bloc. Un lien dans un lien casse la navigation clavier. */}
-          <div className="np-panneau">
-            {vignette && (
-              <span className="np-vignette">
-                <img src={vignette} alt="" loading="lazy" />
-              </span>
-            )}
-            <span className="np-texte">
-              <span className="np-nom">{p.name}</span>
-              <span className="np-prix">{formatPrice(p.price, currency)}</span>
-            </span>
-            <span className="np-fleche" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
-                   strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h13.5" />
-                <path d="m13 6.5 5.5 5.5-5.5 5.5" />
-              </svg>
-            </span>
-          </div>
-        </div>
-      </Link>
-    );
+  /* Suivante : la carte du dessus s'envole, PUIS le paquet avance — elle
+     repasse alors sous les autres. Précédente : la carte cachée sous le paquet
+     revient directement devant. */
+  const suivante = () => {
+    if (n < 2 || envol) return;
+    setEnvol(true);
+    window.setTimeout(() => {
+      setCourant((c) => (c + 1) % n);
+      setEnvol(false);
+    }, reduit ? 0 : ENVOL_MS);
+  };
+  const precedente = () => {
+    if (n < 2 || envol) return;
+    setCourant((c) => (c - 1 + n) % n);
   };
 
-  return (
-    <section
-      id="nos-produits"
-      style={{ background: 'var(--surface)', overflow: 'hidden' }}
-    >
+  const automatique = vue && !reduit && n > 1;
 
-      {/* Titre seul, sans sur-titre : « Boutique » au-dessus de « Nos Produits »
-          disait deux fois la même chose. Le filet doré remplace le sur-titre
-          disparu — il pose la section sans rien répéter. */}
-      <div style={{ textAlign: 'center', marginBottom: 'var(--s-7)' }}>
+  return (
+    <section id="nos-produits" className="ev on-dark">
+      {/* Titre seul, sans sur-titre : le filet doré pose la section. */}
+      <div style={{ textAlign: 'center', marginBottom: 'var(--s-6)' }}>
         <h2>{textes.titre}</h2>
         <span className="filet-titre" aria-hidden="true" />
       </div>
 
-      {/* Carousel auto-scroll */}
-      <div
-        style={{ position: 'relative' }}
-        onMouseEnter={() => setCarouselHovered(true)}
-        onMouseLeave={() => setCarouselHovered(false)}
-      >
-        {/* Flèche gauche */}
-        <button
-          onClick={() => handleArrow(-1)}
-          aria-label="Précédent"
-          style={{
-            position: 'absolute', left: '1.6rem', top: '50%', transform: 'translateY(-50%)',
-            zIndex: 10, width: '4.4rem', height: '4.4rem',
-            background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer',
-            opacity: carouselHovered ? 1 : 0,
-            pointerEvents: carouselHovered ? 'auto' : 'none',
-            transition: 'opacity 0.2s, background 0.2s, border-color 0.2s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--gp-brass-400)'; e.currentTarget.style.borderColor = 'var(--gp-brass-400)'; e.currentTarget.querySelector('svg').style.stroke = 'var(--gp-indigo-900)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.querySelector('svg').style.stroke = 'var(--text)'; }}
+      {n === 0 ? (
+        /* Sans ce mot, la section se vide sans rien dire et a l'air cassée. */
+        <p className="ev-rien">Aucune pièce à afficher pour le moment.</p>
+      ) : (
+        <div
+          ref={scene}
+          className={`jeu${pause ? ' is-pause' : ''}`}
+          role="region"
+          aria-roledescription="jeu de cartes"
+          aria-label={textes.titre}
+          onMouseEnter={() => setPause(true)}
+          onMouseLeave={() => setPause(false)}
+          onFocus={() => setPause(true)}
+          onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setPause(false); }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'stroke 0.2s' }}>
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
+          <div className="jeu-pile">
+            {products.map((p, i) => {
+              // Rang dans le paquet : 0 dessus, puis l'éventail, puis cachée.
+              const rang = (i - courant + n) % n;
+              const dessus = rang === 0;
+              const cachee = rang > EVENTAIL;
+              // Hors du DOM : ni dans l'éventail, ni la dernière du paquet.
+              if (cachee && rang !== n - 1) return null;
+              const vignette = p.secondary_image || p.primary_image;
+              return (
+                <Link
+                  key={p.id}
+                  to={`/produit/${p.slug}`}
+                  className={`np-carte jeu-carte${dessus ? ' is-dessus' : ''}${dessus && envol ? ' is-envol' : ''}${cachee ? ' is-cachee' : ''}`}
+                  style={{ '--rang': Math.min(rang, EVENTAIL), zIndex: n - rang }}
+                  tabIndex={dessus ? 0 : -1}
+                  aria-hidden={dessus ? undefined : true}
+                  onClick={(e) => {
+                    // Une carte de l'éventail passe devant ; seule celle du
+                    // dessus mène à sa fiche.
+                    if (!dessus) { e.preventDefault(); setCourant(i); }
+                  }}
+                >
+                  <div className="np-media">
+                    {p.primary_image ? (
+                      <CldImg
+                        src={p.primary_image}
+                        alt={p.name}
+                        sizes="(max-width: 640px) 70vw, 380px"
+                        widths={[400, 800]}
+                        eager={rang <= 1}
+                        style={{
+                          position: 'absolute', inset: 0,
+                          width: '100%', height: '100%',
+                          objectFit: 'cover', objectPosition: 'center top',
+                        }}
+                      />
+                    ) : (
+                      <div className="np-vide"><span>Photo bientôt</span></div>
+                    )}
 
-        {/* Flèche droite */}
-        <button
-          onClick={() => handleArrow(1)}
-          aria-label="Suivant"
-          style={{
-            position: 'absolute', right: '1.6rem', top: '50%', transform: 'translateY(-50%)',
-            zIndex: 10, width: '4.4rem', height: '4.4rem',
-            background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer',
-            opacity: carouselHovered ? 1 : 0,
-            pointerEvents: carouselHovered ? 'auto' : 'none',
-            transition: 'opacity 0.2s, background 0.2s, border-color 0.2s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--gp-brass-400)'; e.currentTarget.style.borderColor = 'var(--gp-brass-400)'; e.currentTarget.querySelector('svg').style.stroke = 'var(--gp-indigo-900)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.querySelector('svg').style.stroke = 'var(--text)'; }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'stroke 0.2s' }}>
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </button>
+                    {/* Panneau présentationnel : c'est la carte entière qui est
+                        le lien. */}
+                    <div className="np-panneau">
+                      {vignette && (
+                        <span className="np-vignette">
+                          <img src={vignette} alt="" loading="lazy" />
+                        </span>
+                      )}
+                      <span className="np-texte">
+                        <span className="np-nom">{p.name}</span>
+                        <span className="np-prix">{formatPrice(p.price, currency)}</span>
+                      </span>
+                      <span className="np-fleche" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
+                             strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M5 12h13.5" />
+                          <path d="m13 6.5 5.5 5.5-5.5 5.5" />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
 
-        <div ref={carouselRef} style={{ overflow: 'hidden' }}>
-          {/* Sans ce mot, le rail se vide sans rien dire et la section a
-              l'air cassée. */}
-          {products.length === 0 && (
-            <p className="ev-rien">Aucune pièce à afficher pour le moment.</p>
-          )}
-          {products.length > 0 && (
-            <div
-              ref={trackRef}
-              style={{
-                display: 'flex', gap: '2.4rem',
-                willChange: 'transform', paddingLeft: '2.4rem',
-              }}
-            >
-              {products.map((p, i) => renderCard(p, `a-${i}`))}
-              {products.map((p, i) => renderCard(p, `b-${i}`))}
+          {n > 1 && (
+            <div className="jeu-nav">
+              <button type="button" className="jeu-fleche" onClick={precedente} aria-label="Pièce précédente">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+
+              <div className="jeu-repere">
+                <span className="jeu-compte" aria-live="polite">
+                  <span className="visually-hidden">Pièce </span>
+                  {String(courant + 1).padStart(2, '0')}
+                  <span className="jeu-sur"> / {String(n).padStart(2, '0')}</span>
+                </span>
+                {/* Le temps de la carte : il déclenche la suivante. Remonté à
+                    chaque carte (`key`) pour repartir de zéro. */}
+                {automatique && (
+                  <span className="jeu-piste" aria-hidden="true">
+                    <span
+                      key={`${courant}-${envol}`}
+                      className="jeu-temps"
+                      onAnimationEnd={suivante}
+                    />
+                  </span>
+                )}
+              </div>
+
+              <button type="button" className="jeu-fleche" onClick={suivante} aria-label="Pièce suivante">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* Valeurs en pixels et non en rem : elles viennent d'une source calée
-          sur une racine à 16 px, alors que ce site est à 62,5 %. En rem, le
-          panneau et la vignette seraient déformés. */}
+      {/* Valeurs du panneau en pixels : elles viennent d'une source calée sur
+          une racine à 16 px, alors que ce site est à 62,5 %. */}
       <style>{`
         .ev-rien {
           text-align: center;
@@ -306,21 +236,144 @@ const ProductsCarousel = ({ categorySlug }) => {
           padding: var(--s-6) var(--page-pad);
         }
 
-        .np-carte {
-          flex-shrink: 0;
-          display: block;
-          color: inherit;
+        /* ── Le fond : #161B2D ── « .on-dark » bascule le titre, le filet et
+           les flèches ; cette double classe remplace son fond (#0F1320) par
+           l'indigo du chrome. Bande pleine largeur : l'écart avec ce qui
+           précède se prend en marge, l'espace intérieur en padding. */
+        .ev.on-dark {
+          background: var(--surface-chrome);
+          --surface: var(--surface-chrome);
+          margin-top: var(--section-y);
+          padding-block: var(--section-y);
+        }
+        .man + .ev.on-dark,
+        .em + .ev.on-dark,
+        .uv + .ev.on-dark,
+        .bp + .ev.on-dark { margin-top: 0; }
+        .ev { overflow: hidden; }
+
+        /* ── Le paquet ─────────────────────────────────────────────────────
+           Largeur d'une carte : tirée de la hauteur de page (--hp-utile) pour
+           que paquet, titre et flèches tiennent dans l'écran, bornée par la
+           largeur en petit écran. La carte est en 2/3. */
+        .jeu {
+          --jeu-l: min(calc((var(--hp-utile, 90vh) - 30rem) * 2 / 3), 36rem, 62vw);
+          --jeu-pas-x: -13%;
+          --jeu-pas-r: -5deg;
+          display: grid;
+          justify-items: center;
+          gap: var(--s-5);
+        }
+        .jeu-pile {
+          position: relative;
+          width: max(var(--jeu-l), 20rem);
+          aspect-ratio: 2 / 3;
+          margin-top: var(--s-4);
+          /* Le paquet s'ouvre vers la gauche : décalé d'autant vers la
+             droite, l'ensemble reste centré. */
+          translate: 20% 0;
         }
 
+        .jeu-carte {
+          position: absolute;
+          inset: 0;
+          transform-origin: 50% 100%;
+          transform:
+            translateX(calc(var(--jeu-pas-x) * var(--rang)))
+            rotate(calc(var(--jeu-pas-r) * var(--rang)))
+            scale(calc(1 - 0.025 * var(--rang)));
+          filter: brightness(calc(1 - 0.12 * var(--rang)));
+          box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+          border-radius: 24px;
+          transition: transform 650ms var(--ease), filter 400ms var(--ease), opacity 400ms var(--ease);
+          cursor: pointer;
+        }
+        .jeu-carte.is-cachee { opacity: 0; pointer-events: none; }
+        /* La carte du dessus : droite, pleine lumière. */
+        .jeu-carte.is-dessus { filter: none; }
+        /* Elle s'envole vers la droite, puis repasse sous le paquet. */
+        .jeu-carte.is-envol {
+          transform: translate(78%, -6%) rotate(14deg);
+          opacity: 0;
+          transition: transform ${ENVOL_MS}ms var(--ease-in), opacity ${ENVOL_MS}ms var(--ease-in);
+        }
+        /* Une carte de l'éventail se soulève un peu au survol : elle dit
+           qu'elle se prend. */
+        .jeu-carte:not(.is-dessus):hover { filter: brightness(1); }
+
+        /* L'agrandissement de photo de l'ancien rail, sur la carte du dessus
+           seulement. */
+        .np-media img { transition: transform 1200ms var(--ease); }
+        .jeu-carte.is-dessus:hover .np-media img { transform: scale(1.05); }
+
+        /* ── Flèches, compteur et temps ── */
+        .jeu-nav {
+          display: flex;
+          align-items: center;
+          gap: var(--s-4);
+        }
+        .jeu-fleche {
+          display: grid;
+          place-items: center;
+          width: 4.4rem;
+          height: 4.4rem;
+          border: 1px solid var(--line-dark-accent);
+          border-radius: 50%;
+          background: transparent;
+          color: var(--gp-ecru-50);
+          cursor: pointer;
+          transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+        }
+        .jeu-fleche svg { width: 18px; height: 18px; }
+        /* Indigo sur laiton : 7,74:1. */
+        .jeu-fleche:hover { background: var(--gp-brass-400); border-color: var(--gp-brass-400); color: var(--gp-indigo-900); }
+
+        .jeu-repere { display: grid; justify-items: center; gap: 0.8rem; min-width: 9rem; }
+        .jeu-compte {
+          font-family: var(--font-display);
+          font-size: 1.8rem;
+          font-variant-numeric: tabular-nums;
+          letter-spacing: 0.06em;
+          color: var(--gp-brass-400);
+        }
+        /* Écru à 62 % : 6,79:1. */
+        .jeu-sur { color: var(--text-on-dark-muted); }
+        .jeu-piste {
+          position: relative;
+          width: 9rem;
+          height: 2px;
+          overflow: hidden;
+          border-radius: var(--r-pill);
+          background: var(--line-dark);
+        }
+        .jeu-temps {
+          position: absolute;
+          inset: 0;
+          background: var(--gp-brass-400);
+          transform-origin: left;
+          animation: jeu-temps ${DUREE_MS}ms linear forwards;
+        }
+        .jeu.is-pause .jeu-temps { animation-play-state: paused; }
+        @keyframes jeu-temps { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+        /* En petit écran, l'éventail se resserre : ouvert comme au large, il
+           sortirait de l'écran par la gauche. */
+        @media (max-width: 640px) {
+          .jeu { --jeu-pas-x: -8%; --jeu-pas-r: -4deg; }
+          .jeu-pile { translate: 12% 0; }
+        }
+
+        .np-carte { display: block; color: inherit; }
+
+        /* 2/3 : un boubou est une silhouette debout. */
         .np-media {
           position: relative;
-          aspect-ratio: 3 / 4;
+          width: 100%;
+          height: 100%;
           overflow: hidden;
           border-radius: 24px;
           background: var(--surface-sunk);
         }
-        .np-media img { transition: transform 1200ms var(--ease); }
-        .np-carte:hover .np-media img { transform: scale(1.05); }
 
         .np-vide {
           position: absolute;
@@ -352,7 +405,7 @@ const ProductsCarousel = ({ categorySlug }) => {
           color: var(--gp-ecru-50);
           transition: background var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);
         }
-        .np-carte:hover .np-panneau {
+        .jeu-carte.is-dessus:hover .np-panneau {
           border-color: rgba(250,246,238,0.4);
           background: rgba(15,19,32,0.65);
         }
@@ -403,13 +456,17 @@ const ProductsCarousel = ({ categorySlug }) => {
           transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease);
         }
         .np-fleche svg { width: 16px; height: 16px; }
-        .np-carte:hover .np-fleche { opacity: 1; transform: translateX(0); }
+        .jeu-carte.is-dessus:hover .np-fleche { opacity: 1; transform: translateX(0); }
 
         /* Au doigt il n'y a pas de survol : la flèche resterait invisible et
            le panneau à son opacité la plus basse. */
         @media (hover: none) {
-          .np-fleche { opacity: 1; transform: translateX(0); }
+          .jeu-carte.is-dessus .np-fleche { opacity: 1; transform: translateX(0); }
           .np-panneau { background: rgba(15,19,32,0.62); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .jeu-carte, .jeu-carte.is-envol { transition: none; }
         }
       `}</style>
     </section>

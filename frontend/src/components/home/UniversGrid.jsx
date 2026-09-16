@@ -11,9 +11,15 @@ import { RAYONS_DETOURES, PIECES_RAYON, FOND_RAYON, CADRAGE_PIECE } from '../../
  * ---------------------------------------------------------------------------
  * Le DESSIN est celui de Redesign_mcommaman.com : palette rose/ink/stone, Plus
  * Jakarta Sans, tuiles à rayon 24 px, photo qui grandit de 5 % en 1100 ms,
- * voile en dégradé, pastille blanche qui arrive de la gauche au survol. Seuls
- * l'en-tête et les données ont changé. Ne pas « harmoniser » le reste sans
- * demande.
+ * voile en dégradé. Seuls l'en-tête et les données ont changé — et, à la
+ * demande, le nom du rayon : il était posé sur une pastille blanche, flèche au
+ * survol, et s'affiche désormais seul, en texte. Ne pas « harmoniser » le
+ * reste sans demande.
+ *
+ * ── Le fond ─────────────────────────────────────────────────────────────────
+ * #161B2D, à la demande : l'indigo du chrome, celui de « Le mot de la maison ».
+ * Voir « .uv.on-dark » dans le CSS. Les tuiles détourées ont le même fond
+ * et plus de filet autour (retiré à la demande) : elles s'y fondent.
  *
  * ── D'où vient quoi ─────────────────────────────────────────────────────────
  * La grille est bâtie sur RAYONS (constants/rayons.js) et non sur la réponse
@@ -74,7 +80,7 @@ const UniversGrid = () => {
   }, []);
 
   return (
-    <section className="uv">
+    <section className="uv on-dark">
       <div className="uv-shell">
         {/* En-tête au style Golden Pousso — c'est la seule partie de cette
             section transférée qui rejoint le système du site, à la demande :
@@ -156,20 +162,12 @@ const UniversGrid = () => {
                 <div className="uv-voile" aria-hidden="true" />
 
                 <div className="uv-texte">
-                  {/* Le nom est posé sur une étiquette, au bas et au milieu de
-                      la tuile. La flèche vit DANS l'étiquette et non à côté :
-                      deux objets séparés au bas d'une carte centrée se
-                      seraient lus comme deux éléments sans rapport. */}
-                  <h3 className="uv-etiquette">
-                    {nom}
-                    <svg className="uv-fleche" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" strokeWidth={1.9}
-                         strokeLinecap="round" strokeLinejoin="round"
-                         aria-hidden="true">
-                      <path d="M7.5 16.5 16.5 7.5" />
-                      <path d="M9 7.5h7.5V15" />
-                    </svg>
-                  </h3>
+                  {/* Le nom du rayon, en texte simple, au bas et au milieu de
+                      la tuile. Il était posé sur une pastille blanche, flèche
+                      au survol : ce « bouton » a été retiré à la demande. Le
+                      nom reste — c'est lui qui nomme le lien, les images ayant
+                      un alt vide. */}
+                  <h3 className="uv-etiquette">{nom}</h3>
                 </div>
               </Link>
             );
@@ -189,8 +187,55 @@ const UniversGrid = () => {
              écart au transfert à l'identique sur ce point. */
           --uv-font:  var(--font-display);
 
+          /* ↓ LA RÉSERVE DU BAS — la place du nom du rayon. Les pièces
+             s'arrêtent au-dessus, le nom ne se pose plus sur elles. Elle
+             valait 44 px, 56 en grande tuile : moins que la pastille blanche
+             qui portait alors le nom (~51 et ~59 px avec son décollement du
+             bord), qui mordait donc sur les pièces. Relevée à la demande. La
+             pastille a été retirée depuis : le nom seul, 17 px de texte (20 en
+             grande tuile) décollé du bord de 16 px par « .uv-texte », monte à
+             ~36 px (~39) — la réserve lui laisse une trentaine de pixels
+             d'air, gardés à la demande (« plus à l'aise »). */
+          --uv-sol: 66px;
+          --uv-sol-large: 80px;
+
           font-family: var(--uv-font);
         }
+
+        /* ── Le fond : #161B2D ─────────────────────────────────────────────
+           L'indigo du chrome (« --surface-chrome »), comme « Le mot de la
+           maison ». « .on-dark », posé dans le JSX, bascule le titre et le
+           filet en version fond sombre ; il pose aussi son propre fond,
+           #0F1320, que cette double classe remplace. Contrastes mesurés sur ce
+           fond (styles.css) : écru 15,85:1, laiton clair 7,14:1.
+
+           Bande pleine largeur : l'écart avec ce qui précède se prend en
+           MARGE, dehors, et l'espace intérieur en padding en haut ET en bas —
+           sans le padding du bas, les tuiles toucheraient le bord de l'indigo.
+           C'est l'exception que le rythme vertical prévoit pour une bande
+           pleine largeur, pas une entorse. */
+        .uv.on-dark {
+          background: var(--surface-chrome);
+          --surface: var(--surface-chrome);
+          margin-top: var(--section-y);
+          padding-block: var(--section-y);
+        }
+        /* Juste après le panneau de « Le mot de la maison », sur le même
+           indigo : pas de marge — elle ouvrirait une bande d'écru de 80 px
+           entre deux fonds sombres. Les deux bandes se fondent, sans
+           séparateur. Adossé au voisinage :
+           si l'ordre change, la marge revient seule. */
+        .man + .uv.on-dark { margin-top: 0; }
+        /* De même juste après « Nos produits », elle aussi en #161B2D : pas de
+           marge, et pas de séparateur — le filet de laiton qui faisait le
+           joint a été retiré à la demande, les deux bandes se fondent. */
+        .ev + .uv.on-dark { margin-top: 0; }
+
+        /* Plus de filet de laiton autour des tuiles détourées — retiré à la
+           demande. Elles ont le fond de la section (FOND_RAYON, #161B2D) : la
+           grille ne se lit plus que par les pièces et leurs étiquettes, qui
+           flottent sur un aplat continu. Pour la redessiner, un bord de 2 px
+           en « --gp-brass-400 » à 60 % a déjà servi (color-mix). */
 
         .uv-shell {
           margin: 0 auto;
@@ -228,7 +273,10 @@ const UniversGrid = () => {
         .uv-grille {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          grid-auto-rows: clamp(180px, 45vw, 470px);
+          /* Relevé à la demande (il valait clamp(180px, 45vw, 470px)), en même
+             temps que la réserve de l'étiquette : sans lui, les pièces auraient
+             rapetissé de ce que la réserve a gagné. */
+          grid-auto-rows: clamp(210px, 48vw, 510px);
           gap: 12px;
         }
 
@@ -286,12 +334,12 @@ const UniversGrid = () => {
              deux bords ; zero pour toutes les autres — voir CADRAGE_PIECE dans
              constants/rayonsDetoures. Un pourcentage de padding se lit sur la
              LARGEUR du conteneur, la reserve suit donc la tuile. */
-          padding: 8px calc(12px + var(--uv-reserve, 0px)) 44px;
+          padding: 8px calc(12px + var(--uv-reserve, 0px)) var(--uv-sol);
         }
         .uv-tuile--large.uv-tuile--detouree:not(.uv-tuile--paire) .uv-photo img {
           /* La grande tuile est deux fois plus haute : elle peut s'offrir de
              l'air sans que la piece devienne minuscule. */
-          padding: 16px calc(16px + var(--uv-reserve, 0px)) 56px;
+          padding: 16px calc(16px + var(--uv-reserve, 0px)) var(--uv-sol-large);
         }
         /* Le zoom au survol part du bas, sinon la piece decolle du sol en
            grandissant. */
@@ -323,10 +371,10 @@ const UniversGrid = () => {
              piece seule, elle, laisse toujours ses coins libres.
              Ces valeurs sont celles d'une tuile SIMPLE ; la grande tuile les
              reprend en plus large juste en dessous. */
-          padding: 8px 12px 46px;
+          padding: 8px 12px var(--uv-sol);
           box-sizing: border-box;
         }
-        .uv-tuile--large.uv-tuile--paire .uv-photo { padding: 16px 12px 64px; }
+        .uv-tuile--large.uv-tuile--paire .uv-photo { padding: 16px 12px var(--uv-sol-large); }
         .uv-tuile--paire .uv-photo img {
           flex: 0 1 auto;
           width: auto;
@@ -341,8 +389,8 @@ const UniversGrid = () => {
           object-position: center bottom;
         }
         @media (min-width: 1024px) {
-          .uv-tuile--paire .uv-photo { gap: 10px; padding: 8px 16px 48px; }
-          .uv-tuile--large.uv-tuile--paire .uv-photo { gap: 20px; padding: 20px 20px 72px; }
+          .uv-tuile--paire .uv-photo { gap: 10px; padding: 8px 16px var(--uv-sol); }
+          .uv-tuile--large.uv-tuile--paire .uv-photo { gap: 20px; padding: 20px 20px var(--uv-sol-large); }
         }
 
         /* Le voile existe pour detacher l'etiquette d'une photographie dont on
@@ -371,46 +419,36 @@ const UniversGrid = () => {
           padding: 16px;
         }
 
-        /* L'étiquette : un objet posé SUR la photo, pas du texte incrusté
-           dedans. D'où le fond clair plutôt que du blanc sur l'image — un nom
-           en blanc dépend de ce qu'il y a derrière, et les cinq photos n'ont
-           ni la même clarté ni le même sujet à cet endroit. Sur l'étiquette,
-           l'encre tient son contraste quelle que soit la photo. */
-        .uv-etiquette {
-          display: inline-flex;
-          align-items: center;
-          gap: 0;
+        /* Le nom du rayon, en texte simple. Il était posé sur une pastille
+           blanche — encre « --uv-ink », flèche qui arrivait au survol : ce
+           « bouton » a été retiré à la demande, le nom s'affiche seul sur
+           l'indigo de la tuile.
+
+           Écru sur #161B2D : 15,85:1. Au survol il passe au laiton clair,
+           « --gp-brass-400 », 7,14:1 sur ce fond : avec le zoom de la photo,
+           c'est le signe que la tuile est un lien.
+
+           ⚠ Le nom est un <h3> : « .on-dark h3 », dans styles.css, le repeint
+           déjà en écru. La couleur est tout de même écrite ici, en double
+           classe pour passer devant cette règle, afin que le survol l'emporte.
+           Si une tuile photographique revenait (sans détourage), le voile
+           sombre du bas garderait le nom lisible. */
+        .uv .uv-etiquette {
           max-width: 100%;
-          padding: 9px 18px;
-          border-radius: 9999px;
-          background: rgba(255, 255, 255, .93);
-          backdrop-filter: blur(10px);
-          box-shadow: 0 6px 20px -10px rgba(36, 26, 32, .5);
           font-family: var(--uv-font);
-          font-size: 15px;
-          font-weight: 800;
-          letter-spacing: -.015em;
-          color: var(--uv-ink);
+          font-size: 17px;
+          font-weight: 600;
+          letter-spacing: .01em;
+          color: var(--text-on-dark);
           text-align: center;
+          transition: color 400ms var(--uv-ease);
         }
-
-        .uv-tuile--large .uv-etiquette { font-size: 18px; padding: 11px 22px; }
-
-        /* La flèche arrive au survol. Elle ne s'affiche pas d'un coup : c'est
-           l'écart de l'étiquette qui s'ouvre pour lui faire place, si bien que
-           l'étiquette s'élargit au lieu de laisser un trou. */
-        .uv-fleche {
-          width: 0;
-          height: 15px;
-          flex-shrink: 0;
-          opacity: 0;
-          transition: all 400ms var(--uv-ease);
-        }
-        .uv-tuile:hover .uv-etiquette { gap: 8px; background: #fff; }
-        .uv-tuile:hover .uv-fleche { width: 15px; opacity: 1; }
+        .uv-tuile--large .uv-etiquette { font-size: 20px; }
+        .uv .uv-tuile:hover .uv-etiquette,
+        .uv .uv-tuile:focus-visible .uv-etiquette { color: var(--gp-brass-400); }
 
         @media (prefers-reduced-motion: reduce) {
-          .uv-photo img, .uv-fleche, .uv-etiquette { transition: none; }
+          .uv-photo img, .uv-etiquette { transition: none; }
           .uv-tuile:hover .uv-photo img { transform: none; }
         }
 
@@ -434,7 +472,11 @@ const UniversGrid = () => {
              gagnent autant que la paire. */
           .uv-grille {
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            grid-auto-rows: 300px;
+            /* 340 px et non plus 300 : relevé à la demande, avec la réserve
+               de l'étiquette (--uv-sol). Une petite tuile passe de 248 à
+               266 px de pièce, la grande de 524 à 596 : les pièces grandissent
+               même un peu, bien que l'étiquette ait pris sa place. */
+            grid-auto-rows: 340px;
           }
         }
       `}</style>

@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import SEOHead from '../components/SEOHead';
@@ -26,6 +25,22 @@ import { reduirePourEnvoi } from '../utils/imageUpload';
  *
  * Le seul CSS local est celui de la mise en page — une colonne, des blocs
  * séparés d'un filet — et de l'avatar. Tout le reste vient des tokens.
+ *
+ * ── Le dessin : celui de l'Espace Gestion ──────────────────────────────────
+ * À la demande, la page reprend les briques du back-office (pages/gestion) :
+ * l'EN-TÊTE à sur-titre, titre, filet et ligne de décompte (PageHeader) ; le
+ * CADRE de laiton posé sur le fond de la page, jamais un aplat (.gx-cadre) ;
+ * les INTITULÉS de ligne en capitales de laiton, comme les en-têtes de
+ * tableau ; les CHAMPS arrondis à 1,2 rem des tiroirs.
+ *
+ * ⚠ La carte était un ÎLOT CLAIR — écru-100 `#F2EBDD`, `theme-clair` — au
+ * milieu d'un site sombre : elle a été blanche, puis au chrome, puis à
+ * l'écru-100. Elle est maintenant sur l'indigo de la page, comme l'Espace
+ * Gestion, et les couleurs qui la rattrapaient (`--text-accent` redéfini à
+ * `#7D6624`, `--surface-sunk` de l'îlot clair) ont disparu avec elle : sur
+ * l'indigo, les tokens sombres du site suffisent — écru 15,85:1, atténué
+ * 6,79:1, laiton clair 7,14:1. Le formulaire de connexion prend le même
+ * cadre : deux surfaces pour la même page n'avaient pas de raison d'être.
  *
  * ── Ce qui a été retiré ─────────────────────────────────────────────────────
  * ⚠ L'onglet « Mes commandes » n'est plus ici. Il listait les commandes du
@@ -81,7 +96,7 @@ const FormulaireAuth = () => {
   const enConnexion = mode === 'connexion';
 
   return (
-    <div className="compte-colonne compte-colonne--etroite">
+    <div className="compte-colonne compte-colonne--etroite compte-cadre">
       {/* Deux boutons et non des onglets soulignés : le système a déjà des
           actions en pastille, il n'avait pas besoin d'un sixième motif. */}
       <div className="compte-bascule" role="tablist">
@@ -176,7 +191,8 @@ const FormulaireAuth = () => {
    fichier. */
 const CHAMPS = [
   { cle: 'phone',           label: 'Téléphone',            autoComplete: 'tel', type: 'tel' },
-  { cle: 'default_address', label: 'Adresse de livraison', autoComplete: 'street-address' },
+  // `enBas` : rendue tout en bas de la carte, sous le mot de passe, à la demande.
+  { cle: 'default_address', label: 'Adresse de livraison', autoComplete: 'street-address', enBas: true },
 ];
 
 /* Le crayon. Un bouton et non une icône décorative : il ouvre l'édition d'une
@@ -195,7 +211,7 @@ const BoutonCrayon = ({ quoi, onClick }) => (
 );
 
 const Compte = () => {
-  const { user, logout, updateProfile, changePassword } = useAuthStore();
+  const { user, updateProfile, changePassword } = useAuthStore();
 
   /* Une seule ligne s'ouvre à la fois : deux formulaires ouverts côte à côte
      donnent deux boutons « Enregistrer » et on ne sait plus lequel enregistre
@@ -299,15 +315,46 @@ const Compte = () => {
     if (ev.key === 'Escape') { ev.preventDefault(); annuler(); }
   };
 
-  return (
-    /* `.card` donne le filet et le rayon --r-3 ; `.on-dark` bascule d'un coup
-       les tokens de texte, de filet et de surface pour un fond sombre — sans
-       elle, il aurait fallu repasser une à une la couleur des libellés, des
-       valeurs, des séparateurs et des champs. `.compte-carte` ajoute le
-       remplissage et l'indigo exact. */
-    <div className="compte-colonne card compte-carte on-dark">
+  /* Une ligne de champ texte. Sortie de la boucle pour que l'adresse de
+     livraison, placée tout en bas à la demande (`enBas`), se rende par le même
+     code que le téléphone, rendu au-dessus du mot de passe. */
+  const ligneChamp = ({ cle, label, type, autoComplete }) => (
+    <div className="compte-ligne" key={cle}>
+      <dt className="eyebrow">{label}</dt>
 
-      {/* ── L'avatar, et par où sortir ──
+      {edite === cle ? (
+        <dd className="compte-edition">
+          <input
+            className="field"
+            type={type || 'text'}
+            autoComplete={autoComplete}
+            autoFocus
+            value={profil[cle]}
+            onChange={(ev) => setProfil((d) => ({ ...d, [cle]: ev.target.value }))}
+            onKeyDown={auClavier(enregistrerProfil)}
+          />
+          {actions(enregistrerProfil)}
+        </dd>
+      ) : (
+        <>
+          <dd className="compte-valeur">
+            {profil[cle] || <span className="compte-vide">Non renseigné</span>}
+          </dd>
+          <BoutonCrayon quoi={label.toLowerCase()} onClick={() => setEdite(cle)} />
+        </>
+      )}
+    </div>
+  );
+
+  return (
+    /* Un encadrement de laiton sur le fond de la page — la surface de
+       l'Espace Gestion (.gx-cadre), à la demande. C'était `card
+       compte-carte theme-clair` : un îlot écru-100 posé sur l'indigo. */
+    <div className="compte-colonne compte-cadre">
+
+      {/* ── L'avatar ──
+          Les boutons « Mes commandes » et « Se déconnecter » ont été retirés
+          à la demande : la barre de navigation porte les deux.
           Le nom et le téléphone ont été retirés : ils sont écrits juste en
           dessous, dans les lignes « Prénom », « Nom » et « Téléphone ». Les
           répéter ici les affichait deux fois à trois centimètres d'écart. */}
@@ -317,13 +364,6 @@ const Compte = () => {
         </span>
         <BoutonCrayon quoi="la photo" onClick={() => champFichier.current?.click()} />
         <input ref={champFichier} type="file" accept="image/*" onChange={choisirAvatar} hidden />
-
-        <Link to="/commandes" className="btn btn--ghost btn--auto compte-sortie">
-          Mes commandes
-        </Link>
-        <button type="button" className="btn btn--ghost btn--auto" onClick={logout}>
-          Se déconnecter
-        </button>
       </div>
 
       {/* La photo se valide ici, sous l'avatar qu'elle change — et non en pied
@@ -389,34 +429,8 @@ const Compte = () => {
             )}
           </div>
 
-          {/* Les champs texte */}
-          {CHAMPS.map(({ cle, label, type, autoComplete }) => (
-            <div className="compte-ligne" key={cle}>
-              <dt className="eyebrow">{label}</dt>
-
-              {edite === cle ? (
-                <dd className="compte-edition">
-                  <input
-                    className="field"
-                    type={type || 'text'}
-                    autoComplete={autoComplete}
-                    autoFocus
-                    value={profil[cle]}
-                    onChange={(ev) => setProfil((d) => ({ ...d, [cle]: ev.target.value }))}
-                    onKeyDown={auClavier(enregistrerProfil)}
-                  />
-                  {actions(enregistrerProfil)}
-                </dd>
-              ) : (
-                <>
-                  <dd className="compte-valeur">
-                    {profil[cle] || <span className="compte-vide">Non renseigné</span>}
-                  </dd>
-                  <BoutonCrayon quoi={label.toLowerCase()} onClick={() => setEdite(cle)} />
-                </>
-              )}
-            </div>
-          ))}
+          {/* Les champs texte — sauf l'adresse de livraison, tout en bas. */}
+          {CHAMPS.filter((c) => !c.enBas).map(ligneChamp)}
 
           {/* Mot de passe — même ligne, même crayon, autre formulaire */}
           <div className="compte-ligne">
@@ -446,6 +460,9 @@ const Compte = () => {
               </>
             )}
           </div>
+
+          {/* L'adresse de livraison, tout en bas, à la demande. */}
+          {CHAMPS.filter((c) => c.enBas).map(ligneChamp)}
         </dl>
       </div>
     </div>
@@ -456,12 +473,18 @@ const Compte = () => {
 const MonComptePage = () => {
   const { isAuthenticated } = useAuthStore();
 
+  /* ⚠ PAS de ligne de décompte sous le titre, à la demande — l'en-tête de
+     l'Espace Gestion en porte une, celui-ci non. Elle disait le nom et le
+     numéro du compte, écrits juste en dessous dans les lignes « Prénom et
+     nom » et « Téléphone » : elle les affichait deux fois. */
+
   return (
     <>
       <SEOHead title="Mon compte" url="/profil" noindex />
 
       <div className="catalogue-page">
         <section className="catalogue-entete">
+          <span className="eyebrow">Mon espace</span>
           <h1 className="catalogue-titre">
             {isAuthenticated ? 'Mon compte' : 'Se connecter'}
           </h1>
@@ -490,22 +513,23 @@ const MonComptePage = () => {
         }
         .compte-colonne--etroite { max-width: 46rem; }
 
-        /* Le remplissage de la carte. En clamp : 24 px sur un téléphone, où
-           64 px de marge intérieure ne laisseraient plus de largeur aux
-           champs.
+        /* ── LE CADRE ──
+           Un encadrement de laiton posé sur le fond de la page, jamais un
+           aplat : la surface de l'Espace Gestion (.gx-cadre). Le remplissage
+           est en clamp — 24 px sur un téléphone, où 64 px de marge intérieure
+           ne laisseraient plus de largeur aux champs.
 
-           Le fond est celui du chrome du site — bande de coordonnées, barre de
-           navigation, pied de page, hero. La carte se pose donc sur l'écru de
-           la page comme un objet de la même famille que l'en-tête.
-
-           « .on-dark » aurait donné « --surface-dark » (#0F1320), un cran plus
-           sombre : on redéclare ici pour tenir le même indigo que le reste du
-           chrome. Ratios mesurés sur ce fond — écru 15,85:1, laiton 7,14:1,
-           texte atténué 6,79:1. */
-        .compte-carte {
+           Il porte le même dessin pour le compte et pour la connexion. */
+        .compte-cadre {
           padding: clamp(var(--s-5), 4vw, var(--s-8));
-          background: var(--surface-chrome);
+          border: 1px solid var(--line-dark-accent);
+          border-radius: var(--r-3);
         }
+        /* Champs arrondis, à la demande — 1,2 rem, comme ceux des tiroirs de
+           l'Espace Gestion, au lieu des 2 px (--r-1) des champs du site : ils
+           répondent aux boutons en pilule posés juste dessous. */
+        .compte-cadre .field { border-radius: 1.2rem; }
+
 
         /* ── L'identité en tête ── */
         .compte-tete {
@@ -516,8 +540,6 @@ const MonComptePage = () => {
           padding-bottom: var(--s-3);
           border-bottom: 1px solid var(--line);
         }
-        /* Le crayon suit l'avatar, la déconnexion part au bord droit. */
-        .compte-tete .compte-sortie { margin-left: auto; }
 
         .compte-avatar {
           display: grid;
@@ -528,9 +550,10 @@ const MonComptePage = () => {
           overflow: hidden;
           border-radius: var(--r-pill);
           border: 1px solid var(--line-accent);
-          /* « --surface-gold » est une carte CLAIRE : les initiales en laiton
-             s'y posaient à 2,22:1, illisibles. « --surface-sunk » suit la
-             bascule de « .on-dark » et devient l'indigo creusé. */
+          /* L'indigo creusé du site sombre (--surface-sunk vaut l'indigo-700
+             sous .site-page.on-dark) : le filet de laiton dessine l'avatar,
+             les initiales sont en laiton clair — 7,14:1. Dans l'îlot clair
+             d'avant, il fallait un laiton assombri pour tenir le seuil. */
           background: var(--surface-sunk);
           color: var(--text-accent);
           font-family: var(--font-display);
@@ -570,7 +593,14 @@ const MonComptePage = () => {
            du bas de l'identité tient déjà le rôle, et son padding faisait
            doublon avec celui de l'identité juste au-dessus. */
         .compte-ligne:first-child { border-top: 0; padding-top: var(--s-2); }
-        .compte-ligne > dt { color: var(--text-muted); }
+        /* L'intitulé en capitales de laiton — l'en-tête de colonne des
+           tableaux de l'Espace Gestion. Il était atténué. */
+        .compte-ligne > dt {
+          font-size: 1.15rem;
+          font-weight: 600;
+          letter-spacing: 0.16em;
+          color: var(--gp-brass-400);
+        }
         .compte-ligne > dd { margin: 0; }
 
         .compte-valeur {
@@ -637,10 +667,13 @@ const MonComptePage = () => {
         .compte-champs > .btn { margin-top: var(--s-2); }
 
         .compte-champ { display: block; width: 100%; }
+        /* Même intitulé de laiton dans le formulaire de connexion. */
         .compte-champ .eyebrow {
           display: block;
           margin-bottom: var(--s-2);
-          color: var(--text-muted);
+          font-size: 1.15rem;
+          letter-spacing: 0.16em;
+          color: var(--gp-brass-400);
         }
 
         /* Deux champs par ligne au-delà de 560 px, empilés en dessous : côte à

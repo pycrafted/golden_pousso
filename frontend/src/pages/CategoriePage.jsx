@@ -1,10 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
 import { PLPCard, SkeletonCard } from '../components/ProductGridCard';
 import { PlpFilterBar } from '../components/PlpFilterBar';
+import Pagination from '../components/Pagination';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
+import useAuthStore from '../store/authStore';
+
+/* Le formulaire d'ajout de pièce, chargé à la demande. C'est du code
+   d'administration — celui de l'Espace Gestion → Produits, partagé — que les
+   visiteurs n'ont aucune raison de télécharger : il ne part qu'au premier
+   clic sur le stylo, et seul un compte `is_staff` voit le stylo. */
+const ProductForm = lazy(() => import('./gestion/ProductForm'));
 
 /* ⚠ PLUS DE TRI À L'ÉCRAN. Les trois options — par date, par prix
    croissant, par prix décroissant — ont été retirées à la demande. Les pièces
@@ -20,34 +28,57 @@ const CategoriePage = () => {
   const { slug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const currency = useSettingsStore((s) => s.currency);
+  const estAdmin = useAuthStore((s) => s.isAuthenticated && Boolean(s.user?.is_staff));
 
   const [category, setCategory]     = useState(null);
+  // Les sous-catégories du rayon — le filtre par catégorie, à la demande.
+  const [sousCategories, setSousCategories] = useState([]);
   const [notFound, setNotFound]     = useState(false);
   const [catLoading, setCatLoading] = useState(true);
+
+  /* Le panneau d'ajout : `undefined` fermé, `null` création, un produit en
+     édition — la même convention que l'Espace Gestion → Produits. La pièce
+     se crée en une étape, médias compris, puis le panneau se vide pour la
+     suivante (voir ProductForm). */
+  const [edition, setEdition] = useState(undefined);
+  /* Incrémenté à la fermeture du panneau : une pièce ajoutée peut déplacer
+     les bornes de prix et les comptes par état, que les facettes décrivent. */
+  const [versionRayon, setVersionRayon] = useState(0);
 
   /* Ce que le rayon contient AVANT filtrage : bornes de prix et comptes par
      état. C'est ce qui décide quels filtres méritent d'être dessinés. */
   const [facettes, setFacettes] = useState(null);
 
-  const [products, setProducts]       = useState([]);
-  const [totalCount, setTotalCount]   = useState(0);
-  const [nextUrl, setNextUrl]         = useState(null);
-  const [loading, setLoading]         = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [products, setProducts]     = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading]       = useState(true);
+  /* La taille d'une page est celle du serveur, pas une valeur recopiée ici :
+     tant qu'il annonce une page suivante, la page reçue est pleine, donc sa
+     longueur EST la taille de page. 24 n'est qu'un point de départ. */
+  const [parPage, setParPage]       = useState(24);
 
   const minPrice = searchParams.get('min_price') || '';
   const maxPrice = searchParams.get('max_price') || '';
   const enStock  = searchParams.get('in_stock') === 'true';
   const enPromo  = searchParams.get('on_sale')  === 'true';
-  const nouveau  = searchParams.get('is_new')   === 'true';
-  /* '' | 'video' | 'photo' — vide par défaut : le rayon s'ouvre entier, les
-     cartes vidéo et les cartes photo mêlées dans l'ordre du tri. */
-  const media    = searchParams.get('media') || '';
+  /* Le slug de la sous-catégorie choisie, vide par défaut : le rayon s'ouvre
+     entier, sous-catégories comprises. Dans l'URL, pour qu'un lien filtré se
+     partage. */
+  const sous     = searchParams.get('sous') || '';
   const ordering = TRI_DEFAUT;
 
+  /* La page affichée, dans l'URL : elle se partage, le bouton « retour » du
+     navigateur ramène à la précédente, et un rechargement retombe au même
+     endroit. */
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
+
+  /* ⚠ Tout filtre RAMÈNE À LA PAGE 1 — une sous-catégorie comprise. Rester en
+     page 3 après avoir choisi « Bazin » afficherait une grille vide alors
+     qu'il reste des pièces : elles sont en page 1. */
   const updateFilter = (key, value) => {
     const p = new URLSearchParams(searchParams);
     if (value) p.set(key, value); else p.delete(key);
+    p.delete('page');
     setSearchParams(p);
   };
   const resetFilters = () => setSearchParams({});
@@ -56,7 +87,17 @@ const CategoriePage = () => {
     const p = new URLSearchParams(searchParams);
     if (min) p.set('min_price', String(min)); else p.delete('min_price');
     if (max) p.set('max_price', String(max)); else p.delete('max_price');
+    p.delete('page');
     setSearchParams(p);
+  };
+
+  /* Changer de page : l'URL, puis le haut de la page — sinon on arrive au
+     milieu de la grille suivante, à la hauteur où l'on avait cliqué. */
+  const allerPage = (n) => {
+    const p = new URLSearchParams(searchParams);
+    if (n > 1) p.set('page', String(n)); else p.delete('page');
+    setSearchParams(p);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   /* ── Charger la catégorie (nom, description) ── */
@@ -69,15 +110,18 @@ const CategoriePage = () => {
         const found = list.find((c) => c.slug === slug);
         if (!found) { setNotFound(true); return; }
         setCategory(found);
+        setSousCategories(list.filter((c) => c.parent === found.id));
       })
       .catch(() => setNotFound(true))
       .finally(() => setCatLoading(false));
   }, [slug]);
 
   /* ── Charger les facettes du rayon ──────────────────────────────────────
-     Dépend du seul `slug`, jamais des filtres posés : ces bornes décrivent le
+     Dépend du `slug`, jamais des filtres posés : ces bornes décrivent le
      rayon entier. Les rafraîchir à chaque filtre ferait rétrécir le curseur de
-     prix à chaque geste, sans possibilité de revenir en arrière.
+     prix à chaque geste, sans possibilité de revenir en arrière. Elles se
+     relisent seulement quand le rayon lui-même a changé — une pièce ajoutée
+     depuis le stylo (`versionRayon`).
      En cas d'échec, `facettes` reste nul et la barre se réduit au tri —
      dégradation silencieuse plutôt qu'une page cassée. */
   useEffect(() => {
@@ -85,42 +129,43 @@ const CategoriePage = () => {
     apiClient.get('/products/facets/', { params: { category: slug } })
       .then(({ data }) => setFacettes(data))
       .catch(() => {});
-  }, [slug]);
+  }, [slug, versionRayon]);
 
-  const fetchProducts = useCallback(async (reset = true) => {
+  /* Une requête = UNE page, à la demande. La grille est remplacée, jamais
+     allongée : le navigateur ne garde en mémoire que les 24 cartes affichées
+     et ne télécharge que leurs photos. */
+  const fetchProducts = useCallback(async () => {
     if (catLoading || notFound) return;
-    reset ? setLoading(true) : setLoadingMore(true);
+    setLoading(true);
     try {
-      const params = { category: slug };
+      // Une sous-catégorie choisie remplace le rayon : l'API ne renvoie alors
+      // que ses pièces. Sans choix, le rayon ET ses sous-catégories.
+      const params = { category: sous || slug };
       if (minPrice) params.min_price = minPrice;
       if (maxPrice) params.max_price = maxPrice;
       if (enStock)  params.in_stock  = true;
       if (enPromo)  params.on_sale   = true;
-      if (nouveau)  params.is_new    = true;
-      if (media)    params.media     = media;
       if (ordering) params.ordering  = ordering;
+      if (page > 1) params.page      = page;
       const res = await apiClient.get('/products/', { params });
       const data = res.data;
       const results = data.results ?? data;
       setTotalCount(data.count ?? results.length);
-      setNextUrl(data.next ?? null);
-      reset ? setProducts(results) : setProducts((p) => [...p, ...results]);
-    } catch { if (reset) setProducts([]); }
-    finally { reset ? setLoading(false) : setLoadingMore(false); }
-  }, [slug, minPrice, maxPrice, enStock, enPromo, nouveau, media, ordering, catLoading, notFound]);
+      if (data.next && results.length) setParPage(results.length);
+      setProducts(results);
+    } catch (err) {
+      /* Une page qui n'existe plus — l'URL a été bricolée, ou un filtre a
+         raccourci la liste depuis le dernier chargement : l'API répond 404.
+         On revient en page 1 plutôt que de montrer une grille vide. */
+      if (err.response?.status === 404 && page > 1) { allerPage(1); return; }
+      setProducts([]);
+    } finally { setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, sous, minPrice, maxPrice, enStock, enPromo, ordering, page, catLoading, notFound]);
 
-  useEffect(() => { fetchProducts(true); }, [fetchProducts]);
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
-  const loadMore = async () => {
-    if (!nextUrl) return;
-    setLoadingMore(true);
-    try {
-      const res = await apiClient.get(nextUrl.replace(/^https?:\/\/[^/]+/, ''));
-      const data = res.data;
-      setProducts((p) => [...p, ...(data.results ?? data)]);
-      setNextUrl(data.next ?? null);
-    } finally { setLoadingMore(false); }
-  };
+  const pages = Math.max(1, Math.ceil(totalCount / parPage));
 
   /* ── Quels filtres ce rayon mérite-t-il ? ────────────────────────────────
      Une bascule n'est proposée que si elle partage vraiment le rayon en deux.
@@ -134,27 +179,21 @@ const CategoriePage = () => {
   const partage = (compte) =>
     facettes != null && compte > 0 && compte < facettes.total;
 
-  /* ── Le média de la carte ────────────────────────────────────────────────
-     Une carte joue sa vidéo si la pièce en a une, et ne montre sa photo que
-     sinon : les deux bascules se partagent donc le rayon au lieu de se
-     croiser. Elles s'excluent l'une l'autre — cocher « Photo » quand
-     « Vidéo » est posé remplace le filtre au lieu de vider la page, ce qu'une
-     paire de bascules indépendantes ferait à tous les coups.
-
-     Elles n'apparaissent que si le rayon contient VRAIMENT les deux : sur un
-     rayon sans aucune vidéo, « Vidéo » mènerait à une page vide et « Photo »
-     ne retirerait rien. C'est la même règle que les bascules d'état. */
-  const mediaPartage = facettes != null && facettes.video > 0 && facettes.photo > 0;
-  const basculeMedia = (valeur, label) => ({
-    cle: `media-${valeur}`,
-    label,
-    actif: media === valeur,
-    onToggle: () => updateFilter('media', media === valeur ? '' : valeur),
-  });
-
+  /* Plus de bascules « Vidéo » / « Photo » : la vidéo de produit a été
+     retirée, front et back, à la demande. */
   const bascules = [
-    mediaPartage && basculeMedia('video', 'Vidéo'),
-    mediaPartage && basculeMedia('photo', 'Photo'),
+    /* Le filtre par catégorie, à la demande : une bascule par sous-catégorie
+       du rayon, en tête de barre. Exclusives — en choisir une remplace la
+       précédente, la rechoisir la retire. Seules celles qui rangent au moins
+       une pièce sont proposées : une bascule vers une page vide mentirait. */
+    ...sousCategories
+      .filter((s) => s.product_count > 0)
+      .map((s) => ({
+        cle: `sous-${s.slug}`,
+        label: s.name,
+        actif: sous === s.slug,
+        onToggle: () => updateFilter('sous', sous === s.slug ? '' : s.slug),
+      })),
     partage(facettes?.in_stock) && {
       cle: 'in_stock',
       label: 'Disponible',
@@ -174,12 +213,6 @@ const CategoriePage = () => {
       actif: enPromo,
       onToggle: () => updateFilter('on_sale', enPromo ? '' : 'true'),
     },
-    partage(facettes?.is_new) && {
-      cle: 'is_new',
-      label: 'Nouveautés',
-      actif: nouveau,
-      onToggle: () => updateFilter('is_new', nouveau ? '' : 'true'),
-    },
   ].filter(Boolean);
 
   /* Le prix tient en UNE chip et non deux : « ≥ 30 500 » et « ≤ 64 000 » sur
@@ -198,6 +231,14 @@ const CategoriePage = () => {
       onRetirer: b.onToggle,
     })),
   ].filter(Boolean);
+
+  /* Fermer le panneau d'ajout relit la grille ET les facettes : la pièce
+     ajoutée doit apparaître sans recharger la page. */
+  const fermerEdition = () => {
+    setEdition(undefined);
+    setVersionRayon((v) => v + 1);
+    fetchProducts();
+  };
 
   if (!catLoading && notFound) {
     return (
@@ -219,7 +260,7 @@ const CategoriePage = () => {
     <>
       <SEOHead
         title={category?.name || 'Catégorie'}
-        description={category?.description || `Découvrez notre sélection ${category?.name ?? ''} — Haute couture africaine à Dakar, Sénégal.`}
+        description={`Découvrez notre sélection ${category?.name ?? ''} — Haute couture africaine à Dakar, Sénégal.`}
         url={`/categorie/${slug}`}
       />
 
@@ -228,9 +269,26 @@ const CategoriePage = () => {
         {/* ── En-tête ──
             Titre et filet viennent de `.catalogue-entete` / `.catalogue-titre`
             dans styles.css : la page favoris porte exactement le même, et une
-            copie locale des deux aurait divergé au premier réglage. */}
+            copie locale des deux aurait divergé au premier réglage.
+
+            Le stylo n'existe que pour les comptes `is_staff`. Il est HORS du
+            <h1> — le nom accessible du titre reste le nom du rayon — et posé
+            hors du flux à sa droite, voir `.catalogue-edition`. */}
         <section className="catalogue-entete">
-          <h1 className="catalogue-titre">{catLoading ? ' ' : category?.name}</h1>
+          <div className="catalogue-titre-ligne">
+            <h1 className="catalogue-titre">{catLoading ? ' ' : category?.name}</h1>
+            {estAdmin && category && (
+              <button
+                type="button"
+                className="catalogue-edition"
+                onClick={() => setEdition(null)}
+                aria-label={`Ajouter une pièce au rayon ${category.name}`}
+                title="Ajouter une pièce à ce rayon"
+              >
+                <i className="bx bx-pencil" aria-hidden="true" />
+              </button>
+            )}
+          </div>
           <span className="filet-titre" aria-hidden="true" />
         </section>
 
@@ -262,28 +320,30 @@ const CategoriePage = () => {
             </div>
           ) : (
             <div className="catalogue-grille">
-              {products.map((p, i) => <PLPCard key={p.id} product={p} index={i} />)}
+              {products.map((p, i) => <PLPCard key={p.id} product={p} index={i} onModifie={() => fetchProducts()} />)}
             </div>
           )}
 
-          {/* Charger plus */}
-          {nextUrl && !loading && (
-            <div style={{ textAlign: 'center', marginTop: 'var(--s-9)' }}>
-              <p style={{ fontSize: 'var(--t-xs)', fontFamily: 'var(--font-body)', color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 'var(--s-6)' }}>
-                {products.length} sur {totalCount} pièces
-              </p>
-              <button
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="btn btn--ghost btn--auto"
-              >
-                {loadingMore ? 'Chargement…' : 'Charger plus'}
-              </button>
-            </div>
+          {!loading && (
+            <Pagination page={page} pages={pages} total={totalCount} onPage={allerPage} />
           )}
         </div>
       </div>
 
+      {/* Le panneau d'ajout, rayon posé d'office : la pièce créée ici est
+          destinée à CE rayon. `categories` ne sert qu'au menu de l'Espace
+          Gestion, que `categorieFixe` remplace. */}
+      {estAdmin && category && edition !== undefined && (
+        <Suspense fallback={null}>
+          <ProductForm
+            product={edition}
+            categories={[category]}
+            categorieFixe={category}
+            onClose={fermerEdition}
+            onSaved={(enregistre) => { setEdition(enregistre); fetchProducts(); }}
+          />
+        </Suspense>
+      )}
     </>
   );
 };

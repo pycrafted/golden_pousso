@@ -1,7 +1,7 @@
 import csv
 from django.contrib import admin
 from django.http import HttpResponse
-from .models import SectionTexte, Category, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, HeroPromotion, AtelierImage, Review, StockAlert, ShowcaseVideo
+from .models import SectionTexte, Coordonnees, Category, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroPromotion, StockAlert, ShowcaseVideo
 
 
 @admin.register(Category)
@@ -19,10 +19,11 @@ class CategoryAdmin(admin.ModelAdmin):
     qu'un bouton absent.
     """
 
-    list_display = ['name', 'slug', 'structurel', 'is_active', 'order']
-    list_filter = ['is_active']
+    # Plus de statut, d'ordre, de photo ni de description, à la demande : une
+    # catégorie ne porte que son nom et son parent.
+    list_display = ['name', 'slug', 'parent', 'structurel']
     search_fields = ['name', 'slug']
-    ordering = ['order', 'name']
+    ordering = ['name']
 
     @admin.display(description='Rayon fixe', boolean=True)
     def structurel(self, obj):
@@ -35,13 +36,10 @@ class CategoryAdmin(admin.ModelAdmin):
         return ()
 
     def get_exclude(self, request, obj=None):
-        # La photo d'un rayon structurel ne vient plus d'ici : c'est un fichier
-        # du frontend (public/images/rayons/), découpé au ratio des tuiles par
-        # outils/exporter_rayons.py. Laisser le champ dans le formulaire
-        # inviterait à téléverser une image qui ne s'afficherait nulle part —
-        # une action sans effet est pire qu'une action absente.
+        # Un rayon de la maison reste une catégorie principale : le champ
+        # parent n'est pas proposé (le modèle le refuserait de toute façon).
         if obj is not None and obj.est_structurelle:
-            return ('image', 'display')
+            return ('parent',)
         return super().get_exclude(request, obj)
 
     def get_prepopulated_fields(self, request, obj=None):
@@ -69,7 +67,7 @@ class CategoryAdmin(admin.ModelAdmin):
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
     extra = 2
-    fields = ['image', 'preview', 'alt_text', 'is_primary', 'order']
+    fields = ['image', 'preview', 'is_primary', 'order']
     readonly_fields = ['preview']
 
     def preview(self, obj):
@@ -88,29 +86,19 @@ class ProductVariantInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category', 'price', 'stock', 'is_active', 'is_featured', 'is_new', 'created_at']
-    list_filter = ['is_active', 'is_featured', 'is_new', 'category']
+    list_display = ['name', 'category', 'price', 'stock', 'created_at']
+    list_filter = ['category']
     search_fields = ['name', 'slug', 'description']
     prepopulated_fields = {'slug': ('name',)}
-    list_editable = ['is_active', 'is_featured', 'is_new']
     ordering = ['-created_at']
     inlines = [ProductImageInline, ProductVariantInline]
-    actions = ['activer_produits', 'desactiver_produits']
-
-    def activer_produits(self, request, queryset):
-        queryset.update(is_active=True)
-    activer_produits.short_description = 'Activer les produits sélectionnés'
-
-    def desactiver_produits(self, request, queryset):
-        queryset.update(is_active=False)
-    desactiver_produits.short_description = 'Désactiver les produits sélectionnés'
 
 
 @admin.register(ProductImage)
 class ProductImageAdmin(admin.ModelAdmin):
-    list_display = ['product', 'alt_text', 'is_primary', 'order']
+    list_display = ['product', 'is_primary', 'order']
     list_filter = ['is_primary']
-    search_fields = ['product__name', 'alt_text']
+    search_fields = ['product__name']
 
 
 @admin.register(ProductVariant)
@@ -136,15 +124,13 @@ class OrderAdmin(admin.ModelAdmin):
     list_editable = ['status']
     ordering = ['-created_at']
     inlines = [OrderItemInline]
-    actions = ['marquer_confirme', 'marquer_expedie', 'marquer_livre', 'exporter_csv']
-
-    def marquer_confirme(self, request, queryset):
-        queryset.update(status='confirmed')
-    marquer_confirme.short_description = 'Marquer comme Confirmées'
+    # Plus d'action « Marquer comme Confirmées » : « Payée » (l'ancien
+    # « Confirmée ») ne se pose qu'au retour de PayDunya, jamais à la main.
+    actions = ['marquer_expedie', 'marquer_livre', 'exporter_csv']
 
     def marquer_expedie(self, request, queryset):
         queryset.update(status='shipped')
-    marquer_expedie.short_description = 'Marquer comme Expédiées'
+    marquer_expedie.short_description = 'Marquer comme En livraison'
 
     def marquer_livre(self, request, queryset):
         queryset.update(status='delivered')
@@ -182,24 +168,6 @@ class ContactMessageAdmin(admin.ModelAdmin):
     readonly_fields = ['name', 'contact', 'subject', 'message', 'created_at']
 
 
-@admin.register(Review)
-class ReviewAdmin(admin.ModelAdmin):
-    list_display = ['product', 'customer', 'rating', 'is_approved', 'created_at']
-    list_filter = ['is_approved', 'rating']
-    search_fields = ['product__name', 'customer__username', 'customer__first_name', 'comment']
-    list_editable = ['is_approved']
-    ordering = ['-created_at']
-    actions = ['approuver_avis', 'rejeter_avis']
-
-    def approuver_avis(self, request, queryset):
-        queryset.update(is_approved=True)
-    approuver_avis.short_description = 'Approuver les avis sélectionnés'
-
-    def rejeter_avis(self, request, queryset):
-        queryset.update(is_approved=False)
-    rejeter_avis.short_description = 'Rejeter les avis sélectionnés'
-
-
 @admin.register(StockAlert)
 class StockAlertAdmin(admin.ModelAdmin):
     list_display = ['product', 'email', 'notified', 'created_at']
@@ -210,13 +178,14 @@ class StockAlertAdmin(admin.ModelAdmin):
 
 @admin.register(ShowcaseVideo)
 class ShowcaseVideoAdmin(admin.ModelAdmin):
-    list_display = ['__str__', 'video_lien', 'video', 'product', 'order', 'is_active', 'created_at']
-    list_editable = ['order', 'is_active']
-    list_filter = ['is_active']
-    # `product` pointe vers tout le catalogue : un <select> chargerait chaque
-    # produit à l'ouverture de la page.
-    autocomplete_fields = ['product']
+    list_display = ['__str__', 'video_lien', 'order', 'created_at']
+    list_editable = ['order']
     ordering = ['order', '-created_at']
+
+    def has_add_permission(self, request):
+        # Quatre vidéos au plus : le bouton « Ajouter » disparaît à la
+        # quatrième.
+        return super().has_add_permission(request) and ShowcaseVideo.objects.count() < ShowcaseVideo.MAX
 
 
 @admin.register(HeroPromotion)
@@ -258,37 +227,6 @@ class HeroPromotionAdmin(admin.ModelAdmin):
         return format_html('<b style="color:#C9A84C">à l’écran</b>')
 
 
-@admin.register(HeroBanner)
-class HeroBannerAdmin(admin.ModelAdmin):
-    list_display = ['__str__', 'is_active', 'updated_at', 'preview']
-    list_editable = ['is_active']
-    readonly_fields = ['updated_at', 'preview']
-
-    def preview(self, obj):
-        from django.utils.html import format_html
-        if obj.image:
-            return format_html('<img src="{}" style="height:120px;object-fit:cover;border-radius:4px;" />', obj.image.url)
-        return '—'
-    preview.short_description = 'Aperçu'
-
-
-@admin.register(AtelierImage)
-class AtelierImageAdmin(admin.ModelAdmin):
-    list_display = ['__str__', 'order', 'is_active', 'updated_at', 'preview']
-    list_editable = ['order', 'is_active']
-    ordering = ['order', '-updated_at']
-    readonly_fields = ['updated_at', 'preview']
-
-    def preview(self, obj):
-        from django.utils.html import format_html
-        if obj.image:
-            return format_html('<img src="{}" style="height:120px;object-fit:cover;border-radius:4px;" />', obj.image.url)
-        return '—'
-    preview.short_description = 'Aperçu'
-
-
-
-
 @admin.register(SectionTexte)
 class SectionTexteAdmin(admin.ModelAdmin):
     list_display = ['zone', 'surtitre', 'titre', 'updated_at']
@@ -306,4 +244,23 @@ class SectionTexteAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Supprimer une ligne fait retomber la section sur son texte en dur,
         # sans prévenir : on préfère qu'elle reste modifiable.
+        return False
+
+
+@admin.register(Coordonnees)
+class CoordonneesAdmin(admin.ModelAdmin):
+    """Les coordonnées de la boutique. Elles se saisissent normalement dans
+    l'Espace Gestion ; l'admin est là pour les dépanner."""
+
+    list_display = ['adresse', 'telephone', 'email', 'updated_at']
+    readonly_fields = ['updated_at']
+
+    def has_add_permission(self, request):
+        # Une seule ligne : `save()` force la clé primaire à 1, une deuxième
+        # écraserait la première sans le dire.
+        return Coordonnees.objects.count() == 0
+
+    def has_delete_permission(self, request, obj=None):
+        # Sans ligne, la bande retomberait sur les valeurs par défaut sans
+        # prévenir : on corrige, on ne supprime pas.
         return False

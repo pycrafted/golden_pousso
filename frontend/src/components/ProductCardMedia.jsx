@@ -1,16 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
 import CldImg from './CldImg';
 
 /**
  * Zone média d'une carte produit — à poser dans un conteneur `position: relative`
  * (la carte garde ses propres calques : badges, prix, voile « Épuisé »…).
  *
- * C'est la vidéo OU les photos, jamais un mélange des deux :
- *  — vidéo envoyée : elle occupe toute la carte et se lance seule (muette, en
- *    boucle) dès qu'elle entre dans le champ, sans flèche ni point de navigation ;
- *  — sinon : photo principale, bascule vers la photo secondaire au survol.
+ * Photo principale, qui bascule vers la photo secondaire au survol.
  *
- * Les photos d'un produit en vidéo restent visibles sur sa fiche produit.
+ * La carte jouait la vidéo du produit quand il en avait une, à la place des
+ * photos. La vidéo de produit a été retirée, front et back, à la demande.
  */
 const ProductCardMedia = ({
   product,
@@ -20,44 +17,6 @@ const ProductCardMedia = ({
   eager = false,
   placeholder = 'Photo bientôt',
 }) => {
-  const [videoEl, setVideoEl] = useState(null);
-  const videoRef = useCallback((el) => setVideoEl(el), []);
-
-  /* Lecture uniquement quand la carte est à l'écran — au revoir, on met en pause */
-  useEffect(() => {
-    if (!videoEl) return;
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) videoEl.play?.().catch(() => {}); else videoEl.pause?.(); },
-      { threshold: 0.3 }
-    );
-    obs.observe(videoEl);
-    return () => obs.disconnect();
-  }, [videoEl]);
-
-  /* ── Vidéo : elle prend toute la carte ── */
-  if (product.video_url) {
-    return (
-      <video
-        ref={videoRef}
-        src={product.video_url}
-        muted
-        loop
-        playsInline
-        preload="metadata"
-        aria-label={`Vidéo — ${product.name}`}
-        style={{
-          position: 'absolute', inset: 0,
-          width: '100%', height: '100%', objectFit: 'cover',
-          background: '#1A1208',
-          pointerEvents: 'none',
-          transform: hovered ? 'scale(1.04)' : 'scale(1)',
-          transition: 'transform 0.7s ease',
-        }}
-      />
-    );
-  }
-
-  /* ── Sans vidéo : photo principale + bascule au survol ── */
   if (!product.primary_image) return <Placeholder label={placeholder} />;
 
   const secondary = product.secondary_image;

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
-import { LIEN_WHATSAPP } from '../constants/contact';
+import { lienWhatsApp } from '../constants/contact';
 
 const FALLBACK = [
   { num: '01', title: 'Boubous & Bazin',      subtitle: 'Tenues de cérémonie',    href: '/categorie/boubous', slug: 'boubous' },
   { num: '02', title: 'Chaussures',           subtitle: 'Cuir et savoir-faire',   href: '/categorie/chaussures', slug: 'chaussures' },
   { num: '03', title: 'Bijoux & Accessoires', subtitle: 'Finitions artisanales',  href: '/categorie/bijoux',  slug: 'bijoux'  },
-  { num: '04', title: 'Sur Mesure',           subtitle: 'Votre vision, nos mains', href: LIEN_WHATSAPP,      slug: null      },
+  { num: '04', title: 'Sur Mesure',           subtitle: 'Votre vision, nos mains', href: lienWhatsApp(),     slug: null      },
 ];
 
 const CategoryCard = ({ item, index, onSelect, isActive }) => {
@@ -108,9 +108,12 @@ const CategoryTeaser = ({ onSelect, activeSlug }) => {
     apiClient.get('/categories/')
       .then((res) => {
         const data = res.data.results ?? res.data;
-        if (!data || data.length < 4) return;
+        // Les catégories principales seulement : une sous-catégorie n'est
+        // pas un univers de la maison.
+        const principales = (data ?? []).filter((cat) => !cat.parent);
+        if (principales.length < 4) return;
         setCategories(
-          data.slice(0, 4).map((cat, i) => ({
+          principales.slice(0, 4).map((cat, i) => ({
             num:      FALLBACK[i].num,
             title:    cat.name,
             subtitle: FALLBACK[i].subtitle,

@@ -1,7 +1,11 @@
+/* Squelette de carte produit. Ses gris clairs en dur (#f0f0f0, #e0e0e0)
+   faisaient des taches blanches sur le site passé à l'indigo : il lit
+   maintenant « --surface-sunk », mêlé d'un peu de texte pour le reflet —
+   plus sombre sur l'écru, plus clair sur l'indigo. */
 const SkeletonCard = () => (
   <div className="product" style={{ pointerEvents: 'none' }}>
     <div className="top" style={{
-      background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+      background: 'linear-gradient(90deg, var(--surface-sunk) 25%, color-mix(in srgb, var(--surface-sunk) 82%, var(--text)) 50%, var(--surface-sunk) 75%)',
       backgroundSize: '200% 100%',
       animation: 'shimmer 1.4s infinite',
       borderRadius: '1rem',
@@ -11,7 +15,7 @@ const SkeletonCard = () => (
     <div className="bottom" style={{ marginTop: '1rem' }}>
       <div style={{
         height: '1.6rem',
-        background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+        background: 'linear-gradient(90deg, var(--surface-sunk) 25%, color-mix(in srgb, var(--surface-sunk) 82%, var(--text)) 50%, var(--surface-sunk) 75%)',
         backgroundSize: '200% 100%',
         animation: 'shimmer 1.4s infinite',
         borderRadius: '0.5rem',
@@ -20,7 +24,7 @@ const SkeletonCard = () => (
       }} />
       <div style={{
         height: '1.4rem',
-        background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+        background: 'linear-gradient(90deg, var(--surface-sunk) 25%, color-mix(in srgb, var(--surface-sunk) 82%, var(--text)) 50%, var(--surface-sunk) 75%)',
         backgroundSize: '200% 100%',
         animation: 'shimmer 1.4s infinite',
         borderRadius: '0.5rem',

@@ -15,29 +15,35 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, F, Max, Min, Q
 from django.shortcuts import get_object_or_404
-from .models import Category, Product, Order, ContactMessage, HeroBanner, HeroPromotion, AtelierImage, Review, StockAlert, ShowcaseVideo, SectionTexte
+from .models import Category, Product, Order, ContactMessage, HeroPromotion, StockAlert, ShowcaseVideo, SectionTexte, Coordonnees
 from .serializers import (
     CategorySerializer,
     ProductListSerializer, ProductDetailSerializer,
     OrderCreateSerializer, OrderOutputSerializer, ContactMessageSerializer,
-    HeroBannerSerializer, HeroPromotionSerializer, AtelierImageSerializer,
-    ReviewSerializer, ReviewCreateSerializer, StockAlertCreateSerializer,
+    HeroPromotionSerializer,
+    StockAlertCreateSerializer,
     ShowcaseVideoSerializer,
+    CoordonneesSerializer,
 )
-from .filters import AVEC_VIDEO, SANS_VIDEO, ProductFilter, a_une_photo
+from .filters import ProductFilter
 from .emails import send_order_confirmation_email as _send_order_confirmation_email
 
 
 class CategoryListView(generics.ListAPIView):
     # Le compte est annoté plutôt que calculé par le sérialiseur : sinon
-    # chaque rayon déclenche sa propre requête de comptage.
+    # chaque rayon déclenche sa propre requête de comptage. Il inclut les
+    # pièces des sous-catégories, comme la page du rayon.
+    #
+    # Plus de filtre « actif » : une catégorie ne se masque plus. `par_rang`
+    # pose un tri explicite — les rayons de la maison dans l'ordre du menu,
+    # puis les autres par nom —, sans quoi la pagination serait instable.
     queryset = (
         Category.objects
-        .filter(is_active=True)
-        .annotate(nb_produits=Count('products', filter=Q(products__is_active=True)))
-        # L'annotation fait perdre le tri du Meta : sans ce order_by
-        # explicite, la pagination renvoie des résultats instables.
-        .order_by('order', 'name')
+        .par_rang()
+        .annotate(nb_produits=(
+            Count('products', distinct=True)
+            + Count('sous_categories__products', distinct=True)
+        ))
     )
     serializer_class = CategorySerializer
 
@@ -54,7 +60,6 @@ class ProductListView(generics.ListAPIView):
     def get_queryset(self):
         return (
             Product.objects
-            .filter(is_active=True)
             .prefetch_related('images', 'variants')
             .select_related('category')
             .distinct()
@@ -68,7 +73,6 @@ class ProductDetailView(generics.RetrieveAPIView):
     def get_queryset(self):
         return (
             Product.objects
-            .filter(is_active=True)
             .prefetch_related('images', 'variants')
             .select_related('category')
         )
@@ -95,30 +99,22 @@ def product_facets(request):
       s'en sert pour ne PAS dessiner la bascule correspondante : ce rayon-là
       n'a rien en solde, la proposer serait promettre une page vide.
     """
-    qs = Product.objects.filter(is_active=True)
-    slug = request.query_params.get('category')
+    qs = Product.objects.all()
+    slug =request.query_params.get('category')
     if slug:
-        qs = qs.filter(category__slug=slug)
+        # Le rayon ET ses sous-catégories, comme la grille (ProductFilter).
+        qs = qs.filter(Q(category__slug=slug) | Q(category__parent__slug=slug))
 
     remise = Q(old_price__isnull=False, old_price__gt=F('price'))
-    # `video` et `photo` comptent ce que MONTRE la carte, pas ce que la pièce
-    # possède : une pièce qui a une vidéo et des photos est comptée une seule
-    # fois, du côté vidéo. Leur somme peut donc être inférieure au total —
-    # une pièce sans aucun média ne tombe dans ni l'un ni l'autre.
-    agg = qs.annotate(a_photo=a_une_photo()).aggregate(
+    # Plus de comptes `video` / `photo` : la vidéo de produit a été retirée,
+    # et avec elle les bascules « Vidéo » / « Photo » qu'ils décidaient.
+    agg = qs.aggregate(
         total=Count('id'),
         prix_min=Min('price'),
         prix_max=Max('price'),
         en_stock=Count('id', filter=Q(stock__gt=0)),
         epuise=Count('id', filter=Q(stock__lte=0)),
         en_promo=Count('id', filter=remise),
-        nouveautes=Count('id', filter=Q(is_new=True)),
-        # Alias en français, comme `en_stock` et `en_promo` — et surtout PAS
-        # `video` : un alias d'agrégat qui porte le nom d'un champ du modèle
-        # le masque, et le `Q(video='')` du filtre se retrouve comparé au
-        # Count au lieu du fichier.
-        avec_video=Count('id', filter=AVEC_VIDEO),
-        avec_photo=Count('id', filter=SANS_VIDEO & Q(a_photo=True)),
     )
 
     # Rayon vide : les bornes sont nulles et non 0. Un curseur de 0 à 0 se
@@ -131,45 +127,13 @@ def product_facets(request):
         'in_stock': agg['en_stock'],
         'out_of_stock': agg['epuise'],
         'on_sale': agg['en_promo'],
-        'is_new': agg['nouveautes'],
-        'video': agg['avec_video'],
-        'photo': agg['avec_photo'],
     })
 
 
-@api_view(['GET'])
-def product_featured(request):
-    products = (
-        Product.objects
-        .filter(is_active=True, is_featured=True)
-        .prefetch_related('images')
-        .select_related('category')[:8]
-    )
-    serializer = ProductListSerializer(products, many=True, context={'request': request})
-    return Response(serializer.data)
-
-
-@api_view(['GET'])
-def product_new(request):
-    products = (
-        Product.objects
-        .filter(is_active=True, is_new=True)
-        .prefetch_related('images')
-        .select_related('category')
-        .order_by('-created_at')[:8]
-    )
-    serializer = ProductListSerializer(products, many=True, context={'request': request})
-    return Response(serializer.data)
-
-
-@api_view(['POST'])
-def order_create(request):
-    serializer = OrderCreateSerializer(data=request.data)
-    if serializer.is_valid():
-        order = serializer.save()
-        _send_order_confirmation_email(order)
-        return Response(OrderOutputSerializer(order).data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# Plus de `order_create` (`POST /orders/`) : il créait une commande sans
+# paiement, pour Orange Money, Wave, Free Money en direct et le paiement à la
+# livraison. Tout passe désormais par `paydunya_initiate`, à la demande — c'est
+# le paiement qui active la commande.
 
 
 @api_view(['GET'])
@@ -339,7 +303,9 @@ def _restore_order_stock(order):
             if item.variant:
                 item.variant.stock += item.quantity
                 item.variant.save(update_fields=['stock'])
-            else:
+            # Une pièce supprimée depuis la commande n'a plus de stock à
+            # regarnir : la ligne n'y pointe plus (`product` à None).
+            elif item.product:
                 item.product.stock += item.quantity
                 item.product.save(update_fields=['stock'])
 
@@ -476,44 +442,6 @@ def paydunya_callback(request):
     return Response({'detail': 'OK'})
 
 
-# ── Avis clients ──────────────────────────────────────────────
-
-
-@api_view(['GET', 'POST'])
-@permission_classes([AllowAny])
-def product_reviews(request, slug):
-    product = get_object_or_404(Product, slug=slug, is_active=True)
-
-    if request.method == 'GET':
-        reviews = product.reviews.filter(is_approved=True).select_related('customer').order_by('-created_at')
-        return Response(ReviewSerializer(reviews, many=True, context={'request': request}).data)
-
-    if not request.user.is_authenticated:
-        return Response({'detail': 'Connectez-vous pour laisser un avis.'}, status=status.HTTP_401_UNAUTHORIZED)
-
-    if Review.objects.filter(product=product, customer=request.user).exists():
-        return Response({'detail': 'Vous avez déjà laissé un avis pour ce produit.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    serializer = ReviewCreateSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save(product=product, customer=request.user)
-        return Response({'detail': 'Merci pour votre avis ! Il sera visible après modération.'}, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def recent_reviews(request):
-    """Derniers avis approuvés, tous produits confondus — pour la section « Avis Clients » de la homepage."""
-    reviews = (
-        Review.objects
-        .filter(is_approved=True)
-        .select_related('product', 'customer')
-        .order_by('-created_at')[:8]
-    )
-    return Response(ReviewSerializer(reviews, many=True, context={'request': request}).data)
-
-
 # ── Alertes de réassort ───────────────────────────────────────
 
 
@@ -552,39 +480,6 @@ def hero_promotion(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def hero_banner(request):
-    banner = HeroBanner.objects.filter(is_active=True).first()
-    if not banner:
-        return Response({'image_url': None})
-    return Response(HeroBannerSerializer(banner, context={'request': request}).data)
-
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def atelier_image(request):
-    """
-    Les images de l'atelier, groupées par emplacement.
-
-    `image_url` reste la première image de la page À propos : tout code
-    existant continue de fonctionner sans changement.
-    """
-    images = AtelierImage.objects.filter(is_active=True)
-
-    def serialise(emplacement):
-        lot = [i for i in images if i.emplacement == emplacement]
-        return AtelierImageSerializer(lot, many=True, context={'request': request}).data
-
-    apropos = serialise('apropos')
-    return Response({
-        'image_url': apropos[0]['image_url'] if apropos else None,
-        'apropos': apropos,
-        'accueil': serialise('accueil'),
-        'promotion': serialise('promotion'),
-    })
-
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
 def textes_sections(request):
     """
     Les intitulés de sections, indexés par clé.
@@ -601,16 +496,22 @@ def textes_sections(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+def coordonnees(request):
+    """
+    Adresse, téléphone, e-mail de la boutique — lus par la bande qui coiffe
+    toutes les pages.
+
+    `charger()` et non `first()` : la ligne est créée à la première lecture
+    avec les valeurs d'origine, si bien qu'une base neuve ne renvoie jamais un
+    objet vide.
+    """
+    return Response(CoordonneesSerializer(Coordonnees.charger()).data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def showcase_videos(request):
-    # select_related sur la pièce + prefetch sur ses images : sans ça, chaque
-    # vidéo rattachée à un produit coûte deux requêtes de plus pour peupler sa
-    # carte (le produit, puis sa photo principale).
-    videos = (
-        ShowcaseVideo.objects
-        .filter(is_active=True)
-        .select_related('product')
-        .prefetch_related('product__images')
-    )
+    videos = ShowcaseVideo.objects.all()[:ShowcaseVideo.MAX]
     return Response(ShowcaseVideoSerializer(videos, many=True, context={'request': request}).data)
 
 

@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import apiClient from '../api/client';
+import useAuthStore from '../store/authStore';
 import usePrefersReducedMotion from '../hooks/usePrefersReducedMotion';
 import Reveal from './Reveal';
 import useTexteSection from '../hooks/useTexteSection';
@@ -12,24 +14,29 @@ import useTexteSection from '../hooks/useTexteSection';
  * qui fait foi en production est dans `sync_contenu.py`, rejouée à chaque mise
  * en ligne. Renommer ici seulement ne change rien au site déployé.
  * ---------------------------------------------------------------------------
- * Les séquences viennent de l'API (`/videos/`), donc de l'Espace Gestion →
- * Vidéos. La version précédente embarquait en dur quatre plans du dépôt
+ * Les séquences viennent de l'API (`/videos/`) ; elles se gèrent par le stylo
+ * posé à droite du titre (comptes `is_staff`), la page Espace Gestion →
+ * Vidéos de l'accueil ayant été supprimée à la demande. La version précédente embarquait en dur quatre plans du dépôt
  * Redesign_mcommaman.com, avec des pièces et des prix qui n'étaient pas ceux
  * de cette maison — et dont les fichiers ont depuis disparu de `public/`.
  *
  * Le DESSIN reste celui de la source : palette rose/ink/stone/gold, Plus
- * Jakarta Sans, tuiles arrondies, deux voiles, pastille de son, carte produit
- * en pied de tuile. Seules les données ont changé. Ne pas « harmoniser » le
- * reste sans demande explicite.
+ * Jakarta Sans, tuiles arrondies, deux voiles, pastille de son. Seules les
+ * données ont changé. Ne pas « harmoniser » le reste sans demande explicite.
  *
- * La carte produit n'apparaît que si la vidéo est rattachée à une pièce
- * (champ facultatif, réglable en admin). La vidéo montre, la carte vend.
+ * Plus de carte produit en pied de tuile : ce sont des vidéos de la boutique,
+ * qui ne représentent aucune pièce — le champ `product` a été retiré, front et
+ * back, à la demande (migration 0035).
  */
 
 /* Décalages de départ, en secondes. Quand deux tuiles servent la même
    séquence — fréquent quand la maison n'en a que deux ou trois — des lectures
    synchronisées se lisent immédiatement comme une copie. */
 const DEPARTS = [0, 3, 5, 2, 6, 4];
+
+/* La gestion des quatre vidéos de l'Espace Gestion, chargée au premier clic
+   sur le stylo — que seul un compte `is_staff` voit. */
+const GestionVideosAccueil = lazy(() => import('../pages/gestion/VideosPage').then((m) => ({ default: m.GestionVideosAccueil })));
 
 
 /** Haut-parleur, son coupé : la barre traverse le cône. */
@@ -51,8 +58,10 @@ const IconSon = () => (
 );
 
 /**
- * Bande de séquences verticales, à la façon d'un banc de montage : les tuiles
- * ne sont pas alignées, une sur deux descend d'un cran.
+ * Bande de séquences verticales, TOUTES sur une même ligne et à la mesure de
+ * la page, à la demande. Une sur deux descendait d'un cran, à la façon d'un
+ * banc de montage, et les tuiles se rangeaient par trois ou quatre : les
+ * rangées suivantes passaient sous la page.
  *
  * Les vidéos ne jouent que ce qui est à l'écran — une bande de quatre lecteurs
  * qui tournent en fond coûte cher en batterie pour rien. Le son est coupé
@@ -68,6 +77,10 @@ const VideoCardsSection = () => {
   const [bande, setBande] = useState([]);
   const [son, setSon] = useState(null);
   const lecteurs = useRef([]);
+  const estAdmin = useAuthStore((s) => s.isAuthenticated && Boolean(s.user?.is_staff));
+  const [gestion, setGestion] = useState(false);
+  /* Relit la bande après chaque écriture depuis le stylo. */
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     apiClient.get('/videos/')
@@ -76,7 +89,7 @@ const VideoCardsSection = () => {
       // vidéo était acceptée avant que le sérialiseur ne l'interdise.
       .then(({ data }) => setBande((data.results ?? data).filter((v) => v.video_url)))
       .catch(() => {});
-  }, []);
+  }, [version]);
 
   /* Une seule bande son à la fois : ouvrir la deuxième referme la première. */
   useEffect(() => {
@@ -112,11 +125,12 @@ const VideoCardsSection = () => {
   }, [reduced, bande]);
 
   // Rien tant que le propriétaire n'a pas publié de vidéo
-  // (Espace Gestion → Vidéos).
-  if (bande.length === 0) return null;
+  // (par le stylo de cette section). Sauf pour un admin : sans la
+  // section, il n'aurait pas de stylo pour ajouter la première.
+  if (bande.length === 0 && !estAdmin) return null;
 
   return (
-    <section className="em">
+    <section className="em on-dark">
       <div className="em-shell">
         {/* En-tête au style Golden Pousso — titre seul, souligné du filet
             doré, comme les autres sections. C'est la seule partie de cette
@@ -126,19 +140,42 @@ const VideoCardsSection = () => {
             Plus de dorure sur un mot du titre : elle ne servait qu'à mettre
             « Golden Pousso » en laiton, et le titre ne le contient plus. */}
         <Reveal className="em-entete">
-          <h2>{textes.titre}</h2>
+          {/* Le stylo, pour les seuls comptes `is_staff`, à la demande : le
+              même que sur les rayons et la boutique (`.catalogue-edition`),
+              hors du <h2> — le sommaire de l'accueil lit le nom de la
+              section dans ce titre — et hors du flux, à sa droite : le titre
+              reste centré. */}
+          <div className="catalogue-titre-ligne">
+            <h2>{textes.titre}</h2>
+            {estAdmin && (
+              <button
+                type="button"
+                className="catalogue-edition"
+                onClick={() => setGestion(true)}
+                aria-label="Gérer les vidéos de l’aperçu de la boutique"
+                title="Gérer les vidéos"
+              >
+                <i className="bx bx-pencil" aria-hidden="true" />
+              </button>
+            )}
+          </div>
           <span className="filet-titre" aria-hidden="true" />
         </Reveal>
+
+        {/* Section vide : seul un admin la voit, et le stylo est son unique
+            porte d'entrée. */}
+        {bande.length === 0 && (
+          <p className="em-vide">
+            Aucune vidéo pour l’instant. Le stylo permet d’en ajouter jusqu’à
+            quatre ; tant qu’il n’y en a pas, les visiteurs ne voient pas cette
+            section.
+          </p>
+        )}
 
         <Reveal variant="scale">
           <div className="em-bande">
             {bande.map((item, i) => (
-              <div
-                key={item.id}
-                /* Une tuile sur deux descend : la bande cesse d'être une
-                   rangée et devient une composition. */
-                className={`em-tuile ${i % 2 === 1 ? 'em-tuile--basse' : ''}`}
-              >
+              <div key={item.id} className="em-tuile">
                 <div className="em-cadre">
                   <video
                     ref={(el) => { lecteurs.current[i] = el; }}
@@ -180,7 +217,30 @@ const VideoCardsSection = () => {
         </Reveal>
       </div>
 
+      {/* Le panneau est rendu dans <body> : les pages de l'accueil sont
+          réduites par « zoom » (Pagineur), qui réduirait aussi un calque
+          « fixed » posé dedans. */}
+      {estAdmin && gestion && createPortal(
+        <Suspense fallback={null}>
+          <GestionVideosAccueil
+            onClose={() => setGestion(false)}
+            onChange={() => setVersion((v) => v + 1)}
+          />
+        </Suspense>,
+        document.body,
+      )}
+
       <style>{`
+        /* Écru à 62 % sur #161B2D : 6,79:1. */
+        .em-vide {
+          max-width: 46rem;
+          margin: 0 auto;
+          text-align: center;
+          font-size: var(--t-body);
+          line-height: var(--lh-body);
+          color: var(--text-on-dark-muted);
+        }
+
         /* Palette et rythme de la source, redéclarés localement. Cette section
            ne doit rien au thème Or & Indigo. */
         .em {
@@ -192,23 +252,47 @@ const VideoCardsSection = () => {
              celle du site : « tous les écrits, vraiment tous ». */
           --em-font:  var(--font-display);
 
-          /* L'écart du haut est celui de toute la page (--section-y), posé
-             par la règle générale — rien à redéclarer ici.
-
-             Il a été resserré à var(--s-6) tant que cette section suivait
-             directement le hero : celui-ci finit en dégradé vers un aplat
-             d'écru franc, et cette zone vide faisait DÉJÀ la séparation ; la
-             reprendre en padding la comptait deux fois et les vidéos
-             tombaient bien trop bas. La section ne suit plus le hero — c'est
-             « Le mot de la maison » qui l'a précédée, et qui porte désormais
-             ce resserrement. Sans ce retour au rythme commun, le titre venait
-             se coller à 32 px du filet de laiton qui ferme le panneau
-             au-dessus.
+          /* Le fond, l'espace et l'écart du haut sont réglés juste après ce
+             bloc — voir « .em.on-dark » et sa règle de voisinage.
 
              Le reste du dessin de cette section reste celui de la source. */
           font-family: var(--em-font);
           overflow: visible;
         }
+
+        /* ── Le fond : #161B2D ─────────────────────────────────────────────
+           À la demande, l'indigo du chrome (« --surface-chrome »), comme les
+           trois bandes sombres qui suivent. C'est la seule exception au
+           transfert à l'identique avec la police : le reste du dessin est
+           celui de la source. « .on-dark », posé dans le JSX, bascule le titre
+           et le filet en clair ; son propre fond (#0F1320) est remplacé ici.
+
+           Bande pleine largeur : l'écart avec ce qui précède se prend en
+           MARGE, dehors, et l'espace intérieur en padding en haut ET en bas —
+           sans le padding du bas, les tuiles toucheraient le bord de l'indigo. */
+        .em.on-dark {
+          background: var(--surface-chrome);
+          --surface: var(--surface-chrome);
+          margin-top: var(--section-y);
+          padding-block: var(--section-y);
+        }
+        /* Juste après le hero, pas de marge : le hero finit sur le même
+           #161B2D — son fondu vers l'écru a été retiré à la demande. Les deux
+           se fondent, sans séparateur : le filet de laiton qui faisait le
+           joint a été retiré à la demande lui aussi. Adossé au voisinage :
+           ailleurs dans la page, la marge revient seule. */
+        main > section:first-of-type + .em.on-dark { margin-top: 0; }
+
+        /* Juste après « Le mot de la maison », sur le même indigo : pas de
+           marge — elle ouvrirait une bande d'écru de 80 px entre deux fonds
+           sombres. Les deux bandes se fondent, sans séparateur. Adossé au
+           voisinage, la règle cesse d'elle-même si l'ordre change. */
+        .man + .em.on-dark { margin-top: 0; }
+        /* De même juste après « Notre catalogue ». */
+        .uv + .em.on-dark { margin-top: 0; }
+        /* Et juste après la vitrine, « En vitrine » — la place de l'aperçu
+           dans l'ordre actuel : même indigo, pas de marge. */
+        .bp + .em.on-dark { margin-top: 0; }
 
 /* En-tête centré, dans la police et le laiton du site — pas dans la
            palette de la source. */
@@ -250,15 +334,17 @@ const VideoCardsSection = () => {
           background: var(--em-stone);
         }
 
-        /* 3/4 et non le 9/16 de la source : ces tuiles doivent faire la
-           même taille que les cartes de « Nos créations », juste au-dessus.
-           En 9/16 elles montaient à 560 px de haut contre 404 pour une carte —
-           deux objets de même largeur et de hauteurs très différentes, à un
-           écran d'intervalle.
-           Conséquence assumée : une vidéo verticale est davantage recadrée. */
+        /* 2/3 — ni le 9/16 de la source, ni le 3/4 d'avant. Ces tuiles
+           suivent les cartes de « Nos produits », allongées à 2/3 à la
+           demande : deux objets de la même famille, même proportion. En 9/16
+           elles montaient à 560 px de haut contre 404 pour une carte de
+           l'époque — deux objets de même largeur et de hauteurs très
+           différentes.
+           Conséquence : une vidéo verticale (9/16) reste recadrée, mais moins
+           qu'en 3/4. */
         .em-cadre {
           position: relative;
-          aspect-ratio: 3 / 4;
+          aspect-ratio: 2 / 3;
           overflow: hidden;
         }
         .em-cadre video {
@@ -319,37 +405,40 @@ const VideoCardsSection = () => {
           .em-bande { margin: 0 -32px; padding: 0 32px 8px; }
         }
 
+        /* ── Au-delà de 1 024 px : une seule ligne, à la mesure de la page ──
+           À la demande : TOUTES les tuiles sur une ligne, alignées — plus de
+           tuile sur deux qui descend de 48 px, plus de rangées de trois ou
+           quatre dont les suivantes passaient sous la page.
+
+           Elles se partagent la largeur (flex: 1) sans jamais dépasser la
+           hauteur utile. --em-haut-max = la page (--hp-utile, posée par le
+           Pagineur ; l'écran hors de l'accueil), moins l'espace du haut et du
+           bas de la section (2 × --section-y) et le bloc du titre
+           (--em-titre : titre, filet et leur marge). Une tuile en 2/3 ne
+           s'élargit donc jamais au-delà des 2/3 de cette hauteur, et la rangée
+           se centre dans la largeur qui reste.
+
+           Sous 1 024 px, la bande reste une ligne qui défile au doigt. */
         @media (min-width: 1024px) {
           .em-shell { padding: 0 40px; }
+          .em {
+            --em-titre: 13rem;
+            --em-haut-max: calc(var(--hp-utile, 100svh) - 2 * var(--section-y) - var(--em-titre));
+          }
           .em-bande {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            display: flex;
+            justify-content: center;
             gap: 1.25rem;
             overflow: visible;
             margin: 0;
             padding: 0;
-            /* Chaque tuile s'arrête à sa propre hauteur.
-
-               Par défaut une cellule de grille s'étire sur la hauteur de sa
-               rangée. Les tuiles paires descendant de 48 px, la rangée faisait
-               48 px de plus que la hauteur naturelle d'une tuile : les tuiles
-               impaires — la première et la troisième — s'étiraient d'autant et
-               laissaient voir 48 px de leur fond rose sous la vidéo, le cadre
-               vidéo étant lui bloqué en 3/4.
-
-               Ce fond n'apparaissait donc que là où la composition était censée
-               créer du vide, et le décalage se lisait comme un défaut plutôt
-               que comme une intention. */
-            align-items: start;
           }
-          .em-bande > * { width: auto; }
-          .em-tuile--basse { margin-top: 48px; }
-        }
-
-        /* La quatrième colonne n'arrive qu'une fois l'écran assez large pour
-           que les tuiles gardent la largeur d'une carte produit. */
-        @media (min-width: 1280px) {
-          .em-bande { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+          .em-bande > * {
+            flex: 1 1 0;
+            width: auto;
+            min-width: 0;
+            max-width: calc(var(--em-haut-max) * 2 / 3);
+          }
         }
       `}</style>
     </section>

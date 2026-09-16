@@ -4,7 +4,6 @@ from django.db import models
 from .imaging import VarianteWebMixin
 from django.utils.text import slugify
 
-from goldenpousso_backend.video_storage import video_storage
 
 
 class CategorieQuerySet(models.QuerySet):
@@ -22,16 +21,40 @@ class CategorieQuerySet(models.QuerySet):
         if verrouilles:
             raise ValidationError(
                 "Rayons structurels, suppression refusée : %s. Ils sont "
-                "attendus par la page d'accueil, qui porte leur photo et leur "
-                "ordre. Pour en retirer un de l'affichage, décocher « actif » "
-                "plutôt que le supprimer." % ', '.join(verrouilles)
+                "attendus par la page d'accueil, qui porte leur photo. Ils "
+                "se renomment, ils ne se suppriment pas." % ', '.join(verrouilles)
             )
         return super().delete(*args, **kwargs)
 
+    def par_rang(self):
+        """Les cinq rayons dans l'ordre du menu, puis tout le reste par nom.
 
-class Category(VarianteWebMixin):
-    SOURCE_IMAGE = 'image'
-    DOSSIER_WEB = 'categories/web'
+        Remplace le champ `order`, retiré à la demande : l'ordre des rayons de
+        la maison est celui de `Category.SLUGS_STRUCTURELS` — le même que la
+        grille de la page d'accueil —, et une catégorie ajoutée se range par
+        son nom.
+        """
+        rangs = [
+            models.When(slug=slug, then=models.Value(i))
+            for i, slug in enumerate(Category.SLUGS_STRUCTURELS)
+        ]
+        rang = models.Case(
+            *rangs,
+            default=models.Value(len(rangs)),
+            output_field=models.IntegerField(),
+        )
+        return self.annotate(rang=rang).order_by('rang', 'name')
+
+
+class Category(models.Model):
+    """Une catégorie de pièces : un rayon principal, ou la sous-catégorie d'un
+    rayon principal — un seul niveau.
+
+    À la demande, une catégorie ne porte plus que son nom et son parent : la
+    photo, la description, le statut « actif » et l'ordre d'affichage ont été
+    retirés (migration 0030). On ne masque plus une catégorie : si elle ne sert
+    plus, on la supprime. L'ordre vient de `CategorieQuerySet.par_rang`.
+    """
 
     #: Les cinq rayons de la maison. Ils existent toujours : la grille de la
     #: page d'accueil est bâtie sur cette liste côté frontend
@@ -41,23 +64,27 @@ class Category(VarianteWebMixin):
     #: lise encore de la base pour ces rayons, avec le nombre de pièces. Le
     #: SLUG, lui, est la clé qui relie un rayon à sa photo : le changer casse
     #: le lien, il est donc verrouillé en admin.
-    SLUGS_STRUCTURELS = frozenset({
-        'boubous', 'chaussures', 'sacs', 'bijoux', 'cosmetique',
-    })
+    #:
+    #: Un tuple et non un ensemble : son ordre EST l'ordre du menu.
+    SLUGS_STRUCTURELS = ('boubous', 'chaussures', 'sacs', 'bijoux', 'cosmetique')
 
     objects = CategorieQuerySet.as_manager()
 
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True)
-    description = models.TextField(blank=True)
-    image = models.ImageField(upload_to='categories/', blank=True, null=True)
-    is_active = models.BooleanField(default=True)
-    order = models.IntegerField(default=0)
+    #: Vide pour une catégorie principale. CASCADE : supprimer une catégorie
+    #: emporte ses sous-catégories — et échoue en entier (ProtectedError) si
+    #: l'une d'elles range encore des pièces, `Product.category` étant en
+    #: PROTECT.
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='sous_categories', verbose_name='Catégorie parente',
+    )
 
     class Meta:
         verbose_name = 'Catégorie'
         verbose_name_plural = 'Catégories'
-        ordering = ['order', 'name']
+        ordering = ['name']
 
     def __str__(self):
         return self.name
@@ -65,6 +92,36 @@ class Category(VarianteWebMixin):
     @property
     def est_structurelle(self):
         return self.slug in self.SLUGS_STRUCTURELS
+
+    def verifier_parent(self, parent):
+        """Refuse un parent qui casserait l'arbre à un seul niveau.
+
+        Appelée par `clean()` — donc par l'admin — et par le sérialiseur de
+        l'Espace Gestion, qui ne passe pas par `clean()`.
+        """
+        if parent is None:
+            return
+        if self.pk and parent.pk == self.pk:
+            raise ValidationError("Une catégorie ne peut pas être sa propre sous-catégorie.")
+        if self.est_structurelle:
+            raise ValidationError(
+                "Un rayon de la maison reste une catégorie principale : la page "
+                "d'accueil l'attend en tête de grille."
+            )
+        if parent.parent_id:
+            raise ValidationError(
+                "« %s » est déjà une sous-catégorie : choisissez une catégorie "
+                "principale comme parente." % parent.name
+            )
+        if self.pk and self.sous_categories.exists():
+            raise ValidationError(
+                "Cette catégorie a ses propres sous-catégories : elle ne peut "
+                "pas devenir une sous-catégorie à son tour."
+            )
+
+    def clean(self):
+        super().clean()
+        self.verifier_parent(self.parent)
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -74,10 +131,9 @@ class Category(VarianteWebMixin):
     def delete(self, *args, **kwargs):
         if self.est_structurelle:
             raise ValidationError(
-                "Rayon structurel, suppression refusée : %s. Il est attendu "
-                "par la page d'accueil, qui porte sa photo et son ordre. Pour "
-                "le retirer de l'affichage, décocher « actif » plutôt que le "
-                "supprimer." % self.slug
+                "« %s » est un rayon de la maison : il est attendu par la page "
+                "d'accueil, qui porte sa photo. Il se renomme, il ne se "
+                "supprime pas." % self.name
             )
         return super().delete(*args, **kwargs)
 
@@ -87,18 +143,16 @@ class Product(models.Model):
     slug = models.SlugField(unique=True)
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name='products')
     description = models.TextField(blank=True)
-    video = models.FileField(
-        upload_to='products/videos/', storage=video_storage, blank=True, null=True,
-        verbose_name='Vidéo du produit',
-        help_text="Optionnel. Si une vidéo est envoyée, c'est elle qui s'affiche sur la carte "
-                  "produit, à la place de la photo. Les photos restent visibles sur la fiche produit.",
-    )
+    # Plus de `video` : la vidéo de produit a été retirée, front et back, à la
+    # demande — migration 0028. Une pièce ne se présente que par ses photos.
     price = models.DecimalField(max_digits=10, decimal_places=0)
     old_price = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True)
     stock = models.IntegerField(default=0)
-    is_active = models.BooleanField(default=True)
-    is_featured = models.BooleanField(default=False)
-    is_new = models.BooleanField(default=False)
+    # Plus de `is_active` : la possibilité de masquer une pièce a été retirée à
+    # la demande — migration 0029, qui a supprimé les pièces alors masquées.
+    # Toute pièce enregistrée est en ligne ; pour la retirer, on la supprime.
+    # `is_featured` (« Vedette ») et `is_new` (« Nouveauté ») ont été retirés
+    # à la demande — migration 0025.
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -122,10 +176,6 @@ class Product(models.Model):
             send_stock_alert_emails(self)
 
     @property
-    def video_url(self):
-        return self.video.url if self.video else None
-
-    @property
     def primary_image(self):
         img = self.images.filter(is_primary=True).first()
         if not img:
@@ -144,7 +194,6 @@ class ProductImage(VarianteWebMixin):
     DOSSIER_WEB = 'products/web'
 
     image = models.ImageField(upload_to='products/', verbose_name='Photo (original)')
-    alt_text = models.CharField(max_length=200, blank=True)
     is_primary = models.BooleanField(default=False)
     order = models.IntegerField(default=0)
 
@@ -184,14 +233,23 @@ class ProductVariant(models.Model):
 
 class Order(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'En attente'),
-        ('confirmed', 'Confirmée'),
-        ('processing', 'En préparation'),
-        ('shipped', 'Expédiée'),
+        # On vend des vêtements, pas des plats : payé, livré, reçu — à la
+        # demande. Plus d'étape « En préparation » (migration 0031, qui a passé
+        # ces commandes à « Payée »). Les clés restent celles d'avant : l'API,
+        # le retour PayDunya et l'historique s'en servent.
+        ('pending', 'En attente de paiement'),
+        ('confirmed', 'Payée'),
+        ('shipped', 'En livraison'),
         ('delivered', 'Livrée'),
         ('cancelled', 'Annulée'),
     ]
+    #: Tout paiement passe par PayDunya, à la demande : c'est le paiement qui
+    #: active la commande, et seul le retour de PayDunya (`paydunya_callback`)
+    #: la marque payée. PayDunya propose lui-même carte, Orange Money, Wave et
+    #: Free Money sur sa page. Les autres valeurs ne servent plus qu'aux
+    #: commandes passées avant ce changement : le tunnel ne les propose plus.
     PAYMENT_CHOICES = [
+        ('paydunya', 'PayDunya (carte ou mobile money)'),
         ('orange_money', 'Orange Money'),
         ('wave', 'Wave'),
         ('free_money', 'Free Money'),
@@ -220,7 +278,7 @@ class Order(models.Model):
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=0, default=0)
     subtotal = models.DecimalField(max_digits=10, decimal_places=0)
     total = models.DecimalField(max_digits=10, decimal_places=0)
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='cash_on_delivery')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='paydunya')
     payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='pending')
     paydunya_token = models.CharField(max_length=100, blank=True)
     notes = models.TextField(blank=True)
@@ -253,7 +311,12 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
-    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    # Facultatif, et détaché si la pièce est supprimée — à la demande, depuis
+    # que les pièces ne se masquent plus : on les supprime, commandées ou non.
+    # La ligne garde ce qui a été vendu (`product_name`, `product_price`,
+    # `quantity`) : une commande passée reste lisible. PROTECT empêchait de
+    # supprimer une pièce déjà commandée.
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     variant = models.ForeignKey(ProductVariant, on_delete=models.SET_NULL, null=True, blank=True)
     product_name = models.CharField(max_length=200)
     product_price = models.DecimalField(max_digits=10, decimal_places=0)
@@ -269,81 +332,17 @@ class OrderItem(models.Model):
 
 
 
-class HeroBanner(VarianteWebMixin):
-    SOURCE_IMAGE = 'image'
-    DOSSIER_WEB = 'hero/web'
-
-    image = models.ImageField(upload_to='hero/')
-    is_active = models.BooleanField(default=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = 'Bannière Hero'
-        verbose_name_plural = 'Bannières Hero'
-
-    def __str__(self):
-        return f"Hero {'(actif)' if self.is_active else '(inactif)'} — {self.updated_at.strftime('%d/%m/%Y') if self.updated_at else ''}"
-
-    def save(self, *args, **kwargs):
-        if self.is_active:
-            HeroBanner.objects.exclude(pk=self.pk).update(is_active=False)
-        super().save(*args, **kwargs)
+# Plus de `HeroBanner` (« Bannière Hero ») : retirée à la demande, front et
+# back (migration 0032). Plus rien ne la lisait — le hero de l'accueil tient sa
+# parole et ses tableaux côté frontend (Hero.jsx, constants/hero.js).
 
 
-class AtelierImage(VarianteWebMixin):
-    SOURCE_IMAGE = 'image'
-    DOSSIER_WEB = 'atelier/web'
-
-    EMPLACEMENTS = [
-        ('apropos',   'Page À propos — section « Notre Histoire »'),
-        ('accueil',   'Page d’accueil — section « Notre savoir-faire »'),
-        ('promotion', 'Page d’accueil — fond de la bande promotionnelle'),
-    ]
-
-    image = models.ImageField(upload_to='atelier/')
-    # Deux endroits du site montrent l'atelier, avec des besoins différents :
-    # une seule photo sur À propos, deux en paire décalée sur l'accueil. Sans
-    # ce champ, les deux emplacements puisaient dans le même tas et on ne
-    # pouvait pas choisir laquelle allait où.
-    emplacement = models.CharField(
-        max_length=10, choices=EMPLACEMENTS, default='apropos',
-        verbose_name='Emplacement',
-    )
-    is_active = models.BooleanField(default=True, verbose_name='Affichée')
-    order = models.IntegerField(
-        default=0, verbose_name='Ordre',
-        help_text="Ordre d’affichage à l’intérieur de l’emplacement choisi.",
-    )
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = 'Image Atelier'
-        verbose_name_plural = 'Images Atelier'
-        ordering = ['order', '-updated_at']
-
-    def __str__(self):
-        return f"Atelier — {self.get_emplacement_display()}"
+# Plus d'images de l'atelier (`AtelierImage`) : les deux photos du mot de la
+# maison sont des fichiers statiques du front, à la demande — migration 0033.
 
 
-class Review(models.Model):
-    RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]
-
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
-    customer = models.ForeignKey('accounts.Customer', on_delete=models.CASCADE, related_name='reviews')
-    rating = models.PositiveSmallIntegerField(choices=RATING_CHOICES)
-    comment = models.TextField()
-    photo = models.ImageField(upload_to='reviews/', blank=True, null=True)
-    is_approved = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = 'Avis client'
-        verbose_name_plural = 'Avis clients'
-        ordering = ['-created_at']
-        unique_together = [('product', 'customer')]
-
-    def __str__(self):
-        return f"{self.customer} — {self.product.name} ({self.rating}★)"
+# Les avis clients (`Review` : note, commentaire, photo, modération) ont été
+# retirés du site à la demande — migration 0027.
 
 
 class StockAlert(models.Model):
@@ -363,30 +362,27 @@ class StockAlert(models.Model):
 
 
 class ShowcaseVideo(models.Model):
-    title = models.CharField(max_length=200, blank=True, help_text="Repère interne, non affiché sur le site")
-    # ── Deux façons de fournir la séquence ────────────────────────────────
-    # Un LIEN, ou un FICHIER. Le lien passe en premier quand les deux sont là.
-    #
-    # Le lien est la voie normale en production : le propriétaire dépose sa
-    # vidéo dans Cloudflare depuis son navigateur et colle l'adresse ici. Le
-    # fichier ne traverse alors jamais notre serveur — ce qu'il n'arrivait de
-    # toute façon pas à faire, l'instance Render s'endormant au bout de quinze
-    # minutes et son proxy ne retenant pas des dizaines de mégaoctets le temps
-    # du réveil.
+    #: Quatre vidéos au plus, à la demande : la section « Aperçu de la
+    #: boutique » les aligne toutes sur une ligne. Vérifié à la création
+    #: (sérialiseur de gestion, admin) ; l'API publique n'en sert jamais plus.
+    MAX = 4
+
+    # Plus de repère interne (`title`) ni de pièce présentée (`product`), à la
+    # demande (migration 0035) : ce sont des vidéos de la boutique, qui ne
+    # représentent aucun produit, et la place de la tuile suffit à les
+    # reconnaître.
+    # ── La vidéo : un LIEN, uniquement ─────────────────────────────────────
+    # À la demande, plus d'envoi de fichier (migration 0036) : le propriétaire
+    # dépose sa vidéo dans Cloudflare et colle ici son adresse publique. Le
+    # champ `video` (FileField) a été retiré — ses fichiers déjà publiés ont
+    # été convertis en liens par la migration. Il n'arrivait de toute façon
+    # pas à passer en production : l'instance Render s'endort au bout de
+    # quinze minutes et son proxy ne retient pas des dizaines de mégaoctets.
     video_lien = models.URLField(
-        max_length=500, blank=True,
+        max_length=500,
         verbose_name='Lien de la vidéo',
-        help_text="Adresse publique du fichier, déposé sur Cloudflare. "
-                  "C'est la façon recommandée : rien ne transite par le site.",
+        help_text="Adresse publique du fichier, déposé sur Cloudflare.",
     )
-    # L'envoi de fichier reste en place — c'est ce qui sert en développement,
-    # et les séquences déjà publiées ainsi continuent de fonctionner.
-    #
-    # `storage=video_storage` comme `Product.video` : sans lui, la séquence
-    # partait sur le stockage PAR DÉFAUT, qui n'est pas celui des vidéos.
-    # En développement, R2 configuré, cela voulait dire le disque local — d'où
-    # des vidéos qui marchaient en local et nulle part ailleurs.
-    video = models.FileField(upload_to='videos/', storage=video_storage, blank=True)
     # Image affichée avant que la vidéo ne démarre. Sans elle, la tuile reste
     # vide le temps du chargement — très visible sur connexion lente.
     poster = models.ImageField(
@@ -394,17 +390,10 @@ class ShowcaseVideo(models.Model):
         verbose_name='Affiche',
         help_text="Image fixe montrée avant lecture. Recommandée : format vertical 9/16.",
     )
-    # Facultatif : rattache la séquence à une pièce du catalogue. Quand il est
-    # renseigné, une carte cliquable (photo, nom, prix) s'affiche en pied de
-    # tuile sur la page d'accueil — la vidéo montre, la carte vend.
-    product = models.ForeignKey(
-        'Product', on_delete=models.SET_NULL, blank=True, null=True,
-        related_name='showcase_videos',
-        verbose_name='Pièce présentée',
-        help_text="Facultatif. Affiche une carte produit cliquable sur la vidéo.",
-    )
     order = models.IntegerField(default=0)
-    is_active = models.BooleanField(default=True)
+    # Plus de `is_active` : l'option « Visible sur le site » a été retirée à
+    # la demande (migration 0034). Toute vidéo enregistrée est en ligne ; pour
+    # la retirer, on la supprime.
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -413,7 +402,7 @@ class ShowcaseVideo(models.Model):
         ordering = ['order', '-created_at']
 
     def __str__(self):
-        return self.title or f"Vidéo #{self.pk}"
+        return f"Vidéo — place {self.order + 1}"
 
 
 class SectionTexte(models.Model):
@@ -552,3 +541,103 @@ class HeroPromotion(models.Model):
                 .filter(is_active=True, debut__lte=aujourd_hui, fin__gte=aujourd_hui)
                 .order_by('-debut')
                 .first())
+
+
+class Coordonnees(models.Model):
+    """
+    Les coordonnées de la maison — adresse, téléphone, e-mail.
+
+    Le lien WhatsApp du site est fabriqué à partir du même téléphone
+    (`whatsapp`) : il n'y a rien de plus à saisir.
+
+    ── Pourquoi une ligne en base ──────────────────────────────────────────────
+    Elles vivaient dans une constante du frontend (`constants/contact.js`).
+    Changer un numéro demandait donc de toucher au code et de redéployer, ce
+    qu'un propriétaire de boutique ne fait pas. Elles se saisissent maintenant
+    depuis l'Espace Gestion, et la bande qui coiffe le site les prend sans
+    qu'on y touche.
+
+    ── Une seule ligne, jamais zéro ────────────────────────────────────────────
+    Ce n'est pas une liste : il n'y a qu'une boutique. `save()` force la clé
+    primaire à 1 et la suppression est refusée — un formulaire sans ligne à
+    éditer n'aurait rien à afficher. `charger()` crée la ligne à la première
+    lecture, avec les valeurs qui étaient écrites en dur : une base neuve
+    affiche les bonnes coordonnées avant même que quiconque ouvre le
+    formulaire.
+
+    ⚠ Le frontend garde ses constantes comme REPLI : si l'API ne répond pas,
+    la bande affiche les valeurs d'origine plutôt qu'un trou.
+    """
+
+    ADRESSE_DEFAUT = 'Pikine Tally Boumack'
+    TELEPHONE_DEFAUT = '77 751 47 95'
+    EMAIL_DEFAUT = 'contact@goldenpousso.sn'
+
+    adresse = models.CharField(
+        max_length=200, verbose_name='Adresse',
+        help_text="Telle qu'elle s'affiche, par exemple « Pikine Tally Boumack ».",
+    )
+    telephone = models.CharField(
+        max_length=40, verbose_name='Téléphone',
+        help_text="Dans sa présentation locale, par exemple « 77 751 47 95 ». "
+                  "Le lien d'appel est fabriqué à partir de ce numéro.",
+    )
+    email = models.EmailField(verbose_name='Email')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Coordonnées de la boutique'
+        verbose_name_plural = 'Coordonnées de la boutique'
+
+    def __str__(self):
+        return f"{self.adresse} — {self.telephone} — {self.email}"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """Les coordonnées ne se suppriment pas : elles se corrigent."""
+        raise ValidationError("Les coordonnées de la boutique ne peuvent pas être supprimées.")
+
+    @classmethod
+    def charger(cls):
+        ligne, _ = cls.objects.get_or_create(pk=1, defaults={
+            'adresse': cls.ADRESSE_DEFAUT,
+            'telephone': cls.TELEPHONE_DEFAUT,
+            'email': cls.EMAIL_DEFAUT,
+        })
+        return ligne
+
+    @property
+    def telephone_lien(self):
+        """Le numéro au format international, seule forme qu'un téléphone
+        compose de façon fiable depuis l'étranger.
+
+        Saisi avec son indicatif (« +221 77… »), il est conservé tel quel, sans
+        les espaces. Saisi en local (« 77 751 47 95 »), l'indicatif du Sénégal
+        est ajouté. Vide ou illisible, pas de lien du tout : mieux vaut un
+        numéro qu'on recopie qu'un lien qui compose un mauvais correspondant.
+        """
+        brut = (self.telephone or '').strip()
+        chiffres = ''.join(c for c in brut if c.isdigit())
+        if not chiffres:
+            return ''
+        if brut.startswith('+'):
+            return f'+{chiffres}'
+        if chiffres.startswith('221'):
+            return f'+{chiffres}'
+        return f'+221{chiffres}'
+
+    @property
+    def whatsapp(self):
+        """Le même numéro au format wa.me : international, sans « + » ni espaces.
+
+        WhatsApp est le SEUL support du site (l'icône de la barre de
+        navigation, l'entrée du menu mobile, le lien des mentions légales) :
+        laisser son numéro dans le code alors que le téléphone se saisit en
+        base, c'était garder un numéro qui se périme tout seul. Un seul numéro
+        pour les deux — c'est déjà le cas dans la maison, et une boutique qui
+        publie deux numéros en fait toujours un de faux.
+        """
+        return self.telephone_lien.lstrip('+')

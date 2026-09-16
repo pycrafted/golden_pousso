@@ -3,15 +3,9 @@
 Accès réservé aux comptes Customer.is_staff=True (activé une fois via l'admin Django, aucun système
 de rôle supplémentaire nécessaire).
 """
-import os
-import uuid
-from datetime import date
-
-from django.conf import settings
-from django.core.files.storage import storages
-from django.db.models import Sum
-from rest_framework import viewsets, mixins, status
-from rest_framework.decorators import action, api_view, permission_classes
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import ProtectedError
+from rest_framework import viewsets, mixins, status, generics
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
@@ -19,14 +13,18 @@ from rest_framework.response import Response
 from accounts.models import Customer
 from .models import (
     Category, Product, ProductImage, ProductVariant,
-    Order, Review, ContactMessage, StockAlert, HeroBanner, AtelierImage, ShowcaseVideo,
+    Order, ShowcaseVideo, Coordonnees,
 )
 from .emails import send_order_status_email
+# Le rendu au stock d'une commande qui n'aboutit pas vit dans views.py (chemin
+# PayDunya) : la suppression d'une commande s'en sert aussi. views.py n'importe
+# rien d'ici, il n'y a donc pas de cycle.
+from .views import _restore_order_stock
 from .gestion_serializers import (
     GestionCategorySerializer,
+    GestionCoordonneesSerializer,
     GestionProductSerializer, GestionProductImageSerializer, GestionProductVariantSerializer,
-    GestionOrderSerializer, GestionReviewSerializer, GestionContactMessageSerializer,
-    GestionStockAlertSerializer, GestionHeroBannerSerializer, GestionAtelierImageSerializer,
+    GestionOrderSerializer,
     GestionCustomerSerializer, GestionShowcaseVideoSerializer,
 )
 
@@ -39,9 +37,28 @@ class IsStaffUser(BasePermission):
 
 
 class GestionCategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all().order_by('order', 'name')
+    queryset = Category.objects.par_rang()
     serializer_class = GestionCategorySerializer
     permission_classes = [IsStaffUser]
+
+    def destroy(self, request, *args, **kwargs):
+        """Une suppression refusée se dit en clair, au lieu d'une erreur 500.
+
+        Deux refus possibles : des pièces sont encore rangées dans la catégorie
+        ou dans l'une de ses sous-catégories (`Product.category` en PROTECT), ou
+        c'est l'un des cinq rayons de la maison (`Category.delete`).
+        """
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {'detail': "Des pièces sont encore rangées dans cette catégorie ou "
+                           "dans l'une de ses sous-catégories : déplacez-les ou "
+                           "supprimez-les d'abord."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except DjangoValidationError as erreur:
+            return Response({'detail': ' '.join(erreur.messages)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -73,8 +90,14 @@ class GestionProductVariantViewSet(viewsets.ModelViewSet):
         return qs.filter(product_id=product_id) if product_id else qs
 
 
-class GestionOrderViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
-    queryset = Order.objects.all().prefetch_related('items').order_by('-created_at')
+class GestionOrderViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
+                          mixins.UpdateModelMixin, mixins.DestroyModelMixin,
+                          viewsets.GenericViewSet):
+    # Les commandes PAYÉES seulement, à la demande : c'est le paiement qui
+    # active une commande, on ne prépare pas une commande non payée. Une
+    # commande dont le paiement PayDunya n'a pas abouti reste lisible dans
+    # /admin/.
+    queryset = Order.objects.filter(payment_status='paid').prefetch_related('items').order_by('-created_at')
     serializer_class = GestionOrderSerializer
     permission_classes = [IsStaffUser]
 
@@ -84,46 +107,31 @@ class GestionOrderViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixi
         if order.status != previous_status:
             send_order_status_email(order)
 
+    # Une commande jamais expédiée : ses pièces n'ont pas quitté la boutique.
+    # Les supprimer sans les remettre en rayon laisserait le catalogue annoncer
+    # moins de stock qu'il n'y en a — une commande d'essai effacée retiendrait
+    # sa taille pour toujours. Une commande partie (« En livraison », « Livrée »)
+    # ne rend rien : les pièces sont dehors.
+    STATUTS_JAMAIS_PARTIE = ('confirmed', 'cancelled')
 
-class GestionReviewViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
-    queryset = Review.objects.all().select_related('product', 'customer').order_by('-created_at')
-    serializer_class = GestionReviewSerializer
-    permission_classes = [IsStaffUser]
+    def perform_destroy(self, instance):
+        """Supprime une commande, à la demande — définitif.
 
-
-class GestionContactMessageViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
-    queryset = ContactMessage.objects.all().order_by('-created_at')
-    serializer_class = GestionContactMessageSerializer
-    permission_classes = [IsStaffUser]
-
-
-class GestionStockAlertViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    queryset = StockAlert.objects.all().select_related('product').order_by('-created_at')
-    serializer_class = GestionStockAlertSerializer
-    permission_classes = [IsStaffUser]
-
-
-class GestionHeroBannerViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
-    queryset = HeroBanner.objects.all().order_by('-updated_at')
-    serializer_class = GestionHeroBannerSerializer
-    permission_classes = [IsStaffUser]
-
-
-class GestionAtelierImageViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
-    queryset = AtelierImage.objects.all().order_by('order', '-updated_at')
-    serializer_class = GestionAtelierImageSerializer
-    permission_classes = [IsStaffUser]
-
-    def get_queryset(self):
+        Ses lignes partent avec elle (`OrderItem.order` en CASCADE) ; le client,
+        lui, n'est pas touché (la commande ne lui est liée que par téléphone).
+        Rien n'est envoyé au client : une commande supprimée n'a pas de statut
+        à annoncer.
         """
-        `?emplacement=accueil` isole un emplacement.
+        if instance.status in self.STATUTS_JAMAIS_PARTIE:
+            _restore_order_stock(instance)
+        instance.delete()
 
-        Sans ce filtre, les deux blocs de l'Espace Gestion afficheraient le
-        même tas d'images et le propriétaire ne saurait pas laquelle part où.
-        """
-        qs = super().get_queryset()
-        emplacement = self.request.query_params.get('emplacement')
-        return qs.filter(emplacement=emplacement) if emplacement else qs
+
+# Les pages « Messages » et « Alertes de réassort » de l'Espace Gestion ont été
+# supprimées à la demande, avec leurs API (`/gestion/messages/`,
+# `/gestion/stock-alerts/`). Les deux modèles restent : le site enregistre
+# toujours un message de contact et une demande de réassort, l'e-mail de retour
+# en stock part toujours, et les deux listes se consultent dans /admin/.
 
 
 class GestionShowcaseVideoViewSet(viewsets.ModelViewSet):
@@ -131,105 +139,56 @@ class GestionShowcaseVideoViewSet(viewsets.ModelViewSet):
     serializer_class = GestionShowcaseVideoSerializer
     permission_classes = [IsStaffUser]
 
-    @action(detail=False, methods=['post'], url_path='lien-envoi')
-    def lien_envoi(self, request):
-        """Délivre une URL signée pour déposer la vidéo DIRECTEMENT sur R2.
-
-        ── Pourquoi le fichier ne passe plus par ici ────────────────────────
-        Il n'y arrivait pas. L'envoi répondait 502 Bad Gateway, et les journaux
-        de Render ne montraient aucune trace de la requête : elle mourait dans
-        le proxy, avant Django. L'instance gratuite s'endort au bout de quinze
-        minutes d'inactivité ; au réveil, le proxy ne peut pas garder en
-        mémoire des dizaines de mégaoctets le temps que le conteneur démarre.
-        Une petite requête survit à ce réveil, une vidéo non.
-
-        Et même réveillée, la route était absurde : le fichier partait de Dakar
-        vers l'Oregon, puis l'Oregon le repoussait vers un bucket en Europe.
-        Deux traversées de l'Atlantique pour un fichier qui doit finir à
-        Cloudflare, lequel a un point de présence à Dakar même.
-
-        Le navigateur dépose donc sur R2 par cette URL signée, puis ne poste
-        ici qu'une ligne de texte : la clé de l'objet. Django n'a plus à porter
-        le poids.
-
-        ── Ce que l'URL autorise ────────────────────────────────────────────
-        Une seule écriture, sur une seule clé que le serveur choisit, pendant
-        une heure. Le client ne décide ni de l'emplacement ni du nom : il ne
-        peut donc pas écraser un objet existant.
-        """
-        if not settings.R2_ENABLED:
-            # Sans R2, il n'y a pas de dépôt direct possible : le formulaire
-            # retombe sur l'envoi classique en multipart, qui reste en place.
-            return Response({'disponible': False})
-
-        nom = (request.data.get('nom') or 'video.mp4').strip()
-        extension = os.path.splitext(nom)[1].lower() or '.mp4'
-        if extension not in ('.mp4', '.webm', '.mov', '.m4v'):
-            return Response(
-                {'detail': f"Format non accepté : {extension}. Utilisez .mp4, .webm ou .mov."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Le serveur nomme, jamais le client : un nom venu du navigateur
-        # pourrait viser une clé déjà prise, ou sortir du dossier des vidéos.
-        cle = f'videos/{uuid.uuid4().hex}{extension}'
-        type_mime = request.data.get('type') or 'video/mp4'
-
-        stockage = storages['videos']
-        client = stockage.connection.meta.client
-        url = client.generate_presigned_url(
-            'put_object',
-            Params={
-                'Bucket': stockage.bucket_name,
-                'Key': cle,
-                # Signé, donc le navigateur devra envoyer exactement cette
-                # valeur. C'est elle que R2 renverra ensuite aux visiteurs :
-                # sans elle, la balise <video> reçoit un octet-stream et refuse
-                # de lire.
-                'ContentType': type_mime,
-            },
-            ExpiresIn=3600,
-        )
-        return Response({'disponible': True, 'url': url, 'cle': cle, 'type': type_mime})
+    # Plus de `lien-envoi` (URL signée pour déposer un fichier sur R2) : une
+    # vidéo se fournit par son lien Cloudflare uniquement, à la demande.
 
 
-class GestionCustomerViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
+class GestionCustomerViewSet(viewsets.ModelViewSet):
+    """Les comptes utilisateurs : création, modification, type (client /
+    admin), désactivation et suppression, à la demande — un admin ne peut ni se
+    repasser client, ni se désactiver, ni se supprimer lui-même.
+
+    Un compte naissait uniquement de l'inscription du site ; l'Espace Gestion
+    en crée maintenant (`POST`), ce qui est le seul moyen d'ouvrir l'accès à un
+    second admin sans ligne de commande.
+
+    Supprimer un compte n'efface pas ses commandes : elles ne lui sont pas
+    rattachées par clé étrangère mais par téléphone (`Order.customer_phone`)."""
     queryset = Customer.objects.all().order_by('-date_joined')
     serializer_class = GestionCustomerSerializer
     permission_classes = [IsStaffUser]
 
     def perform_update(self, serializer):
-        instance = serializer.instance
-        revoking_self = (
-            instance.pk == self.request.user.pk
-            and 'is_staff' in serializer.validated_data
-            and not serializer.validated_data['is_staff']
-        )
-        if revoking_self:
-            raise ValidationError("Vous ne pouvez pas retirer votre propre accès à l'Espace Gestion.")
+        donnees = serializer.validated_data
+        if serializer.instance.pk == self.request.user.pk:
+            if 'is_staff' in donnees and not donnees['is_staff']:
+                raise ValidationError("Vous ne pouvez pas vous repasser vous-même en client.")
+            if 'is_active' in donnees and not donnees['is_active']:
+                raise ValidationError("Vous ne pouvez pas désactiver votre propre compte.")
         serializer.save()
 
+    def perform_destroy(self, instance):
+        if instance.pk == self.request.user.pk:
+            raise ValidationError("Vous ne pouvez pas supprimer votre propre compte.")
+        instance.delete()
 
-@api_view(['GET'])
-@permission_classes([IsStaffUser])
-def dashboard_stats(request):
-    today = date.today()
-    month_start = today.replace(day=1)
 
-    orders_today = Order.objects.filter(created_at__date=today).count()
-    revenue_month = Order.objects.filter(
-        created_at__date__gte=month_start, payment_status='paid'
-    ).aggregate(total=Sum('total'))['total'] or 0
-    low_stock_count = Product.objects.filter(is_active=True, stock__lte=3).count()
-    pending_reviews = Review.objects.filter(is_approved=False).count()
-    unread_messages = ContactMessage.objects.filter(is_read=False).count()
-    pending_orders = Order.objects.filter(status='pending').count()
+# Le tableau de bord de l'Espace Gestion a été supprimé à la demande, avec son
+# API `/gestion/dashboard/` : elle ne servait qu'à lui (commandes du jour,
+# chiffre d'affaires du mois, stock faible, commandes en attente). `/gestion`
+# redirige désormais vers les commandes.
 
-    return Response({
-        'orders_today': orders_today,
-        'revenue_month': revenue_month,
-        'low_stock_count': low_stock_count,
-        'pending_reviews': pending_reviews,
-        'unread_messages': unread_messages,
-        'pending_orders': pending_orders,
-    })
+
+class GestionCoordonneesView(generics.RetrieveUpdateAPIView):
+    """Les coordonnées de la boutique — une seule ligne, donc pas de liste.
+
+    `RetrieveUpdateAPIView` et non un ViewSet : il n'y a rien à créer ni à
+    supprimer, et l'adresse de la ressource ne porte pas d'identifiant
+    (/gestion/coordonnees/). `charger()` crée la ligne au premier passage :
+    le formulaire s'ouvre toujours rempli, jamais sur un 404.
+    """
+    serializer_class = GestionCoordonneesSerializer
+    permission_classes = [IsStaffUser]
+
+    def get_object(self):
+        return Coordonnees.charger()

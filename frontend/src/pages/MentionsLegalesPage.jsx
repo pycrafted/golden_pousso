@@ -1,10 +1,10 @@
 import { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
-import { LIEN_WHATSAPP } from '../constants/contact';
+import { useLienWhatsApp } from '../store/coordonneesStore';
 
 const C = {
-  bg:        '#1A1208',
+  bg:        '#161B2D',   // l'indigo du site ; c'était l'ancien brun #1A1208
   panel:     '#111111',
   border:    '#1E1E1E',
   borderMid: '#2A2A2A',
@@ -96,6 +96,8 @@ const SECTIONS = [
 /* ── Page ── */
 const MentionsLegalesPage = () => {
   const [heroRef, heroVisible] = useInView();
+  /* Le numéro de la boutique, saisi dans l'Espace Gestion → Coordonnées. */
+  const lienWhatsApp = useLienWhatsApp();
 
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -175,7 +177,7 @@ const MentionsLegalesPage = () => {
               <Highlight label="Raison sociale"   value="Golden Pousso" />
               <Highlight label="Forme juridique"  value="Entreprise individuelle" />
               <Highlight label="Adresse"          value="Pikine Tally Boumack, Tableau Gazelle N.2372, Dakar, Sénégal" />
-              <Highlight label="Téléphone"        value="33 834 10 17 · 78 126 35 35" />
+              <Highlight label="Téléphone"        value="77 751 47 95 (téléphone et WhatsApp)" />
               <Highlight label="Email"            value="contact@goldenpousso.sn" />
               <Highlight label="Directeur de publication" value="Équipe Golden Pousso" />
               <Highlight label="Hébergement"      value="Vercel Inc. · 340 Pine Street, San Francisco, CA 94104, USA" />
@@ -200,12 +202,12 @@ const MentionsLegalesPage = () => {
 
             <H3>3. Commande et validation</H3>
             <P>
-              Toute commande vaut acceptation des présentes CGV. La commande est confirmée après réception du paiement ou, pour les commandes à la livraison, après confirmation téléphonique. Un numéro de commande est communiqué par SMS et/ou e-mail.
+              Toute commande vaut acceptation des présentes CGV. La commande est confirmée à la réception du paiement. Un numéro de commande est communiqué par SMS et/ou e-mail.
             </P>
 
             <H3>4. Paiement</H3>
             <P>
-              Modes de paiement acceptés : Orange Money, Wave, Free Money, virement bancaire, paiement à la livraison (Dakar Centre et Banlieue uniquement). Le paiement est dû intégralement avant expédition, sauf pour le paiement à la livraison.
+              Le paiement se fait en ligne, au moment de la commande, sur la page sécurisée de PayDunya : carte bancaire, Orange Money, Wave ou Free Money. Il n&apos;y a pas de paiement à la livraison. Le paiement est dû intégralement : une commande n&apos;est préparée qu&apos;une fois payée.
             </P>
 
             <H3>5. Livraison</H3>
@@ -249,7 +251,7 @@ const MentionsLegalesPage = () => {
 
             <H3>Vos droits</H3>
             <P>
-              Vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles. Pour exercer ces droits, contactez-nous par e-mail à contact@goldenpousso.sn ou par WhatsApp au 78 126 35 35.
+              Vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles. Pour exercer ces droits, contactez-nous par e-mail à contact@goldenpousso.sn ou par WhatsApp au 77 751 47 95.
             </P>
 
             <H3>Sécurité</H3>
@@ -287,7 +289,7 @@ const MentionsLegalesPage = () => {
               </p>
             </div>
             <a
-              href={LIEN_WHATSAPP}
+              href={lienWhatsApp}
               target="_blank"
               rel="noopener noreferrer"
               style={{

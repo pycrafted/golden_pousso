@@ -1,96 +1,132 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { COLORS, RADIUS, FONT_DISPLAY, FONT_BODY } from '../../theme';
+import { useState, useEffect, useId } from 'react';
+import './gestion.css';
 
-export const PageHeader = ({ title, subtitle, action }) => (
-  <div style={{ marginBottom: '3rem' }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.6rem', marginBottom: subtitle ? '0.8rem' : 0 }}>
-      <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: '2.6rem', color: COLORS.ink, letterSpacing: '-0.01em' }}>{title}</h1>
-      {action}
-    </div>
-    {subtitle && (
-      <p style={{ fontFamily: FONT_BODY, fontSize: '1.35rem', color: COLORS.mutedOnLight, lineHeight: 1.6, maxWidth: '72rem' }}>
-        {subtitle}
-      </p>
-    )}
+/**
+ * Les briques de l'Espace Gestion.
+ * ---------------------------------------------------------------------------
+ * À la demande, l'Espace Gestion prolonge le dessin du site : indigo, laiton,
+ * pilules, tiroirs du panier. Tout le style vit dans gestion.css (classes
+ * .gx-*) ; ces composants ne posent plus aucune couleur en ligne. Ils lisaient
+ * `COLORS` (theme.js), figé pour un fond clair.
+ */
+
+/** Titre de page — celui des catalogues : sur-titre, h1, filet ; puis les
+ *  outils (recherche, filtres, action) centrés dessous. */
+export const PageHeader = ({ title, compte, action }) => (
+  <header className="gx-entete">
+    <span className="eyebrow">Espace Gestion</span>
+    <h1 className="gx-titre">{title}</h1>
+    <span className="filet-titre" aria-hidden="true" />
+    {compte && <p className="gx-compte">{compte}</p>}
+    {action && <div className="gx-outils">{action}</div>}
+  </header>
+);
+
+export const GestionButton = ({ children, variant = 'primary', petit = false, icone, className = '', type = 'button', ...props }) => (
+  <button
+    type={type}
+    {...props}
+    className={`gx-btn gx-btn--${variant}${petit ? ' gx-btn--petit' : ''} ${className}`.trim()}
+  >
+    {icone && <i className={`bx ${icone}`} aria-hidden="true" />}
+    {children}
+  </button>
+);
+
+/** Bouton rond à icône. `label` est obligatoire : c'est le seul nom du bouton. */
+export const IconButton = ({ icone, label, danger = false, ...props }) => (
+  <button
+    type="button"
+    {...props}
+    className={`gx-icone${danger ? ' gx-icone--danger' : ''}`}
+    aria-label={label}
+    title={label}
+  >
+    <i className={`bx ${icone}`} aria-hidden="true" />
+  </button>
+);
+
+export const GestionInput = ({ className = '', ...props }) => <input {...props} className={`field ${className}`.trim()} />;
+export const GestionTextarea = ({ className = '', ...props }) => <textarea {...props} className={`field ${className}`.trim()} />;
+export const GestionSelect = ({ children, className = '', ...props }) => (
+  <select {...props} className={`field ${className}`.trim()}>{children}</select>
+);
+
+export const Recherche = ({ label, ...props }) => (
+  <div className="gx-recherche">
+    <i className="bx bx-search" aria-hidden="true" />
+    <input type="search" className="field" aria-label={label} placeholder={label} {...props} />
   </div>
 );
 
-export const GestionButton = ({ children, variant = 'primary', style, ...props }) => {
-  const base = {
-    padding: '1rem 2rem', border: 'none', cursor: 'pointer', borderRadius: RADIUS,
-    fontFamily: FONT_BODY, fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.05em',
-    display: 'inline-flex', alignItems: 'center', gap: '0.6rem', transition: 'opacity 0.2s',
-  };
-  const variants = {
-    primary: { background: COLORS.gold, color: COLORS.cream },
-    outline: { background: 'transparent', color: COLORS.ink, border: `1px solid ${COLORS.mutedOnLight}` },
-    danger: { background: 'transparent', color: '#c0392b', border: '1px solid #c0392b' },
-    dangerSolid: { background: '#c0392b', color: '#fff' },
-  };
+/** Un champ libellé. `groupe` : un <div> au lieu d'un <label>, pour un
+ *  contenu qui porte déjà le sien (choix de fichier, pilules). */
+export const Field = ({ label, aide, groupe = false, children }) => {
+  const Balise = groupe ? 'div' : 'label';
   return (
-    <button
-      {...props}
-      style={{ ...base, ...variants[variant], ...style }}
-      onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-    >
+    <Balise className="gx-champ">
+      <span className="gx-label">{label}</span>
       {children}
-    </button>
+      {aide && <span className="gx-aide">{aide}</span>}
+    </Balise>
   );
 };
 
-const fieldBase = {
-  width: '100%', padding: '1rem 1.2rem', border: `1px solid #E0D8C8`, background: '#fff',
-  fontFamily: FONT_BODY, fontSize: '1.3rem', color: COLORS.ink, outline: 'none',
-  boxSizing: 'border-box', borderRadius: RADIUS,
-};
-
-export const GestionInput = (props) => <input {...props} style={{ ...fieldBase, ...props.style }} />;
-export const GestionTextarea = (props) => <textarea {...props} style={{ ...fieldBase, resize: 'vertical', ...props.style }} />;
-export const GestionSelect = ({ children, ...props }) => (
-  <select {...props} style={{ ...fieldBase, cursor: 'pointer', ...props.style }}>{children}</select>
+/** Le choix d'un fichier, en pilule de contour — la case native est cachée. */
+export const ChoixFichier = ({ libelle, fichier, disabled = false, ...props }) => (
+  <div>
+    <label className="gx-btn gx-btn--outline gx-fichier" aria-disabled={disabled || undefined}>
+      <i className="bx bx-upload" aria-hidden="true" />
+      {libelle}
+      <input type="file" disabled={disabled} {...props} />
+    </label>
+    {fichier && <span className="gx-fichier-nom">{fichier.name}</span>}
+  </div>
 );
 
-export const Field = ({ label, children }) => (
-  <label style={{ display: 'block', marginBottom: '1.6rem' }}>
-    <span style={{ display: 'block', fontFamily: FONT_BODY, fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: COLORS.mutedOnLight, marginBottom: '0.6rem' }}>
-      {label}
-    </span>
+export const Bascule = ({ children, ...props }) => (
+  <label className="gx-bascule">
+    <input type="checkbox" {...props} />
     {children}
   </label>
 );
 
-export const Badge = ({ children, tone = 'neutral' }) => {
-  const tones = {
-    neutral: { background: '#F0EAE0', color: COLORS.mutedOnLight },
-    success: { background: 'rgba(34,197,94,0.12)', color: '#16803d' },
-    warning: { background: 'rgba(184,150,10,0.14)', color: '#8a6d08' },
-    danger: { background: 'rgba(220,38,38,0.1)', color: '#c0392b' },
-  };
-  return (
-    <span style={{
-      display: 'inline-block', padding: '0.3rem 1rem', fontSize: '1.05rem', fontFamily: FONT_BODY,
-      fontWeight: 600, letterSpacing: '0.03em', borderRadius: '999px', ...tones[tone],
-    }}>
-      {children}
-    </span>
-  );
-};
+/** Filtres exclusifs en pilules. `options` : [{ valeur, libelle, nb? }]. */
+export const Pilules = ({ label, options, valeur, onChange }) => (
+  <div className="gx-filtres" role="group" aria-label={label}>
+    {options.map((o) => (
+      <button
+        key={o.valeur}
+        type="button"
+        className="gx-pilule"
+        aria-pressed={valeur === o.valeur}
+        onClick={() => onChange(o.valeur)}
+      >
+        {o.libelle}
+        {o.nb !== undefined && <span className="gx-pilule-nb">{o.nb}</span>}
+      </button>
+    ))}
+  </div>
+);
+
+/* Tons historiques (`neutral`, `success`, `warning`, `danger`) + `info`. */
+export const Badge = ({ children, tone = 'neutral' }) => (
+  <span className={`gx-pastille gx-pastille--${tone}`}>{children}</span>
+);
 
 export const GestionTable = ({ columns, children }) => (
-  <div style={{ overflowX: 'auto', background: '#fff', border: '1px solid #EDE5D6', borderRadius: RADIUS }}>
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: FONT_BODY }}>
+  <div className="gx-cadre gx-table-cadre">
+    <table className="gx-table">
       <thead>
         <tr>
-          {columns.map((c) => (
-            <th key={c} style={{
-              textAlign: 'left', padding: '1.2rem 1.6rem', fontSize: '1.05rem', textTransform: 'uppercase',
-              letterSpacing: '0.08em', color: COLORS.mutedOnLight, borderBottom: '1px solid #EDE5D6', whiteSpace: 'nowrap',
-            }}>
-              {c}
-            </th>
-          ))}
+          {columns.map((c, i) => {
+            const col = typeof c === 'string' ? { titre: c } : c;
+            return (
+              <th key={col.titre || i} className={col.droite ? 'gx-droite' : undefined}>
+                {col.titre || <span className="visually-hidden">Actions</span>}
+              </th>
+            );
+          })}
         </tr>
       </thead>
       <tbody>{children}</tbody>
@@ -98,69 +134,81 @@ export const GestionTable = ({ columns, children }) => (
   </div>
 );
 
-export const Td = ({ children, style }) => (
-  <td style={{ padding: '1.2rem 1.6rem', fontSize: '1.3rem', color: COLORS.ink, borderBottom: '1px solid #F3EEE2', ...style }}>
-    {children}
-  </td>
+/** Une cellule. `intitule` : le nom de la colonne, affiché devant la valeur
+ *  quand le tableau se replie en cartes (petit écran). */
+export const Td = ({ children, intitule, className, style }) => (
+  <td data-intitule={intitule} className={className} style={style}>{children}</td>
 );
 
-export const StatCard = ({ label, value, hint, tone = 'neutral', to }) => {
-  const toneColor = tone === 'warning' ? COLORS.terracotta : tone === 'danger' ? '#c0392b' : COLORS.gold;
-  const content = (
-    <>
-      <p style={{ fontFamily: FONT_BODY, fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: COLORS.mutedOnLight, marginBottom: '1rem' }}>
-        {label}
-      </p>
-      <p style={{ fontFamily: FONT_DISPLAY, fontSize: '2.8rem', color: toneColor }}>{value}</p>
-      {hint && <p style={{ fontFamily: FONT_BODY, fontSize: '1.15rem', color: COLORS.mutedOnLight, marginTop: '0.8rem' }}>{hint}</p>}
-    </>
-  );
-  const style = { display: 'block', background: '#fff', border: '1px solid #EDE5D6', borderRadius: RADIUS, padding: '2.2rem', textDecoration: 'none', transition: 'border-color 0.2s, box-shadow 0.2s' };
-  if (to) {
-    return (
-      <Link
-        to={to}
-        style={style}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = COLORS.gold; e.currentTarget.style.boxShadow = '0 2px 10px rgba(184,150,10,0.12)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#EDE5D6'; e.currentTarget.style.boxShadow = 'none'; }}
-      >
-        {content}
-      </Link>
-    );
-  }
-  return <div style={style}>{content}</div>;
+export const Panel = ({ children, className = '' }) => (
+  <div className={`gx-cadre gx-panneau ${className}`.trim()}>{children}</div>
+);
+
+/** État vide — le constat, la phrase, l'action. */
+export const EmptyState = ({ icon = 'bx-info-circle', title, description, action }) => (
+  <div className="gx-cadre gx-vide">
+    <span className="gx-vide-icone" aria-hidden="true"><i className={`bx ${icon}`} /></span>
+    <p className="gx-vide-titre">{title}</p>
+    {description && <p className="gx-vide-texte">{description}</p>}
+    {action && <div className="gx-vide-action">{action}</div>}
+  </div>
+);
+
+/** Squelette de chargement, au rayon des cadres qu'il remplace. */
+export const Chargement = ({ lignes = 4 }) => (
+  <div className="gx-squelette" aria-busy="true" aria-label="Chargement">
+    {Array.from({ length: lignes }, (_, i) => <span key={i} />)}
+  </div>
+);
+
+/* Échap ferme le calque. La boîte de confirmation, posée par-dessus un
+   tiroir, écoute en capture et arrête l'événement : Échap ne referme qu'elle,
+   pas le tiroir dessous. */
+const useEchap = (onClose, actif = true, dessus = false) => {
+  useEffect(() => {
+    if (!actif) return undefined;
+    const surTouche = (e) => {
+      if (e.key !== 'Escape') return;
+      if (dessus) e.stopPropagation();
+      onClose?.();
+    };
+    window.addEventListener('keydown', surTouche, dessus);
+    return () => window.removeEventListener('keydown', surTouche, dessus);
+  }, [onClose, actif, dessus]);
 };
 
-export const Panel = ({ children, style }) => (
-  <div style={{ background: '#fff', border: '1px solid #EDE5D6', borderRadius: RADIUS, padding: '2.4rem', ...style }}>
+/**
+ * Tiroir latéral — le dessin du panier et du formulaire produit : indigo
+ * glissant de la droite sur un voile flouté, titre de laiton, corps qui
+ * défile seul, pied fixe portant les actions.
+ */
+export const Tiroir = ({ titre, sousTitre, onClose, pied, children, fermable = true }) => {
+  const titreId = useId();
+  useEchap(fermable ? onClose : undefined, fermable);
+  return (
+    <>
+      <div className="gx-voile" onClick={fermable ? onClose : undefined} />
+      <div role="dialog" aria-modal="true" aria-labelledby={titreId} className="gx-tiroir on-dark">
+        <header className="gx-tiroir-tete">
+          <div style={{ minWidth: 0 }}>
+            <h2 id={titreId} className="gx-tiroir-titre">{titre}</h2>
+            {sousTitre && <p className="gx-tiroir-sous-titre">{sousTitre}</p>}
+          </div>
+          <IconButton icone="bx-x" label="Fermer" onClick={onClose} disabled={!fermable} />
+        </header>
+        <div className="gx-tiroir-corps">{children}</div>
+        {pied && <footer className="gx-tiroir-pied">{pied}</footer>}
+      </div>
+    </>
+  );
+};
+
+/** Un bloc de tiroir, séparé du précédent par un filet. */
+export const Bloc = ({ titre, children }) => (
+  <section className="gx-bloc">
+    {titre && <h3 className="gx-bloc-titre">{titre}</h3>}
     {children}
-  </div>
-);
-
-/** Bandeau d'aide contextuelle, à placer en haut d'une page pour expliquer ce qu'on peut y faire. */
-export const HelpBox = ({ children }) => (
-  <div style={{
-    display: 'flex', gap: '1.4rem', alignItems: 'flex-start',
-    background: 'rgba(184,150,10,0.08)', border: `1px solid rgba(184,150,10,0.25)`,
-    borderRadius: RADIUS, padding: '1.6rem 2rem', marginBottom: '2.4rem',
-  }}>
-    <i className="bx bx-bulb" style={{ fontSize: '2rem', color: COLORS.gold, flexShrink: 0, marginTop: '0.1rem' }} />
-    <p style={{ fontFamily: FONT_BODY, fontSize: '1.3rem', color: COLORS.ink, lineHeight: 1.7 }}>{children}</p>
-  </div>
-);
-
-/** État vide guidé — remplace les listes vides silencieuses par une explication + une action. */
-export const EmptyState = ({ icon = 'bx-info-circle', title, description, action }) => (
-  <div style={{ textAlign: 'center', padding: '6rem 3rem', background: '#fff', border: '1px dashed #E0D8C8', borderRadius: RADIUS }}>
-    <i className={`bx ${icon}`} style={{ fontSize: '4rem', color: COLORS.gold, marginBottom: '1.6rem', display: 'block' }} />
-    <p style={{ fontFamily: FONT_BODY, fontSize: '1.6rem', fontWeight: 700, color: COLORS.ink, marginBottom: '0.8rem' }}>{title}</p>
-    {description && (
-      <p style={{ fontFamily: FONT_BODY, fontSize: '1.3rem', color: COLORS.mutedOnLight, maxWidth: '46rem', margin: '0 auto 1.6rem', lineHeight: 1.7 }}>
-        {description}
-      </p>
-    )}
-    {action}
-  </div>
+  </section>
 );
 
 /**
@@ -170,6 +218,8 @@ export const EmptyState = ({ icon = 'bx-info-circle', title, description, action
  */
 export const ConfirmDialog = ({ title, description, confirmLabel = 'Confirmer', danger = true, onConfirm, onCancel }) => {
   const [loading, setLoading] = useState(false);
+  const titreId = useId();
+  useEchap(onCancel, !loading, true);
   const handleConfirm = async () => {
     setLoading(true);
     try {
@@ -179,14 +229,14 @@ export const ConfirmDialog = ({ title, description, confirmLabel = 'Confirmer', 
     }
   };
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      <div onClick={onCancel} style={{ position: 'absolute', inset: 0, background: 'rgba(26,18,8,0.55)' }} />
-      <div style={{ position: 'relative', background: '#fff', borderRadius: RADIUS, padding: '3.2rem', maxWidth: '46rem', width: '100%' }}>
-        <p style={{ fontFamily: FONT_BODY, fontSize: '1.8rem', fontWeight: 700, color: COLORS.ink, marginBottom: '1.2rem' }}>{title}</p>
-        <p style={{ fontFamily: FONT_BODY, fontSize: '1.35rem', color: COLORS.mutedOnLight, lineHeight: 1.7, marginBottom: '2.6rem' }}>{description}</p>
-        <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'flex-end' }}>
-          <GestionButton variant="outline" onClick={onCancel}>Annuler</GestionButton>
-          <GestionButton variant={danger ? 'dangerSolid' : 'primary'} onClick={handleConfirm} disabled={loading}>
+    <div className="gx-dialogue-cadre">
+      <div className="gx-voile" onClick={loading ? undefined : onCancel} />
+      <div role="alertdialog" aria-modal="true" aria-labelledby={titreId} className="gx-dialogue on-dark">
+        <h2 id={titreId} className="gx-tiroir-titre">{title}</h2>
+        <p className="gx-dialogue-texte">{description}</p>
+        <div className="gx-dialogue-actions">
+          <GestionButton variant="outline" onClick={onCancel} disabled={loading}>Annuler</GestionButton>
+          <GestionButton variant={danger ? 'dangerSolid' : 'primary'} onClick={handleConfirm} disabled={loading} autoFocus>
             {loading ? 'Un instant…' : confirmLabel}
           </GestionButton>
         </div>

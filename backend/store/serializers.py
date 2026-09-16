@@ -1,7 +1,7 @@
 ﻿from rest_framework import serializers
 from django.db import transaction
-from django.db.models import Avg
-from .models import Category, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, HeroBanner, AtelierImage, Review, StockAlert, ShowcaseVideo, SectionTexte, HeroPromotion
+from django.db.models import Q
+from .models import Category, Product, ProductImage, ProductVariant, Order, OrderItem, ContactMessage, StockAlert, ShowcaseVideo, SectionTexte, HeroPromotion, Coordonnees
 
 
 def cld(url, transform='f_auto,q_auto'):
@@ -12,52 +12,29 @@ def cld(url, transform='f_auto,q_auto'):
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    """Une seule des quatre catégories a une image propre. `image_url` retombe
-    donc sur la photo d'un produit du rayon : une tuile sans visuel casse la
-    grille de la page d'accueil, et l'admin ne peut pas toujours fournir une
-    image dédiée pour chaque rayon."""
-    image_url = serializers.SerializerMethodField()
+    """Nom, slug, parent et nombre de pièces — rien d'autre.
+
+    La photo (`image`, `image_url`), la description et l'ordre ont été retirés
+    à la demande. La photo d'un rayon de la maison vient du frontend
+    (constants/rayons.js) ; `parent` est vide pour une catégorie principale,
+    et c'est ce qui la distingue d'une sous-catégorie côté frontend.
+    """
     product_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'description', 'image', 'image_url',
-                  'product_count', 'order']
+        fields = ['id', 'name', 'slug', 'parent', 'product_count']
 
     def get_product_count(self, obj):
-        """Nombre de pièces en ligne dans le rayon.
+        """Pièces du rayon ET de ses sous-catégories : la page d'un rayon les
+        montre toutes (voir `ProductFilter.filtre_rayon`).
 
         Lit l'annotation posée par la vue quand elle existe ; retombe sur un
-        comptage direct pour les autres appels (détail produit, admin…)."""
+        comptage direct pour les autres appels."""
         compte = getattr(obj, 'nb_produits', None)
-        return compte if compte is not None else obj.products.filter(is_active=True).count()
-
-    def get_image_url(self, obj):
-        request = self.context.get('request')
-
-        def absolu(url):
-            return request.build_absolute_uri(url) if request else url
-
-        if obj.image:
-            return absolu(obj.fichier_web.url)
-
-        produit = (
-            obj.products
-            .filter(is_active=True, images__isnull=False)
-            .prefetch_related('images')
-            .first()
-        )
-        if produit:
-            image = produit.images.first()
-            if image:
-                return absolu(image.fichier_web.url)
-        return None
-
-
-def video_url(product, request):
-    if not product.video:
-        return None
-    return request.build_absolute_uri(product.video.url) if request else product.video.url
+        if compte is not None:
+            return compte
+        return Product.objects.filter(Q(category=obj) | Q(category__parent=obj)).count()
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -65,7 +42,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'alt_text', 'is_primary', 'order']
+        fields = ['id', 'image', 'is_primary', 'order']
 
     def get_image(self, obj):
         request = self.context.get('request')
@@ -88,29 +65,15 @@ class ProductListSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     primary_image = serializers.SerializerMethodField()
     secondary_image = serializers.SerializerMethodField()
-    video_url = serializers.SerializerMethodField()
     discount_percent = serializers.SerializerMethodField()
-    rating_avg = serializers.SerializerMethodField()
-    review_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'slug', 'category', 'price', 'old_price',
-            'primary_image', 'secondary_image', 'video_url',
-            'discount_percent', 'is_new', 'is_featured', 'stock',
-            'rating_avg', 'review_count',
+            'primary_image', 'secondary_image',
+            'discount_percent', 'stock',
         ]
-
-    def get_video_url(self, obj):
-        return video_url(obj, self.context.get('request'))
-
-    def get_rating_avg(self, obj):
-        avg = obj.reviews.filter(is_approved=True).aggregate(avg=Avg('rating'))['avg']
-        return round(avg, 1) if avg else None
-
-    def get_review_count(self, obj):
-        return obj.reviews.filter(is_approved=True).count()
 
     def get_primary_image(self, obj):
         request = self.context.get('request')
@@ -139,19 +102,14 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
     primary_image = serializers.SerializerMethodField()
-    video_url = serializers.SerializerMethodField()
     discount_percent = serializers.SerializerMethodField()
-    rating_avg = serializers.SerializerMethodField()
-    review_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'slug', 'category', 'description',
             'price', 'old_price', 'discount_percent', 'stock',
-            'is_active', 'is_featured', 'is_new',
-            'primary_image', 'video_url', 'images', 'variants',
-            'rating_avg', 'review_count',
+            'primary_image', 'images', 'variants',
             'created_at', 'updated_at'
         ]
 
@@ -162,18 +120,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return cld(request.build_absolute_uri(img.fichier_web.url), 'w_1200,f_auto,q_auto,c_limit')
         return None
 
-    def get_video_url(self, obj):
-        return video_url(obj, self.context.get('request'))
-
     def get_discount_percent(self, obj):
         return obj.discount_percent
-
-    def get_rating_avg(self, obj):
-        avg = obj.reviews.filter(is_approved=True).aggregate(avg=Avg('rating'))['avg']
-        return round(avg, 1) if avg else None
-
-    def get_review_count(self, obj):
-        return obj.reviews.filter(is_approved=True).count()
 
 
 
@@ -191,7 +139,8 @@ class OrderCreateSerializer(serializers.Serializer):
     customer_email = serializers.EmailField(required=False, allow_blank=True)
     delivery_address = serializers.CharField(required=False, allow_blank=True)
     delivery_zone = serializers.ChoiceField(choices=Order.DELIVERY_ZONE_CHOICES)
-    payment_method = serializers.ChoiceField(choices=Order.PAYMENT_CHOICES)
+    # Plus de `payment_method` à choisir : toute commande se paie par PayDunya,
+    # à la demande (voir Order.PAYMENT_CHOICES). Un champ envoyé est ignoré.
     notes = serializers.CharField(required=False, allow_blank=True)
     items = OrderItemInputSerializer(many=True)
 
@@ -235,6 +184,7 @@ class OrderCreateSerializer(serializers.Serializer):
 
             order = Order.objects.create(
                 **validated_data,
+                payment_method='paydunya',
                 delivery_fee=delivery_fee,
                 subtotal=subtotal,
                 total=subtotal + delivery_fee,
@@ -266,31 +216,13 @@ class OrderOutputSerializer(serializers.ModelSerializer):
         ]
 
 
-class ShowcaseVideoProductSerializer(serializers.ModelSerializer):
-    """Strict minimum pour la carte posée sur la vidéo : photo, nom, prix."""
-    primary_image = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Product
-        fields = ['id', 'name', 'slug', 'price', 'primary_image']
-
-    def get_primary_image(self, obj):
-        image = obj.images.first()
-        if not image:
-            return None
-        request = self.context.get('request')
-        url = image.fichier_web.url
-        return request.build_absolute_uri(url) if request else url
-
-
 class ShowcaseVideoSerializer(serializers.ModelSerializer):
     video_url = serializers.SerializerMethodField()
     poster_url = serializers.SerializerMethodField()
-    product = ShowcaseVideoProductSerializer(read_only=True)
 
     class Meta:
         model = ShowcaseVideo
-        fields = ['id', 'video_url', 'poster_url', 'product']
+        fields = ['id', 'video_url', 'poster_url']
 
     def _absolu(self, fichier):
         """URL absolue si la requête est dans le contexte, relative sinon.
@@ -305,10 +237,8 @@ class ShowcaseVideoSerializer(serializers.ModelSerializer):
         return request.build_absolute_uri(fichier.url) if request else fichier.url
 
     def get_video_url(self, obj):
-        # Le lien d'abord : quand il est renseigné, c'est lui qui fait foi.
-        # Il pointe déjà sur une adresse publique et complète — rien à
-        # reconstruire.
-        return obj.video_lien or self._absolu(obj.video)
+        # Un lien Cloudflare, déjà public et complet : rien à reconstruire.
+        return obj.video_lien
 
     def get_poster_url(self, obj):
         return self._absolu(obj.poster)
@@ -318,6 +248,21 @@ class SectionTexteSerializer(serializers.ModelSerializer):
     class Meta:
         model = SectionTexte
         fields = ['cle', 'surtitre', 'titre']
+
+
+class CoordonneesSerializer(serializers.ModelSerializer):
+    """Les coordonnées telles que la bande les affiche.
+
+    `telephone_lien` est calculé par le modèle et non saisi : deux champs pour
+    un même numéro finiraient par se contredire, et c'est le lien — invisible —
+    qui serait faux.
+    """
+    telephone_lien = serializers.CharField(read_only=True)
+    whatsapp = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Coordonnees
+        fields = ['adresse', 'telephone', 'telephone_lien', 'whatsapp', 'email']
 
 
 class ContactMessageSerializer(serializers.ModelSerializer):
@@ -338,65 +283,6 @@ class HeroPromotionSerializer(serializers.ModelSerializer):
     class Meta:
         model = HeroPromotion
         fields = ['titre', 'offre', 'accroche', 'lien', 'libelle_lien', 'fin']
-
-
-class HeroBannerSerializer(serializers.ModelSerializer):
-    image_url = serializers.SerializerMethodField()
-
-    class Meta:
-        model = HeroBanner
-        fields = ['id', 'image_url']
-
-    def get_image_url(self, obj):
-        request = self.context.get('request')
-        if obj.image and request:
-            return cld(request.build_absolute_uri(obj.fichier_web.url), 'w_1920,f_auto,q_auto,c_limit')
-        return None
-
-
-class AtelierImageSerializer(serializers.ModelSerializer):
-    image_url = serializers.SerializerMethodField()
-
-    class Meta:
-        model = AtelierImage
-        # `order` place la photo : 0 à gauche, 1 à droite. Sans lui, le
-        # frontend ne pourrait que les empiler dans l'ordre reçu — et une
-        # seule photo publiée à droite atterrirait à gauche.
-        fields = ['id', 'image_url', 'order']
-
-    def get_image_url(self, obj):
-        request = self.context.get('request')
-        if obj.image and request:
-            return cld(request.build_absolute_uri(obj.fichier_web.url), 'w_1200,f_auto,q_auto,c_limit')
-        return None
-
-
-# ── Avis clients ──
-
-class ReviewSerializer(serializers.ModelSerializer):
-    customer_name = serializers.SerializerMethodField()
-    photo = serializers.SerializerMethodField()
-    product_name = serializers.CharField(source='product.name', read_only=True)
-    product_slug = serializers.CharField(source='product.slug', read_only=True)
-
-    class Meta:
-        model = Review
-        fields = ['id', 'customer_name', 'rating', 'comment', 'photo', 'product_name', 'product_slug', 'created_at']
-
-    def get_customer_name(self, obj):
-        return obj.customer.get_full_name() or obj.customer.first_name or 'Client Golden Pousso'
-
-    def get_photo(self, obj):
-        request = self.context.get('request')
-        if obj.photo and request:
-            return cld(request.build_absolute_uri(obj.photo.url), 'w_400,f_auto,q_auto,c_limit')
-        return None
-
-
-class ReviewCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Review
-        fields = ['rating', 'comment', 'photo']
 
 
 # ── Alertes de réassort ──

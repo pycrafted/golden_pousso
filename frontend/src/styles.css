@@ -46,6 +46,7 @@
   /* Terre cuite — accent secondaire : promo, solde, urgence douce. */
   --gp-terra-500: #C2662D;    /* sur fond sombre — 4,61:1 sur indigo-900 */
   --gp-terra-700: #9A4E1C;    /* sur fond clair — 5,60:1 sur écru-50 */
+  --gp-terra-300: #D6804A;    /* sur le site sombre — 5,73:1 sur #161B2D, 4,93:1 sur indigo-700 */
 
   /* Neutres */
   --gp-ink:   #12141C;        /* quasi-noir indigo — 17,05:1 sur écru-50 */
@@ -54,6 +55,11 @@
   /* États */
   --gp-success:  #1E7A46;     /* 4,96:1 sur écru-50 */
   --gp-danger:   #B3261E;     /* 6,06:1 sur écru-50 */
+  --gp-danger-300: #EF8A80;   /* sur le site sombre — 7,01:1 sur #161B2D */
+  /* États sur le site sombre — pastilles de l'Espace Gestion (texte sur un
+     voile de 14 % de sa propre teinte posé sur #161B2D). */
+  --gp-success-300: #7BCB9B;  /* 8,84:1 sur #161B2D, 6,66:1 sur sa pastille */
+  --gp-info-300:    #9DB4E8;  /* 8,24:1 sur #161B2D, 6,30:1 sur sa pastille */
   --gp-whatsapp: #25D366;     /* couleur de marque — fond uniquement, texte ink */
 
 
@@ -315,7 +321,8 @@ section {
 }
 
 /* La dernière section d'une page retrouve un espace en bas : sans lui, son
-   contenu viendrait toucher le pied de page. */
+   contenu toucherait le bas de la page — il n'y a plus de pied de page pour
+   l'en séparer. */
 main > section:last-of-type {
   padding-bottom: var(--section-y);
 }
@@ -327,11 +334,18 @@ img {
 
 /* Le focus clavier doit rester visible partout — le reset ci-dessus a mis
    outline: none sur tout, ce qui rend le site inutilisable au clavier sans
-   cette règle. Le :focus-visible ne s'affiche pas à la souris. */
+   cette règle. Le :focus-visible ne s'affiche pas à la souris.
+
+   ⚠ PLUS DE DOUBLE BORDURE, à la demande. L'anneau était décalé de 3 px :
+   autour d'un élément qui a sa propre bordure (champ, bouton en pilule,
+   case), l'écart dessinait un second cadre. Il est désormais COLLÉ
+   (outline-offset: 0) et suit l'arrondi de l'élément — on voit une bordure
+   plus épaisse, pas deux. Les champs de saisie n'ont plus d'anneau du tout :
+   leur propre bordure s'épaissit (voir « .field:focus »). Ne pas remettre de
+   décalage positif sur un élément bordé. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--gp-brass-700);
-  outline-offset: 3px;
-  border-radius: var(--r-1);
+  outline-offset: 0;
 }
 
 .on-dark :where(a, button, input, select, textarea, [tabindex]):focus-visible {
@@ -366,11 +380,28 @@ img {
 
    La page porte son fond en propre : `--surface` sur toute la hauteur, même
    quand la liste est vide et ne remplit pas l'écran. Sans le `min-height`,
-   l'état vide laisse voir le fond du document sous le pied de page. */
+   l'état vide laisse voir le fond du document sous la liste. */
 .catalogue-page {
   background: var(--surface);
   color: var(--text);
   min-height: 100vh;
+}
+
+/* Variante sombre, posée par la page qui la veut (`catalogue-page on-dark`) :
+   la boutique, à la demande, sur l'indigo du chrome. Depuis, TOUT le site
+   public l'est (« .site-page ») : cette variante ne change plus rien, elle
+   reste pour une page qui sortirait du Layout. `.on-dark` bascule les tokens
+   mais pose #0F1320 : la double classe rend #161B2D.
+
+   `--surface-sunk` passe à l'indigo-700 : sous `.on-dark` il vaudrait
+   l'indigo-800, soit #161B2D, la couleur même de la page — les emplacements
+   de photo en attente et les squelettes de chargement disparaîtraient dans
+   le fond. Contrastes sur #161B2D : écru 15,85:1, écru à 62 % 6,79:1,
+   laiton clair 7,14:1. */
+.catalogue-page.on-dark {
+  background: var(--surface-chrome);
+  --surface: var(--surface-chrome);
+  --surface-sunk: var(--gp-indigo-700);
 }
 
 /* L'en-tête est un <section> : il prend son espace du haut de la règle
@@ -401,6 +432,60 @@ img {
 }
 
 .catalogue-entete .filet-titre { margin-inline: auto; }
+
+/* La ligne du titre porte, pour les seuls comptes `is_staff`, le stylo qui
+   ouvre l'ajout d'une piece au rayon. Le stylo est pose EN DEHORS du flux, a
+   droite du titre : le titre reste centre sur la page, qu'il y ait un stylo
+   ou non - un visiteur et un administrateur voient le meme en-tete. */
+.catalogue-titre-ligne {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.catalogue-edition {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  margin-left: var(--s-3);
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  padding: 0;
+  /* Fond doré plein, à la demande — il était transparent, cerné d'un filet.
+     Laiton clair sur l'indigo de la page, 7,14:1 ; stylo indigo dessus,
+     7,74:1. Au survol, écru et encre (17,05:1), comme les autres pilules de
+     laiton du site (« Créer la pièce »). Le site public étant tout indigo, le
+     laiton clair ne se pose jamais sur l'écru, où il ne tiendrait que 2,2:1. */
+  border: 1px solid var(--gp-brass-400);
+  border-radius: var(--r-pill);
+  background: var(--gp-brass-400);
+  color: var(--gp-indigo-900);
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease),
+              color var(--dur-1) var(--ease),
+              border-color var(--dur-1) var(--ease);
+}
+.catalogue-edition:hover {
+  background: var(--gp-ecru-50);
+  border-color: var(--gp-ecru-50);
+  color: var(--gp-ink);
+}
+
+/* En petit ecran, un nom de rayon long occupe toute la largeur : pose a
+   droite, le stylo sortirait de l'ecran. Il revient dans le flux, sous le
+   titre. */
+@media (max-width: 640px) {
+  .catalogue-titre-ligne { display: block; }
+  .catalogue-edition {
+    position: static;
+    transform: none;
+    margin: var(--s-3) auto 0;
+  }
+}
 
 .catalogue-corps {
   max-width: var(--page-max);
@@ -486,6 +571,75 @@ img {
 .on-dark h2,
 .on-dark h3,
 .on-dark h4 { color: var(--text-on-dark); }
+
+/* ── Le site entier sur l'indigo #161B2D ────────────────────────────────────
+   À la demande, toutes les pages publiques : le Layout pose « site-page
+   on-dark » sur <main>. « .on-dark » bascule le texte et les filets ; cette
+   double classe reprend le fond et « --surface » au chrome (« .on-dark » seul
+   poserait #0F1320), et redéfinit ce qui ne bascule pas de lui-même :
+
+   - --surface-sunk à l'indigo-700 : sinon la couleur exacte de la page, et
+     photos en attente comme squelettes de chargement y disparaissaient ;
+   - le bouton plein : écru à l'encre (17,05:1 ; survol écru-100, 15,49:1).
+     Plein d'encre, il était invisible sur l'indigo ;
+   - --text-promo : la terre cuite claire (5,73:1) ; la 500 ne tenait que
+     4,26:1 ;
+   - le contour des champs (--field-bord*) : écru à 40 %, 3,60:1 — le seuil
+     d'un contour de champ est 3:1, le filet à 10 % disparaissait ; laiton
+     clair au survol et au focus ; rouge clair en erreur (7,01:1).
+
+   La barre de navigation, la bande de coordonnées, le panneau du panier et
+   les notifications sont HORS de <main> : ils gardent leurs couleurs.
+   L'Espace Gestion a son propre layout, mais pose les mêmes classes : il est
+   sur le même indigo (voir pages/gestion/gestion.css). */
+.site-page.on-dark {
+  background: var(--surface-chrome);
+  --surface: var(--surface-chrome);
+  --surface-sunk: var(--gp-indigo-700);
+  --action-fill: var(--gp-ecru-50);
+  --action-fill-text: var(--gp-ink);
+  --action-fill-hover: var(--gp-ecru-100);
+  --text-promo: var(--gp-terra-300);
+  --field-bord: rgba(250, 246, 238, 0.4);
+  --field-bord-survol: var(--gp-brass-400);
+  --field-bord-focus: var(--gp-brass-400);
+  --field-bord-erreur: var(--gp-danger-300);
+}
+/* Sous une page plus courte que l'écran, le document garde l'indigo. */
+body:has(.site-page) { background: var(--surface-chrome); }
+
+/* ── Îlot clair ──────────────────────────────────────────────────────────────
+   Un bloc DESSINÉ pour un fond clair, posé dans le site sombre — le
+   formulaire produit de l'admin ouvert depuis un rayon, les cartes blanches
+   du compte, de la commande et de l'historique : ces tokens le rendent à
+   l'écru. Les titres aussi, que « .on-dark h1…h4 » repeignait.
+   Une valeur comme « var(--line) » se résout ici, sur l'îlot : elle vaut
+   donc le filet clair. */
+.theme-clair {
+  --surface: var(--gp-ecru-50);
+  --surface-sunk: var(--gp-ecru-100);
+  --text: var(--gp-ink);
+  --text-muted: var(--gp-slate);
+  --text-accent: var(--gp-brass-700);
+  --text-promo: var(--gp-terra-700);
+  --line: var(--gp-ecru-200);
+  --line-accent: rgba(131, 107, 38, 0.32);
+  --action-fill: var(--gp-ink);
+  --action-fill-text: var(--gp-ecru-50);
+  --action-fill-hover: var(--gp-indigo-700);
+  --field-bord: var(--line);
+  --field-bord-survol: var(--line-accent);
+  --field-bord-focus: var(--gp-brass-700);
+  --field-bord-erreur: var(--gp-danger);
+  color: var(--text);
+}
+.on-dark .theme-clair :is(h1, h2, h3, h4) { color: var(--text); }
+/* L'anneau de focus revient au laiton foncé : le laiton clair du fond sombre
+   (« .on-dark … :focus-visible ») ne tenait qu'environ 2,2:1 sur un îlot
+   clair. Même spécificité, déclarée après : elle l'emporte. */
+.theme-clair :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline-color: var(--gp-brass-700);
+}
 
 
 /* ═══════════════ PRIMITIVES TYPOGRAPHIQUES ══════════════════════════════ */
@@ -719,8 +873,8 @@ img {
   object-fit: cover;
 }
 
-/* Badge posé dans un coin de média (Nouveau, Rupture, -20%). */
-/* Badges de carte produit — « Nouveauté », « −X % », « Épuisé ».
+/* Badges de carte produit — « −X % », « Épuisé ». (« Nouveauté » a été
+   retiré du site à la demande.)
    Ils sont TOUJOURS posés sur une photo, jamais sur un aplat maîtrisé. D'où
    deux exigences que n'a pas un badge d'interface ordinaire :
 
@@ -749,20 +903,18 @@ img {
               0 0.4rem 1.2rem -0.4rem rgba(15, 19, 32, 0.55);
 }
 
-.badge--new   { background: var(--gp-brass-400); color: var(--gp-indigo-900); }
 .badge--out   { background: var(--gp-indigo-900); color: var(--gp-ecru-50); }
 
 /* La remise est le seul badge qui porte un chiffre, et c'est celui qui doit
    s'imposer : plus grand, plus lourd, moins interlettré — un nombre n'a pas
    besoin de l'espacement qui aère un mot en capitales.
 
-   Le fond passe de terracotta-500 à terracotta-700. Ce n'est pas un choix de
-   goût : l'écru sur terracotta-500 ne tenait que 3,72:1, sous le seuil AA de
-   4,5:1 pour un texte de cette taille. Sur terracotta-700 il tient 5,60:1, et
-   le ton plus profond tranche en prime sur les photos claires et dorées où
-   l'ancien se noyait. */
+   Le fond est ROUGE, à la demande — le rouge d'erreur du système,
+   --gp-danger #B3261E, sur les cartes produit comme sur la fiche. Il a été
+   terracotta-500 (écru 3,72:1, sous le seuil AA de 4,5:1), puis
+   terracotta-700 (5,60:1). */
 .badge--promo {
-  background: var(--gp-terra-700);   /* écru-50 : 5,60:1 ✅ */
+  background: var(--gp-danger);      /* écru-50 : 6,06:1 ✅ */
   color: var(--gp-ecru-50);
   font-size: 1.35rem;
   font-weight: 800;
@@ -839,7 +991,9 @@ img {
   width: 100%;
   padding: 1.3rem var(--s-4);
   background: var(--surface);
-  border: 1px solid var(--line);
+  /* --field-bord* : réglés par le site sombre et l'îlot clair ; à défaut,
+     les filets du fond clair. */
+  border: 1px solid var(--field-bord, var(--line));
   border-radius: var(--r-1);
   font-family: var(--font-body);
   font-size: var(--t-body);
@@ -849,10 +1003,19 @@ img {
 }
 
 .field::placeholder { color: var(--text-muted); }
-.field:hover { border-color: var(--line-accent); }
-.field:focus { border-color: var(--gp-brass-700); }
+.field:hover { border-color: var(--field-bord-survol, var(--line-accent)); }
+/* Le focus d'un champ : SA bordure, épaissie à 2 px (le trait intérieur
+   double le filet sans changer la taille du champ) et passée au laiton —
+   4,76:1 sur l'écru, 7,14:1 en laiton clair sur l'indigo, au-dessus des 3:1
+   d'un indicateur de focus. L'anneau global est retiré ici : collé ou non à
+   la bordure, il aurait fait un second cadre. */
+.field:focus {
+  border-color: var(--field-bord-focus, var(--gp-brass-700));
+  box-shadow: inset 0 0 0 1px var(--field-bord-focus, var(--gp-brass-700));
+}
+.field:focus-visible { outline: none; }
 
-.field[aria-invalid="true"] { border-color: var(--gp-danger); }
+.field[aria-invalid="true"] { border-color: var(--field-bord-erreur, var(--gp-danger)); }
 
 .label {
   display: block;

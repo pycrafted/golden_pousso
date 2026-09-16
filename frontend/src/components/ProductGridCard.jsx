@@ -10,17 +10,21 @@ import ProductCard from './ProductCard';
 
    Les grilles PLP tiennent 4 colonnes en desktop, d'où le `sizes` plus serré
    que la valeur par défaut du composant. */
-export const PLPCard = ({ product, index }) => (
+export const PLPCard = ({ product, index, onModifie }) => (
   <ProductCard
     product={product}
     index={index}
+    onModifie={onModifie}
     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
   />
 );
 
-/* ── Skeleton ── */
+/* ── Skeleton ──
+   « --surface-sunk » et non #F2EBDD en dur : c'est la même valeur sur les
+   pages claires, et sur la boutique, sombre, le squelette prend l'indigo des
+   emplacements de photo au lieu d'y poser des cartes écru. */
 export const SkeletonCard = () => (
-  <div style={{ aspectRatio: '3/4', background: '#F2EBDD', borderRadius: 'var(--r-surface)', animation: 'shimmer 1.6s ease-in-out infinite' }} />
+  <div style={{ aspectRatio: '3/4', background: 'var(--surface-sunk)', borderRadius: 'var(--r-surface)', animation: 'shimmer 1.6s ease-in-out infinite' }} />
 );
 
 /* @deprecated — `fadeUp`, `fadeDown` et `shimmer` sont désormais déclarées une

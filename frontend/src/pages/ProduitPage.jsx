@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import CldImg from '../components/CldImg';
 import ProductCard from '../components/ProductCard';
+import PastillesPiece from '../components/PastillesPiece';
 import SEOHead from '../components/SEOHead';
-import SizeGuideModal from '../components/SizeGuideModal';
 import StockAlertForm from '../components/StockAlertForm';
 import apiClient from '../api/client';
 import useCartStore from '../store/cartStore';
-import useFavorisStore from '../store/favorisStore';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
 /**
@@ -26,8 +25,8 @@ import useSettingsStore, { formatPrice } from '../store/settingsStore';
  * Indigo comme le reste du site : plus une seule couleur en dur ici.
  *
  * ── Ce que la colonne dit, et ce qu'elle ne dit plus ────────────────────────
- * L'ordre : rayon (en tête de page) · titre · avis · prix · description ·
- * couleur · taille · quantité, panier, cœur · stock.
+ * L'ordre : rayon (en tête de page) · titre · prix · description ·
+ * couleur · taille · quantité et panier · stock.
  * La description est lue TÔT, entre le prix et les choix : on sait ce qu'on
  * achète avant de choisir une taille, pas après avoir déplié un accordéon.
  *
@@ -51,7 +50,10 @@ import useSettingsStore, { formatPrice } from '../store/settingsStore';
  *   de cérémonie commandé en plusieurs exemplaires, c'était le parcours du
  *   combattant.
  * • Le CŒUR. Il existait sur la carte produit et disparaissait sur la fiche —
- *   soit exactement là où l'on hésite.
+ *   soit exactement là où l'on hésite. Il est posé sur la photo, avec les
+ *   autres pastilles de la carte (PastillesPiece) ; celui de la colonne
+ *   d'achat, à côté du panier, a été retiré à la demande : il faisait
+ *   doublon.
  * • Le SUPPLÉMENT DE VARIANTE. La colonne affichait `product.price` pendant
  *   que le panier facturait `price + variant.price_adjustment` : la fiche
  *   annonçait un prix, le panier en réclamait un autre. Le prix suit
@@ -61,11 +63,11 @@ import useSettingsStore, { formatPrice } from '../store/settingsStore';
  *   sur la foi d'une taille que le client n'avait pas demandée.
  *
  * ── Ce qui n'a pas été ajouté, volontairement ───────────────────────────────
- * • Pas de bouton WhatsApp : il avait été retiré à la demande, et le Layout
- *   pose déjà une bulle WhatsApp flottante sur toutes les pages.
+ * • Pas de bouton WhatsApp : il avait été retiré à la demande, et la barre de
+ *   navigation porte déjà l'icône WhatsApp sur toutes les pages.
  * • Pas de référence article : le modèle `Product` n'a pas de SKU.
- * • Pas de note en dur. La ligne d'avis ne s'affiche que s'il existe vraiment
- *   des avis approuvés (`rating_avg`, `review_count`).
+ * • Pas d'avis : la note, les étoiles et le nombre d'avis ont été retirés du
+ *   site, front et back, à la demande.
  * • Les couleurs restent des boutons de texte : elles sont saisies en texte
  *   libre en admin, sans code hexadécimal. Le jour où `ProductVariant` gagne
  *   un champ couleur, la pastille ronde devient possible.
@@ -73,7 +75,10 @@ import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
 const ProduitPage = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const addItem = useCartStore((s) => s.addItem);
+  /* Relit la pièce après une modification par le stylo de la photo. */
+  const [version, setVersion] = useState(0);
   const currency = useSettingsStore((s) => s.currency);
 
   const [product, setProduct] = useState(null);
@@ -85,7 +90,6 @@ const ProduitPage = () => {
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantite, setQuantite] = useState(1);
-  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   /* ── Loupe ──────────────────────────────────────────────────────────────
      `zoom` : la loupe est active. `origine` : le point de la photo, en %, que
@@ -98,10 +102,15 @@ const ProduitPage = () => {
   const [origine, setOrigine] = useState({ x: 50, y: 50 });
   const [hdDemandee, setHdDemandee] = useState(false);
 
-  // Un booléen et non l'objet du magasin : un sélecteur qui renvoie un nouvel
-  // objet à chaque rendu ferait boucler zustand.
-  const aime = useFavorisStore((s) => s.items.some((f) => f.id === product?.id));
-  const basculerFavori = useFavorisStore((s) => s.basculer);
+  /* Le NIVEAU de la loupe se règle, à la demande : molette sur la photo, ou
+     « − / + » en haut à gauche. Il valait 1,55, fixe. Au bout de la plage,
+     la molette rend la main à la page : tourner vers le bas au niveau le plus
+     faible fait défiler, au lieu de bloquer le défilement tant que le
+     pointeur est sur la grande photo. */
+  const [niveau, setNiveau] = useState(LOUPE.defaut);
+  const niveauRef = useRef(niveau);
+  useEffect(() => { niveauRef.current = niveau; }, [niveau]);
+  const visuelRef = useRef(null);
 
   useEffect(() => {
     setLoading(true);
@@ -112,6 +121,7 @@ const ProduitPage = () => {
     setQuantite(1);
     setZoom(false);
     setHdDemandee(false);
+    setNiveau(LOUPE.defaut);
 
     apiClient.get(`/products/${slug}/`)
       .then((r) => {
@@ -124,7 +134,26 @@ const ProduitPage = () => {
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, version]);
+
+  useEffect(() => {
+    const el = visuelRef.current;
+    if (!el) return undefined;
+    const surRoue = (e) => {
+      if (!MQ_POINTEUR_FIN?.matches || !el.classList.contains('peut-zoomer')) return;
+      if (e.target.closest('.fp-vues, .pc-pastilles')) return;
+      const n = niveauRef.current;
+      if ((e.deltaY > 0 && n <= LOUPE.min) || (e.deltaY < 0 && n >= LOUPE.max)) return;
+      e.preventDefault();
+      // Proportionnel au geste : un cran de molette (~100) vaut un pas ; un
+      // pavé tactile, qui envoie une pluie de petits écarts, zoome en douceur.
+      setNiveau(borner(n - e.deltaY * (LOUPE.pas / 100)));
+      setZoom(true);
+      setHdDemandee(true);
+    };
+    el.addEventListener('wheel', surRoue, { passive: false });
+    return () => el.removeEventListener('wheel', surRoue);
+  }, [loading, error]);
 
   if (loading) {
     return (
@@ -145,11 +174,13 @@ const ProduitPage = () => {
     );
   }
 
-  // La vidéo, quand le produit en a une, occupe la première place de la galerie.
+  // Les photos seules : la vidéo de produit, qui ouvrait la galerie, a été
+  // retirée, front et back, à la demande.
   const media = [
-    ...(product.video_url ? [{ type: 'video', key: 'video', src: product.video_url }] : []),
     ...(product.images ?? []).map((img) => ({
-      type: 'image', key: `img-${img.id}`, src: img.image, alt: img.alt_text,
+      // Le nom de la pièce décrit la photo : le texte alternatif saisi à la
+      // main a été retiré, front et back, à la demande.
+      type: 'image', key: `img-${img.id}`, src: img.image, alt: product.name,
     })),
   ];
   const courant = media[selectedImage];
@@ -208,16 +239,18 @@ const ProduitPage = () => {
     setQuantite(Math.min(Math.max(1, qte + delta), Math.max(1, stockDispo)));
   };
 
-  /* La loupe ne vaut que pour une photo : sur une vidéo elle masquerait les
-     contrôles natifs, qui occupent précisément la bande où l'on pointe. */
-  const zoomable = courant?.type === 'image';
+  // Toute vue est une photo : la loupe vaut dès qu'il y en a une.
+  const zoomable = Boolean(courant);
 
   const suivrePointeur = (e) => {
     if (!zoomable || !MQ_POINTEUR_FIN?.matches) return;
     // La bande de vues est posée EN SURIMPRESSION sur le bas du visuel : sans
     // cette sortie, viser une miniature ferait plonger l'agrandissement vers
     // le bas de la photo au moment même où l'on s'apprête à en changer.
-    if (e.target.closest('.fp-vues')) { setZoom(false); return; }
+    if (e.target.closest('.fp-vues, .pc-pastilles')) { setZoom(false); return; }
+    // Sur la commande du zoom, l'agrandissement reste tel quel : on voit
+    // l'effet du clic sans que le point de mire saute vers le coin.
+    if (e.target.closest('.fp-loupe')) return;
     const r = e.currentTarget.getBoundingClientRect();
     setOrigine({
       x: ((e.clientX - r.left) / r.width) * 100,
@@ -227,8 +260,11 @@ const ProduitPage = () => {
     setHdDemandee(true);
   };
 
-  const note = product.rating_avg;
-  const nbAvis = product.review_count;
+  const changerNiveau = (delta) => {
+    setNiveau((n) => borner(n + delta));
+    setZoom(true);
+    setHdDemandee(true);
+  };
 
   return (
     <div className="fp">
@@ -258,18 +294,13 @@ const ProduitPage = () => {
               garde-fou « pointeur fin » qu'un style inline ne saurait pas
               porter. */}
           <div
+            ref={visuelRef}
             className={`fp-visuel ${zoomable ? 'peut-zoomer' : ''} ${zoom ? 'est-zoom' : ''}`}
-            style={{ '--zx': `${origine.x}%`, '--zy': `${origine.y}%` }}
+            style={{ '--zx': `${origine.x}%`, '--zy': `${origine.y}%`, '--zniveau': niveau }}
             onMouseMove={suivrePointeur}
             onMouseLeave={() => setZoom(false)}
           >
-            {courant?.type === 'video' ? (
-              <video
-                key={courant.src}
-                src={courant.src}
-                controls autoPlay muted loop playsInline
-              />
-            ) : courant ? (
+            {courant ? (
               <>
                 <CldImg
                   src={courant.src}
@@ -299,12 +330,34 @@ const ProduitPage = () => {
               <span className="fp-vide">Photo bientôt</span>
             )}
 
+            {/* Les quatre pastilles de la carte produit — cœur, panier, et
+                pour un admin stylo et poubelle —, au même endroit et au même
+                dessin, à la demande (PastillesPiece). Le panier ajoute la
+                taille et la quantité choisies ; une pièce supprimée renvoie
+                vers son rayon. */}
+            <PastillesPiece
+              product={product}
+              epuise={product.stock === 0}
+              onAjouterPanier={ajouterAuPanier}
+              onModifie={() => setVersion((v) => v + 1)}
+              onSupprime={() => navigate(`/categorie/${product.category?.slug ?? ''}`, { replace: true })}
+            />
+
+            {/* Le réglage de la loupe — pointeur fin seulement, comme la
+                loupe elle-même (voir la feuille). */}
+            {zoomable && (
+              <div className="fp-loupe" role="group" aria-label="Zoom de la photo">
+                <button type="button" onClick={() => changerNiveau(-LOUPE.pas)} disabled={niveau <= LOUPE.min} aria-label="Diminuer le zoom">−</button>
+                <span className="fp-loupe-niveau" aria-live="polite">{Math.round(niveau * 100)} %</span>
+                <button type="button" onClick={() => changerNiveau(LOUPE.pas)} disabled={niveau >= LOUPE.max} aria-label="Augmenter le zoom">+</button>
+              </div>
+            )}
+
             {/* La bande montre TOUTES les vues, y compris celle affichée :
                 masquer la première la rendait inatteignable dès le premier
-                clic sur une autre. Quand la vue courante est une vidéo, la
-                bande se relève pour ne pas couvrir les contrôles natifs. */}
+                clic sur une autre. */}
             {vues.length > 1 && (
-              <div className={`fp-vues ${courant?.type === 'video' ? 'est-video' : ''}`}>
+              <div className="fp-vues">
                 {vues.map(({ media: m, index: i }) => (
                   <button
                     key={m.key}
@@ -314,9 +367,7 @@ const ProduitPage = () => {
                     aria-current={selectedImage === i}
                     className={`fp-vue ${selectedImage === i ? 'is-active' : ''}`}
                   >
-                    {m.type === 'video'
-                      ? <video src={m.src} muted playsInline preload="metadata" />
-                      : <CldImg src={m.src} alt="" sizes="72px" widths={[160, 320]} />}
+                    <CldImg src={m.src} alt="" sizes="72px" widths={[160, 320]} />
                   </button>
                 ))}
               </div>
@@ -329,18 +380,6 @@ const ProduitPage = () => {
                 page, au même dessin et à la même taille, et deux fois le même
                 mot à trois centimètres d'écart ne se lit qu'une. */}
             <h1 className="fp-titre">{product.name}</h1>
-
-            {/* La ligne ne s'affiche que s'il existe vraiment des avis. */}
-            {note && nbAvis > 0 && (
-              <div className="fp-note">
-                <span className="fp-etoiles" aria-hidden="true">
-                  {'★'.repeat(Math.round(note))}{'☆'.repeat(5 - Math.round(note))}
-                </span>
-                <span className="fp-note-texte">
-                  {String(note).replace('.', ',')} · {nbAvis} avis
-                </span>
-              </div>
-            )}
 
             <div className="fp-prix-ligne">
               <span className="fp-prix">{formatPrice(prix, currency)}</span>
@@ -365,9 +404,9 @@ const ProduitPage = () => {
             {/* La description est lue directement, et lue TÔT : elle tient la
                 place du chapô, entre le prix et les choix. On sait ce qu'on
                 achète avant de choisir une taille, pas après avoir cliqué sur
-                un accordéon en bas de colonne. */}
+                un accordéon en bas de colonne. Sans sur-titre : « La pièce »
+                a été retiré à la demande. */}
             <div className="fp-description">
-              <span className="eyebrow">La pièce</span>
               <p>{product.description || 'Description à venir.'}</p>
             </div>
 
@@ -375,7 +414,9 @@ const ProduitPage = () => {
               <div className="fp-bloc-choix">
                 <div className="fp-bloc-entete">
                   <span className="fp-bloc-titre">Couleur</span>
-                  <span className="fp-bloc-valeur">{selectedColor || 'Au choix'}</span>
+                  {/* La couleur choisie seulement — « Au choix », affiché
+                      tant que rien n'était choisi, a été retiré à la demande. */}
+                  {selectedColor && <span className="fp-bloc-valeur">{selectedColor}</span>}
                 </div>
                 <div className="fp-options">
                   {couleurs.map((c) => (
@@ -397,13 +438,8 @@ const ProduitPage = () => {
               <div className="fp-bloc-choix">
                 <div className="fp-bloc-entete">
                   <span className="fp-bloc-titre">Taille</span>
-                  <button
-                    type="button"
-                    onClick={() => setSizeGuideOpen(true)}
-                    className="fp-lien-bouton link-reveal"
-                  >
-                    Guide des tailles
-                  </button>
+                  {/* Le lien « Guide des tailles » a été retiré à la demande,
+                      avec la fenêtre qu'il ouvrait (SizeGuideModal). */}
                 </div>
                 <div className="fp-options">
                   {tailles.map((t) => (
@@ -458,28 +494,6 @@ const ProduitPage = () => {
                   <button type="button" onClick={ajouterAuPanier} className="btn btn--primary fp-cta">
                     Ajouter au panier
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      basculerFavori(product);
-                      toast(aime
-                        ? `${product.name} retiré des favoris`
-                        : `${product.name} mis de côté`);
-                    }}
-                    aria-pressed={aime}
-                    aria-label={aime
-                      ? `Retirer ${product.name} des favoris`
-                      : `Mettre ${product.name} de côté`}
-                    className={`fp-coeur ${aime ? 'is-aime' : ''}`}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24"
-                         fill={aime ? 'currentColor' : 'none'}
-                         stroke="currentColor" strokeWidth="1.8"
-                         strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8z" />
-                    </svg>
-                  </button>
                 </div>
 
                 {presqueEpuise && (
@@ -510,13 +524,6 @@ const ProduitPage = () => {
         )}
       </div>
 
-      {sizeGuideOpen && (
-        <SizeGuideModal
-          categorySlug={product.category?.slug}
-          onClose={() => setSizeGuideOpen(false)}
-        />
-      )}
-
       <style>{FEUILLE}</style>
     </div>
   );
@@ -532,6 +539,10 @@ const ProduitPage = () => {
    figerait la photo agrandie sans moyen d'en sortir, et ferait télécharger
    pour rien la variante 1 600 px. Le même test garde la règle CSS plus bas —
    les deux doivent rester d'accord. */
+/* La loupe : de 125 % à 400 %, par pas de 25 %, à 150 % à l'ouverture. */
+const LOUPE = { min: 1.25, defaut: 1.5, max: 4, pas: 0.25 };
+const borner = (n) => Math.round(Math.min(LOUPE.max, Math.max(LOUPE.min, n)) * 100) / 100;
+
 const MQ_POINTEUR_FIN = typeof window !== 'undefined'
   ? window.matchMedia('(hover: hover) and (pointer: fine)')
   : null;
@@ -587,8 +598,7 @@ const FEUILLE = `
     display: grid;
     place-items: center;
   }
-  .fp-visuel > img,
-  .fp-visuel > video {
+  .fp-visuel > img {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -597,10 +607,9 @@ const FEUILLE = `
   }
 
   /* ── Loupe ────────────────────────────────────────────────────────────────
-     1,55 et pas davantage : au-delà, le cadrage 4/5 ne montre plus la pièce
-     mais un morceau de tissu hors contexte, et le moindre geste de la main
-     balaye la moitié du vêtement. À 1,55 on lit la trame d'un bazin et la
-     broderie sans perdre de vue ce qu'on regarde.
+     Le grossissement se RÈGLE, à la demande (molette, ou « − / + ») : de 1,25
+     à 4, 1,5 à l'ouverture — assez pour lire la trame d'un bazin et la
+     broderie sans perdre de vue la pièce. Il était fixé à 1,55.
 
      La propriété scale, et non transform : le point de mire
      (transform-origin) doit suivre la main SANS retard, alors que le
@@ -622,7 +631,7 @@ const FEUILLE = `
       transform-origin: var(--zx, 50%) var(--zy, 50%);
       transition: scale var(--dur-2) var(--ease), opacity var(--dur-1) var(--ease);
     }
-    .fp-visuel.est-zoom > img { scale: 1.55; }
+    .fp-visuel.est-zoom > img { scale: var(--zniveau, 1.5); }
 
     .fp-visuel.est-zoom .fp-hd { opacity: 1; }
   }
@@ -632,6 +641,51 @@ const FEUILLE = `
   @media (prefers-reduced-motion: reduce) {
     .fp-visuel > img { transition: none; }
   }
+  /* La commande de zoom : la pastille écrue des cartes (indigo dessus),
+     en haut à gauche — le coin droit est aux pastilles cœur, panier… Elle
+     n'existe qu'au pointeur fin, là où la loupe existe. */
+  .fp-loupe { display: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .fp-loupe {
+      position: absolute;
+      top: var(--s-3);
+      left: var(--s-3);
+      z-index: 3;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      padding: 0.3rem;
+      border-radius: var(--r-pill);
+      background: rgba(250, 246, 238, 0.92);
+      backdrop-filter: blur(8px);
+      color: var(--gp-indigo-900);
+      cursor: default;
+    }
+  }
+  .fp-loupe button {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    font-size: 1.8rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--dur-1) var(--ease);
+  }
+  .fp-loupe button:hover:not([disabled]) { background: var(--gp-brass-400); }
+  .fp-loupe button[disabled] { opacity: 0.35; cursor: not-allowed; }
+  .fp-loupe-niveau {
+    min-width: 5.2ch;
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+
   .fp-vide {
     font-size: var(--t-xs);
     text-transform: uppercase;
@@ -659,10 +713,6 @@ const FEUILLE = `
     color: var(--text);
     text-wrap: balance;
   }
-
-  .fp-note { display: flex; align-items: center; gap: var(--s-3); margin-top: var(--s-3); }
-  .fp-etoiles { font-size: var(--t-sm); letter-spacing: 2px; color: var(--text-accent); }
-  .fp-note-texte { font-size: var(--t-xs); color: var(--text-muted); }
 
   .fp-prix-ligne {
     display: flex;
@@ -710,15 +760,6 @@ const FEUILLE = `
     color: var(--text-muted);
   }
   .fp-bloc-valeur { font-size: var(--t-sm); color: var(--text); }
-
-  .fp-lien-bouton {
-    font-family: var(--font-body);
-    font-size: var(--t-xs);
-    font-weight: 600;
-    color: var(--text-accent);
-    background: none;
-    cursor: pointer;
-  }
 
   /* Le rôle décide du rayon : ce sont des actions, donc des pilules. */
   .fp-options { display: flex; flex-wrap: wrap; gap: var(--s-2); }
@@ -782,27 +823,9 @@ const FEUILLE = `
   }
 
   /* .btn porte width:100% sous 768 px : le flex:1 le laisse partager la
-     rangée avec le sélecteur de quantité et le cœur. */
+     rangée avec le sélecteur de quantité. (Le cœur qui la complétait a été
+     retiré : il est sur la photo.) */
   .fp-cta { flex: 1; min-width: 0; }
-
-  .fp-coeur {
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    width: 4.8rem;
-    min-height: 4.8rem;
-    border: 1px solid var(--line);
-    border-radius: var(--r-pill);
-    background: transparent;
-    color: var(--text);
-    cursor: pointer;
-    transition: border-color var(--dur-1) var(--ease),
-                color var(--dur-1) var(--ease),
-                transform var(--dur-1) var(--ease);
-  }
-  .fp-coeur:hover  { border-color: var(--gp-brass-700); }
-  .fp-coeur:active { transform: scale(0.92); }
-  .fp-coeur.is-aime { color: var(--text-promo); border-color: var(--text-promo); }
 
   /* La rareté se dit en terre cuite : c'est le rôle de l'accent secondaire —
      promo, solde, urgence douce. */
@@ -857,8 +880,6 @@ const FEUILLE = `
     background: linear-gradient(to top, rgba(15, 19, 32, 0.58), rgba(15, 19, 32, 0));
   }
   .fp-vues::-webkit-scrollbar { display: none; }
-  /* Les contrôles natifs d'une vidéo occupent la même bande basse. */
-  .fp-vues.est-video { padding-bottom: 5.6rem; }
 
   .fp-vue {
     position: relative;
@@ -875,8 +896,7 @@ const FEUILLE = `
   }
   .fp-vue:hover { opacity: 1; }
   .fp-vue.is-active { opacity: 1; box-shadow: 0 0 0 2px var(--gp-brass-400); }
-  .fp-vue img,
-  .fp-vue video {
+  .fp-vue img {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -904,15 +924,6 @@ const FEUILLE = `
     .fp-recos-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .fp-vues { gap: 0.6rem; padding: var(--s-6) var(--s-2) var(--s-2); }
     .fp-vue { width: 4.6rem; }
-  }
-
-  /* Au doigt, la rangée d'action tient mal à trois : le bouton passe sous le
-     couple quantité + cœur plutôt que d'être écrasé entre les deux. */
-  @media (max-width: 480px) {
-    .fp-actions { flex-wrap: wrap; }
-    .fp-qte { order: 1; }
-    .fp-coeur { order: 2; margin-left: auto; }
-    .fp-cta { order: 3; flex: 1 0 100%; }
   }
 `;
 

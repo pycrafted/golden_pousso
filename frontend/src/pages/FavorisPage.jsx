@@ -232,16 +232,19 @@ const FavorisPage = () => {
 
         /* Le système n'a pas de bouton « danger » : il n'en avait jamais eu
            besoin. Plutôt que d'en ajouter un au socle pour un seul emploi, on
-           teinte ici le bouton fantôme en terre cuite — 5,60:1 sur l'écru, le
-           seuil AA est tenu. À remonter dans styles.css le jour où une
+           teinte ici le bouton fantôme en terre cuite — « --text-promo » :
+           5,60:1 sur l'écru, 5,73:1 sur le site indigo (terre cuite claire).
+           Au survol, le texte prend l'encre du bouton plein : écru sur la
+           terre cuite 700 (5,60:1), encre sur la claire (6,17:1) — l'écru n'y
+           tenait que 2,77:1. À remonter dans styles.css le jour où une
            deuxième page en demande un. */
         .fav-vider {
-          color: var(--gp-terra-700);
-          border-color: var(--gp-terra-700);
+          color: var(--text-promo);
+          border-color: var(--text-promo);
         }
         .fav-vider:hover:not([disabled]) {
-          background: var(--gp-terra-700);
-          color: var(--gp-ecru-50);
+          background: var(--text-promo);
+          color: var(--action-fill-text);
         }
 
         /* Annuler n'est pas un bouton dessiné : dans une paire de décision, le

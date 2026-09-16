@@ -25,13 +25,11 @@ from store.models import SectionTexte
 # Les titres réglés en développement. La clé est celle que lit le frontend.
 TEXTES = {
     'accueil-atelier':    'L’élégance africaine',
-    'accueil-avis':       'Elles Nous Font Confiance',
     'accueil-categories': 'Notre catalogue',
     'accueil-contact':    'Parlons de votre pièce',
-    'accueil-creations':  'En vitrine',
+    'accueil-creations':  'Nos produits',
     'accueil-mouvement':  'Aperçu de la boutique',
-    'accueil-promotion':  'Promotion',
-    'accueil-selection':  'Nos plus belles pièces',
+    'accueil-promotion':  'En vitrine',
 }
 
 

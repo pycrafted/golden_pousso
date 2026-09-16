@@ -87,8 +87,6 @@ Boutique disponible sur : http://localhost:5173
 ```
 GET  /api/v1/categories/
 GET  /api/v1/products/          ?category=&min_price=&max_price=&search=&ordering=
-GET  /api/v1/products/featured/
-GET  /api/v1/products/new/
 GET  /api/v1/products/:slug/
 POST /api/v1/orders/
 GET  /api/v1/orders/:order_number/
@@ -116,7 +114,7 @@ npm run build   # génère dist/
 
 | Route | Description |
 |-------|-------------|
-| `/` | Accueil (produits vedettes, nouveautés) |
+| `/` | Accueil (pagination horizontale par section) |
 | `/boutique` | Catalogue avec filtres sidebar |
 | `/produit/:slug` | Fiche produit (galerie, variantes, stock) |
 | `/panier` | Panier (Zustand persist) |

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { COORDONNEES } from '../constants/contact';
+import { entreesCoordonnees } from '../constants/contact';
+import useCoordonneesStore from '../store/coordonneesStore';
 
 /**
  * Bande de coordonnées — au-dessus de la barre de navigation, sur tout le site.
@@ -56,6 +57,13 @@ import { COORDONNEES } from '../constants/contact';
  * déborde de l'écran au lieu de défiler, et une partie des coordonnées
  * devient inatteignable.
  *
+ * ── D'où viennent les valeurs ──────────────────────────────────────────────
+ * De la base, par `GET /coordonnees/` (store/coordonneesStore.js) : l'adresse,
+ * le téléphone et l'e-mail se saisissent dans l'Espace Gestion → Coordonnées.
+ * Tant que la réponse n'est pas là — et si elle n'arrive jamais —, la bande
+ * affiche le repli écrit dans `constants/contact.js` : elle coiffe toutes les
+ * pages, un trou à sa place se verrait avant tout le reste.
+ *
  * ── Ce que la bande portait avant ───────────────────────────────────────────
  * La promesse commerciale : « Confectionné à la main à Pikine », « Livraison
  * 24 – 48 h sur Dakar », « Wave · Orange Money · Free Money », « Retouches
@@ -80,6 +88,14 @@ const STYLE_ENTREE = {
 
 const BandeCoordonnees = () => {
   const ref = useRef(null);
+
+  /* Un seul aller-retour pour toute la visite : le store garde la réponse, et
+     la bande se remonte à chaque changement de page. */
+  const coordonnees = useCoordonneesStore((s) => s.coordonnees);
+  const charger = useCoordonneesStore((s) => s.charger);
+  useEffect(() => { charger(); }, [charger]);
+
+  const entrees = entreesCoordonnees(coordonnees);
 
   /* La hauteur est publiée à chaque changement de taille — rotation de
      l'écran, passage à la ligne, police tardive. Un simple relevé au montage
@@ -144,7 +160,7 @@ const BandeCoordonnees = () => {
         maxWidth: 'var(--page-max)',
         margin: '0 auto',
       }}>
-        {COORDONNEES.map(({ libelle, texte, lien }, i) => {
+        {entrees.map(({ libelle, texte, lien }, i) => {
           /* Le libellé en capitales dorées, la valeur dans sa casse d'origine.
              Les capitales ne sont pas posées sur toute la bande : une adresse
              e-mail en capitales se lit mal et cesse de ressembler à une
@@ -178,7 +194,7 @@ const BandeCoordonnees = () => {
 
                   `aria-hidden` : c'est une ponctuation, pas un mot. Sans lui,
                   un lecteur d'écran annonce l'icône entre chaque coordonnée. */}
-              {i < COORDONNEES.length - 1 && (
+              {i < entrees.length - 1 && (
                 <i
                   className="bx bx-cut"
                   aria-hidden="true"

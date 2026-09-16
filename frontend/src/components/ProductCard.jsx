@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ProductCardMedia from './ProductCardMedia';
+import PastillesPiece from './PastillesPiece';
 import useCartStore from '../store/cartStore';
-import useFavorisStore from '../store/favorisStore';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
 /**
@@ -22,7 +22,7 @@ import useSettingsStore, { formatPrice } from '../store/settingsStore';
  * Reprises de la carte du dépôt redesign, dans la palette de la maison :
  *
  * Empilées en haut à droite, TOUTES DEUX visibles en permanence — le coin
- * haut-gauche reste aux badges « Nouveauté » et « −X % ».
+ * haut-gauche reste au badge « −X % ».
  *
  *   cœur     mise de côté ;
  *   panier   ajout direct.
@@ -30,6 +30,14 @@ import useSettingsStore, { formatPrice } from '../store/settingsStore';
  * La source les révélait au survol. Sur une grille de vingt-quatre pièces,
  * cela oblige à promener la souris pour découvrir qu'une action existe — et
  * au doigt, le survol n'existant pas, elle reste introuvable.
+ *
+ * Pour un compte `is_staff`, un TROISIÈME bouton, le stylo, à la demande :
+ * même pastille, sous le panier. Il ouvre le formulaire produit en
+ * modification (pages/gestion/EditionPiece.jsx), puis `onModifie` fait relire
+ * la grille à la page. Il reste posé sur une pièce épuisée, seule des trois :
+ * la mettre à jour est justement ce qu'on veut y faire. Sous le stylo, la
+ * POUBELLE, à la demande (pages/gestion/SuppressionPiece.jsx) : confirmation,
+ * suppression définitive, puis `onModifie` fait relire la grille.
  *
  * Le bouton « plein écran » de la source a été retiré : la photo en grand
  * n'apportait rien que la fiche produit ne montre déjà mieux.
@@ -50,20 +58,18 @@ import useSettingsStore, { formatPrice } from '../store/settingsStore';
  *                                 d'apparition et le chargement anticipé
  * @param {boolean} animate        Apparition en fondu montant
  * @param {string}  sizes          Attribut `sizes` transmis au média
+ * @param {func}    onModifie      Appelé après une modification par le stylo
  */
 const ProductCard = ({
   product,
   index = 0,
   animate = true,
   sizes = '(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw',
+  onModifie,
 }) => {
   const [hovered, setHovered] = useState(false);
   const currency = useSettingsStore((s) => s.currency);
   const addItem = useCartStore((s) => s.addItem);
-  // Un booléen et non l'objet du magasin : un sélecteur qui renvoie un nouvel
-  // objet à chaque rendu ferait boucler zustand.
-  const aime = useFavorisStore((s) => s.items.some((f) => f.id === product.id));
-  const basculerFavori = useFavorisStore((s) => s.basculer);
 
   const outOfStock = product.stock === 0;
   const href = `/produit/${product.slug}`;
@@ -116,55 +122,23 @@ const ProductCard = ({
             d'alerte de réassort. */}
         <Link to={href} className="pc-surface" aria-label={product.name} />
 
-        {/* Badges — empilés dans le même conteneur pour qu'un produit à la
-            fois nouveau et remisé ne les superpose pas. */}
-        {(product.is_new || discountPercent) && !outOfStock && (
+        {/* La remise — seul badge restant : « Nouveauté » a été retiré du
+            site à la demande, avec le champ qui le portait. */}
+        {discountPercent && !outOfStock && (
           <div className="pc-badges">
-            {product.is_new && <span className="badge badge--new">Nouveauté</span>}
-            {discountPercent && <span className="badge badge--promo">−{discountPercent}%</span>}
+            <span className="badge badge--promo">−{discountPercent}%</span>
           </div>
         )}
 
-        {!outOfStock && (
-          <div className="pc-pastilles">
-            <button
-              type="button"
-              onClick={() => {
-                basculerFavori(product);
-                toast(aime
-                  ? `${product.name} retiré des favoris`
-                  : `${product.name} ajouté à vos favoris`);
-              }}
-              aria-pressed={aime}
-              aria-label={aime
-                ? `Retirer ${product.name} des favoris`
-                : `Ajouter ${product.name} aux favoris`}
-              className={`pc-pastille pc-coeur ${aime ? 'is-aime' : ''}`}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24"
-                   fill={aime ? 'currentColor' : 'none'}
-                   stroke="currentColor" strokeWidth="1.8"
-                   strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8z" />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              onClick={ajouterAuPanier}
-              aria-label={`Ajouter ${product.name} au panier`}
-              className="pc-pastille pc-action"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" strokeWidth="1.8"
-                   strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                <path d="M3 6h18" />
-                <path d="M16 10a4 4 0 0 1-8 0" />
-              </svg>
-            </button>
-          </div>
-        )}
+        {/* Cœur, panier, et pour un admin stylo et poubelle : un seul
+            composant, partagé avec la fiche produit. */}
+        <PastillesPiece
+          product={product}
+          epuise={outOfStock}
+          onAjouterPanier={ajouterAuPanier}
+          onModifie={onModifie}
+          onSupprime={onModifie}
+        />
 
         {/* Nom et prix dans un panneau vitré posé au pied de la photo — le
             traitement de la section « Nos créations » de l'accueil. La
@@ -232,47 +206,8 @@ const ProductCard = ({
           background: rgba(15, 19, 32, 0.55);
         }
 
-        /* Fond écru translucide et flou : une pastille opaque ferait un trou
-           blanc dans la photo, une pastille transparente disparaîtrait sur une
-           dentelle claire. */
-        /* Les deux pastilles sont empilées en haut à droite : le panier a
-           quitté le bas de la carte. Le coin haut-gauche reste aux badges. */
-        .pc-pastilles {
-          position: absolute;
-          top: var(--s-3);
-          right: var(--s-3);
-          z-index: 2;
-          display: flex;
-          flex-direction: column;
-          gap: var(--s-2);
-        }
-
-        .pc-pastille {
-          display: grid;
-          place-items: center;
-          width: 3.6rem;
-          height: 3.6rem;
-          border-radius: var(--r-pill);
-          background: rgba(250, 246, 238, 0.92);
-          backdrop-filter: blur(8px);
-          color: var(--gp-indigo-900);
-          cursor: pointer;
-          transition: background var(--dur-1) var(--ease),
-                      color var(--dur-1) var(--ease),
-                      opacity var(--dur-1) var(--ease),
-                      transform var(--dur-1) var(--ease);
-        }
-        .pc-pastille:hover  { background: var(--gp-brass-400); }
-        .pc-pastille:active { transform: scale(0.9); }
-
-        /* Le cœur garde le coin et reste posé en permanence. */
-        .pc-coeur.is-aime { color: var(--gp-terra-700); }
-
-        /* Les deux pastilles restent posées en permanence. Le panier était
-           révélé au survol, comme dans la source : sur une grille de vingt-
-           quatre pièces, ça oblige à promener la souris pour découvrir qu'une
-           action existe — et au doigt elle n'existe pas du tout. */
-
+        /* Les pastilles — cœur, panier, stylo, poubelle — et leur dessin
+           vivent dans PastillesPiece.jsx, partagé avec la fiche produit. */
 
         /* ── Panneau nom + prix, repris de « Nos créations » ────────────────
            Valeurs en pixels : elles viennent d'une section calée sur une

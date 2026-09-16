@@ -1,129 +1,138 @@
 import { Link } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 
-const C = {
-  bg:        '#1A1208',
-  panel:     '#111111',
-  border:    '#1E1E1E',
-  borderMid: '#2A2A2A',
-  gold:      '#B8960A',
-  terra:     '#C2662D',
-  cream:     '#FAF6EE',
-  muted:     'rgba(250,246,238,0.6)',
-};
-
-const LINKS = [
-  { to: '/',          label: 'Accueil' },
-  { to: '/boutique', label: 'Boutique' },
-];
+/**
+ * Page introuvable.
+ * ---------------------------------------------------------------------------
+ * Refaite dans le vocabulaire du site, à la demande : elle se dessinait à sa
+ * façon, avec sa propre palette en dur (`#B8960A`, `#111111`, `#2A2A2A`) et
+ * une trentaine de styles en ligne. Elle emprunte maintenant ce que les autres
+ * pages emploient déjà :
+ *
+ *   — le TITRE et son FILET de l'en-tête des catalogues (`.catalogue-titre`,
+ *     `.filet-titre`) — le même titre que la boutique, les rayons, les favoris ;
+ *   — le CHAPÔ `.lead`, la voix des paragraphes d'introduction ;
+ *   — les BOUTONS `.btn` du site : laiton pour la boutique, contour pour
+ *     l'accueil. Ils étaient deux rectangles à angles vifs, l'un laiton plein
+ *     virant terre cuite au survol, l'autre cerné de gris.
+ *
+ * ── L'état vide, en trois morceaux ─────────────────────────────────────────
+ * Le constat (« Page introuvable »), la phrase, l'action — la règle des pages
+ * de catalogue. La rangée de liens rapides qui fermait la page a été retirée :
+ * elle proposait « Accueil » et « Boutique », c'est-à-dire exactement les deux
+ * boutons posés juste au-dessus.
+ *
+ * ── Les ciseaux ────────────────────────────────────────────────────────────
+ * À la demande, les trois étoiles « ✦ ✦ ✦ » sont remplacées par les CISEAUX de
+ * la bande de coordonnées (`bx-cut`, laiton) : le geste qui dit le métier, déjà
+ * employé en haut de chaque page pour séparer adresse, téléphone et e-mail.
+ * Purement décoratifs, donc `aria-hidden` — un lecteur d'écran n'annonce pas
+ * trois fois « ciseaux ».
+ *
+ * ── Le grand 404 ───────────────────────────────────────────────────────────
+ * Il reste, en filigrane de laiton derrière la page. C'est une image, pas un
+ * texte : le titre dit déjà la chose, et le nombre est donc masqué aux lecteurs
+ * d'écran. Il porte `.wonk` — l'axe irrégulier de Fraunces, réservé aux
+ * très grands corps (≥ 40 px), comme le `<h1>` du hero.
+ *
+ * ⚠ Pas de fond ni de couleur posés ici : la page vit dans le `Layout`, dont
+ * le `<main class="site-page on-dark">` peint déjà l'indigo et bascule les
+ * tokens. Elle ne prend que la hauteur qui reste sous les deux barres
+ * collantes (`--bande-h` + `--nav-h`) — en `100vh`, elle débordait d'autant.
+ */
 
 const Page404 = () => (
   <>
     <SEOHead title="Page introuvable" url="/404" noindex />
 
-    <div style={{
-      background: C.bg, minHeight: '100vh', color: C.cream,
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '4rem 2rem', textAlign: 'center',
-    }}>
+    <section className="p404">
+      <p className="p404-numero wonk" aria-hidden="true">404</p>
 
-      {/* Numéro 404 */}
-      <p style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 'clamp(10rem, 20vw, 18rem)',
-        lineHeight: 1,
-        letterSpacing: '-0.04em',
-        background: `linear-gradient(180deg, rgba(184,150,10,0.15) 0%, rgba(184,150,10,0.03) 100%)`,
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        backgroundClip: 'text',
-        marginBottom: '0',
-        userSelect: 'none',
-      }}>
-        404
+      <p className="p404-ciseaux" aria-hidden="true">
+        <i className="bx bx-cut" />
+        <i className="bx bx-cut" />
+        <i className="bx bx-cut" />
       </p>
 
-      {/* Ornement */}
-      <span style={{ fontSize: '1.6rem', color: C.gold, letterSpacing: '0.5em', marginBottom: '3rem' }}>✦ ✦ ✦</span>
+      <h1 className="catalogue-titre">Page introuvable</h1>
+      <span className="filet-titre" aria-hidden="true" />
 
-      <h1 style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 'clamp(2.4rem, 4vw, 4rem)',
-        color: C.cream, letterSpacing: '-0.01em',
-        lineHeight: 1.1, marginBottom: '1.6rem',
-      }}>
-        Page introuvable
-      </h1>
-
-      <p style={{
-        fontSize: '1.4rem', fontFamily: 'var(--font-body)',
-        color: C.muted, lineHeight: 1.8,
-        maxWidth: '44rem', marginBottom: '5rem',
-      }}>
-        La page que vous cherchez n'existe pas ou a été déplacée. Explorez notre boutique ou retournez à l'accueil.
+      <p className="lead p404-texte">
+        La page que vous cherchez n&apos;existe pas ou a été déplacée. Explorez
+        notre boutique, ou retournez à l&apos;accueil.
       </p>
 
-      {/* CTA principal */}
-      <div style={{ display: 'flex', gap: '1.6rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '6rem' }}>
-        <Link
-          to="/boutique"
-          style={{
-            display: 'inline-flex', alignItems: 'center',
-            padding: '1.6rem 5rem',
-            background: C.gold, color: '#1A1208',
-            fontSize: '1.1rem', fontFamily: 'var(--font-body)',
-            fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
-            textDecoration: 'none', transition: 'background 0.25s, color 0.25s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = C.terra; e.currentTarget.style.color = C.cream; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = C.gold; e.currentTarget.style.color = '#1A1208'; }}
-        >
-          Voir la boutique
-        </Link>
-        <Link
-          to="/"
-          style={{
-            display: 'inline-flex', alignItems: 'center',
-            padding: '1.6rem 4rem',
-            background: 'transparent', color: C.muted,
-            border: `1px solid ${C.borderMid}`,
-            fontSize: '1.1rem', fontFamily: 'var(--font-body)',
-            letterSpacing: '0.2em', textTransform: 'uppercase',
-            textDecoration: 'none', transition: 'border-color 0.2s, color 0.2s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.borderMid; e.currentTarget.style.color = C.muted; }}
-        >
-          Accueil
-        </Link>
+      <div className="p404-actions">
+        <Link to="/boutique" className="btn btn--accent">Voir la boutique</Link>
+        <Link to="/" className="btn btn--ghost">Accueil</Link>
       </div>
+    </section>
 
-      {/* Liens rapides */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '0',
-        borderTop: `1px solid ${C.border}`, paddingTop: '3rem',
-        flexWrap: 'wrap', justifyContent: 'center', gap: '3rem',
-      }}>
-        {LINKS.map(({ to, label }) => (
-          <Link
-            key={to}
-            to={to}
-            style={{
-              fontSize: '1.1rem', fontFamily: 'var(--font-body)',
-              textTransform: 'uppercase', letterSpacing: '0.2em',
-              color: C.muted, textDecoration: 'none',
-              transition: 'color 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = C.cream}
-            onMouseLeave={(e) => e.currentTarget.style.color = C.muted}
-          >
-            {label}
-          </Link>
-        ))}
-      </div>
+    <style>{`
+      .p404 {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        /* La hauteur qui reste sous la bande de coordonnées et la barre de
+           navigation, toutes deux collantes. */
+        min-height: calc(100vh - var(--bande-h, 0px) - var(--nav-h, 0px));
+        padding: var(--s-9) var(--page-pad);
+        text-align: center;
+      }
 
-    </div>
+      /* Le nombre en filigrane : du laiton qui s'éteint vers le bas, jamais un
+         aplat. Il n'est pas là pour être lu — d'où l'opacité basse et le
+         aria-hidden ; le titre porte le sens. */
+      .p404-numero {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: clamp(9rem, 18vw, 16rem);
+        font-weight: 600;
+        line-height: 0.9;
+        letter-spacing: -0.04em;
+        background: linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--gp-brass-400) 22%, transparent) 0%,
+          color-mix(in srgb, var(--gp-brass-400) 4%, transparent) 100%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        user-select: none;
+      }
+
+      /* Les ciseaux de la bande, en ponctuation sous le nombre. */
+      .p404-ciseaux {
+        display: flex;
+        justify-content: center;
+        gap: var(--s-5);
+        margin: var(--s-5) 0 var(--s-7);
+        font-size: 2rem;
+        line-height: 1;
+        color: var(--gp-brass-400);
+      }
+
+      .p404-texte { margin: var(--s-6) auto 0; max-width: 46rem; }
+
+      .p404-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--s-4);
+        margin-top: var(--s-8);
+      }
+
+      @media (max-width: 767px) {
+        .p404 { padding-block: var(--s-8); }
+        .p404-ciseaux { gap: var(--s-4); font-size: 1.8rem; }
+        /* Sous 767 px, un bouton .btn prend toute la largeur (règle du
+           site) : la rangée se borne pour que les deux boutons empilés
+           restent à la mesure du texte plutôt qu'à celle de l'écran.
+           ⚠ Pas d'accent grave dans ce bloc : il fermerait le gabarit JS. */
+        .p404-actions { width: min(32rem, 100%); }
+      }
+    `}</style>
   </>
 );
 

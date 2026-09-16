@@ -44,3 +44,14 @@ Thumbs.db
 # Dossier de transit : les tableaux du hero, copies la pour etre televerses
 # dans l'Espace Gestion. Les medias ne passent pas par git.
 /hero-a-televerser/
+
+# Les vidéos de l'« Aperçu de la boutique » NE SONT PAS servies par le site :
+# elles se déposent dans Cloudflare et le site n'en garde que le lien (voir
+# ShowcaseVideo dans CLAUDE.md). 58 Mo de .mp4 dans l'historique n'y
+# serviraient personne, et n'en sortiraient plus.
+/frontend/public/videos/
+
+# Images de travail à la racine du front : les originaux des détourages de la
+# vitrine, gardés pour refaire une découpe. Le site sert les .webp de
+# frontend/public/images/.
+/frontend/*.png

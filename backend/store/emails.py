@@ -18,6 +18,7 @@ def _build_order_body(order):
     )
 
     payment_labels = {
+        'paydunya': 'PayDunya',
         'orange_money': 'Orange Money',
         'wave': 'Wave',
         'free_money': 'Free Money',
@@ -56,7 +57,7 @@ Vous pouvez suivre votre commande sur :
 
 ────────────────────────────────
 Pour toute question, contactez-nous :
-  WhatsApp / Tel : {getattr(settings, 'CONTACT_PHONE', '+221 XX XXX XX XX')}
+  WhatsApp / Tel : {getattr(settings, 'CONTACT_PHONE', '+221 77 751 47 95')}
   Email          : {getattr(settings, 'CONTACT_EMAIL', 'contact@goldenpousso.com')}
 
 Merci pour votre confiance !
@@ -112,10 +113,10 @@ def send_order_status_email(order):
     """Notifie le client d'un changement de statut."""
     if not order.customer_email:
         return
+    # Payée, en livraison, livrée — plus d'« en préparation », à la demande.
     status_labels = {
-        'confirmed': 'confirmée',
-        'processing': 'en préparation',
-        'shipped': 'expédiée',
+        'confirmed': 'payée',
+        'shipped': 'en cours de livraison',
         'delivered': 'livrée',
         'cancelled': 'annulée',
     }

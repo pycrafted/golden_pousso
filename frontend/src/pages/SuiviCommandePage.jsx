@@ -6,23 +6,23 @@ import apiClient from '../api/client';
 const formatFCFA = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' FCFA';
 
 const STATUS_STEPS = [
-  { key: 'pending',    label: 'En attente',      icon: '○' },
-  { key: 'confirmed',  label: 'Confirmée',        icon: '✓' },
-  { key: 'processing', label: 'En préparation',   icon: '◎' },
-  { key: 'shipped',    label: 'Expédiée',          icon: '▷' },
-  { key: 'delivered',  label: 'Livrée',            icon: '✦' },
+  // Payé, livré, reçu : plus d'étape « En préparation », à la demande.
+  { key: 'pending',    label: 'En attente de paiement', icon: '○' },
+  { key: 'confirmed',  label: 'Payée',                  icon: '✓' },
+  { key: 'shipped',    label: 'En livraison',           icon: '▷' },
+  { key: 'delivered',  label: 'Livrée',                 icon: '✦' },
 ];
 
 const STATUS_COLORS = {
   pending:    '#B8960A',
   confirmed:  '#3b82f6',
-  processing: '#8b5cf6',
   shipped:    '#06b6d4',
   delivered:  '#22c55e',
   cancelled:  '#ef4444',
 };
 
 const PAYMENT_LABELS = {
+  paydunya:         'PayDunya',
   orange_money:     'Orange Money',
   wave:             'Wave',
   free_money:       'Free Money',
@@ -85,7 +85,7 @@ const SuiviCommandePage = () => {
     return (
       <>
         <SEOHead title="Suivi de commande" url="/commande/suivi" noindex />
-        <div style={{ background: '#1A1208', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem' }}>
+        <div style={{ background: '#161B2D', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem' }}>
           <div style={{ maxWidth: '52rem', width: '100%' }}>
             <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
               <p style={{ fontSize: '1.1rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.3em', color: '#B8960A', marginBottom: '1.6rem' }}>
@@ -133,14 +133,14 @@ const SuiviCommandePage = () => {
   }
 
   if (loading) return (
-    <div style={{ background: '#1A1208', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ background: '#161B2D', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ width: '4rem', height: '4rem', border: '2px solid #2A2A2A', borderTop: '2px solid #B8960A', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 
   if (accessDenied) return (
-    <div style={{ background: '#1A1208', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem', textAlign: 'center' }}>
+    <div style={{ background: '#161B2D', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem', textAlign: 'center' }}>
       <div>
         <p style={{ fontSize: '4rem', marginBottom: '2rem' }}>🔒</p>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.8rem', color: '#FAF6EE', marginBottom: '1.2rem' }}>Accès restreint</h2>
@@ -155,7 +155,7 @@ const SuiviCommandePage = () => {
   );
 
   if (error || !order) return (
-    <div style={{ background: '#1A1208', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem', textAlign: 'center' }}>
+    <div style={{ background: '#161B2D', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem', textAlign: 'center' }}>
       <div>
         <p style={{ fontSize: '4rem', marginBottom: '2rem' }}>✕</p>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.8rem', color: '#FAF6EE', marginBottom: '1.2rem' }}>Commande introuvable</h2>
@@ -176,7 +176,7 @@ const SuiviCommandePage = () => {
       <SEOHead title={`Commande #${order.order_number}`} url={`/commande/suivi/${order.order_number}`} noindex />
       <Navbar />
 
-      <div style={{ background: '#1A1208', minHeight: '100vh', color: '#FAF6EE', paddingTop: '12rem', paddingBottom: '10rem' }}>
+      <div style={{ background: '#161B2D', minHeight: '100vh', color: '#FAF6EE', paddingTop: '12rem', paddingBottom: '10rem' }}>
         <div style={{ maxWidth: '86rem', margin: '0 auto', padding: '0 4rem' }}>
 
           {/* ── En-tête ── */}

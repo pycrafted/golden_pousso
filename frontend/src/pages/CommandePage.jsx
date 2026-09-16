@@ -9,7 +9,8 @@ import apiClient from '../api/client';
  * Commande — le tunnel d'achat, en trois étapes.
  * ===========================================================================
  * Réécriture du dessin, pas du fonctionnement. Les données envoyées, les
- * routes appelées, le passage par PayDunya, le repli sur /orders/ et tout ce
+ * routes appelées, le passage par PayDunya (désormais le SEUL paiement, à la
+ * demande — le repli sur /orders/ a été retiré) et tout ce
  * qui est écrit en sessionStorage sont repris à l'identique.
  *
  * Ce qui change, c'est que la page ne se dessine plus elle-même. Elle avait sa
@@ -23,10 +24,17 @@ import apiClient from '../api/client';
  * pour les actions, `.eyebrow` pour les intitulés, et les tokens pour tout le
  * reste.
  *
- * ── Les cartes ─────────────────────────────────────────────────────────────
- * Chaque étape est une carte au chrome du site (#161B2D), et le récapitulatif
- * en est une seconde, collée à droite. C'est le dessin de la carte du compte,
- * repris ici pour que le tunnel ne soit pas une île.
+ * ── Les surfaces : le dessin de l'Espace Gestion ───────────────────────────
+ * À la demande, comme /commandes et /profil : chaque étape est un CADRE de
+ * laiton posé sur l'indigo de la page (.gx-cadre), jamais un aplat, et le
+ * récapitulatif en est un second, collé à droite. L'en-tête prend le
+ * sur-titre, le filet et la ligne de décompte du back-office (PageHeader), les
+ * intitulés de champ passent en capitales de laiton comme les en-têtes de
+ * tableau, et les champs s'arrondissent à 1,2 rem comme ceux des tiroirs.
+ *
+ * ⚠ Les cartes étaient BLANCHES (`theme-clair`), sur le modèle de la carte du
+ * compte — qui a elle aussi rejoint le cadre de laiton depuis. Le tunnel était
+ * le dernier îlot clair du site ; il n'en reste aucun.
  *
  * ⚠ CE QUI A ÉTÉ RETIRÉ DE L'ÉTAPE 1, à la demande : la case « c'est un
  * cadeau » avec le nom du destinataire et le mot d'accompagnement, ainsi que
@@ -52,21 +60,16 @@ const DELIVERY_ZONES = [
   { value: 'pickup',         label: 'Retrait en boutique (Pikine Tally Boumack)', fee: 0,    delay: 'Immédiat' },
 ];
 
-/* Les émojis qui décoraient chaque moyen de paiement ont été retirés : le
-   système n'en emploie nulle part ailleurs, et un 💳 au milieu d'une liste en
-   Fraunces se lit comme un corps étranger. */
-const PAYMENT_METHODS = [
-  { value: 'card',             label: 'Carte bancaire',          paydunya: true,
-    instructions: 'Vous serez redirigé vers la page de paiement sécurisée PayDunya (Visa, Mastercard, Orange Money, Wave…).' },
-  { value: 'orange_money',     label: 'Orange Money',
-    instructions: 'Envoyez le montant au 77 XXX XX XX et mentionnez votre numéro de commande.' },
-  { value: 'wave',             label: 'Wave',
-    instructions: 'Scannez le QR code Wave en boutique ou envoyez au 77 XXX XX XX.' },
-  { value: 'free_money',       label: 'Free Money',
-    instructions: 'Composez le #150# et transférez le montant au 77 XXX XX XX.' },
-  { value: 'cash_on_delivery', label: 'Paiement à la livraison',
-    instructions: 'Préparez le montant exact en espèces pour le livreur.' },
-];
+/* UN SEUL moyen de paiement, à la demande : PayDunya. C'est le paiement qui
+   active la commande, et seul le retour de PayDunya la marque payée. Carte,
+   Orange Money, Wave et Free Money se choisissent sur SA page, où le client
+   est redirigé. Ont été retirés : le paiement à la livraison et les envois
+   Orange Money / Wave / Free Money « à la main », qui créaient des commandes
+   non payées que rien ne venait jamais marquer payées. */
+const PAIEMENT = {
+  label: 'Paiement sécurisé PayDunya',
+  note: 'Carte bancaire, Orange Money, Wave ou Free Money : vous choisirez sur la page sécurisée de PayDunya, où vous serez redirigé après le récapitulatif.',
+};
 
 const ETAPES = ['Livraison', 'Paiement', 'Récapitulatif'];
 
@@ -105,7 +108,7 @@ const Champ = ({ label, obligatoire, large, children }) => (
 
 /* ── Le récapitulatif ──────────────────────────────────────────────────── */
 const Recapitulatif = ({ items, subtotal, deliveryFee, total }) => (
-  <aside className="card cde-carte cde-recap on-dark">
+  <aside className="cde-cadre cde-recap">
     <h2 className="cde-recap-titre">Votre commande</h2>
 
     <ul className="cde-articles">
@@ -138,7 +141,7 @@ const Recapitulatif = ({ items, subtotal, deliveryFee, total }) => (
 
 /* ── Étape 1 : livraison ───────────────────────────────────────────────── */
 const Etape1 = ({ form, set, setStep }) => (
-  <div className="card cde-carte on-dark">
+  <div className="cde-cadre">
     <h2 className="cde-titre">Informations de livraison</h2>
 
     <div className="cde-grille">
@@ -208,29 +211,20 @@ const Etape1 = ({ form, set, setStep }) => (
 );
 
 /* ── Étape 2 : paiement ────────────────────────────────────────────────── */
-const Etape2 = ({ form, set, setStep }) => (
-  <div className="card cde-carte on-dark">
+const Etape2 = ({ setStep }) => (
+  <div className="cde-cadre">
     <h2 className="cde-titre">Mode de paiement</h2>
 
+    {/* Plus de choix à faire : un seul moyen, montré tel quel. */}
     <div className="cde-moyens">
-      {PAYMENT_METHODS.map((pm) => {
-        const actif = form.payment_method === pm.value;
-        return (
-          <label key={pm.value} className={`cde-choix${actif ? ' cde-choix--actif' : ''}`}>
-            <input type="radio" name="paiement" value={pm.value} checked={actif}
-              onChange={() => set('payment_method', pm.value)} />
-            <span className="cde-moyen-corps">
-              <span className="cde-moyen-tete">
-                <span className="cde-moyen-nom">{pm.label}</span>
-                {pm.paydunya && <span className="badge">Recommandé</span>}
-              </span>
-              {/* Les instructions ne s'affichent que sur le moyen choisi :
-                  les cinq à la fois font un mur qu'on ne lit pas. */}
-              {actif && <span className="cde-moyen-note">{pm.instructions}</span>}
-            </span>
-          </label>
-        );
-      })}
+      <div className="cde-choix cde-choix--actif">
+        <span className="cde-moyen-corps">
+          <span className="cde-moyen-tete">
+            <span className="cde-moyen-nom">{PAIEMENT.label}</span>
+          </span>
+          <span className="cde-moyen-note">{PAIEMENT.note}</span>
+        </span>
+      </div>
     </div>
 
     <div className="cde-actions">
@@ -246,9 +240,8 @@ const Etape2 = ({ form, set, setStep }) => (
 
 /* ── Étape 3 : récapitulatif ───────────────────────────────────────────── */
 const Etape3 = ({ form, zone, setStep, handleConfirm, loading }) => {
-  const pm = PAYMENT_METHODS.find((p) => p.value === form.payment_method);
   return (
-    <div className="card cde-carte on-dark">
+    <div className="cde-cadre">
       <h2 className="cde-titre">Récapitulatif</h2>
 
       <dl className="cde-releve">
@@ -272,7 +265,7 @@ const Etape3 = ({ form, zone, setStep, handleConfirm, loading }) => {
         </div>
         <div>
           <dt className="eyebrow">Paiement</dt>
-          <dd>{pm?.label}</dd>
+          <dd>{PAIEMENT.label}</dd>
         </div>
       </dl>
 
@@ -282,44 +275,16 @@ const Etape3 = ({ form, zone, setStep, handleConfirm, loading }) => {
         </button>
         <button type="button" className="btn btn--accent btn--auto"
           onClick={handleConfirm} disabled={loading}>
-          {loading
-            ? (form.payment_method === 'card' ? 'Redirection…' : 'Envoi…')
-            : (form.payment_method === 'card' ? 'Payer par carte' : 'Confirmer ma commande')}
+          {loading ? 'Redirection…' : 'Payer ma commande'}
         </button>
       </div>
     </div>
   );
 };
 
-/* ── Étape 4 : c'est enregistré ────────────────────────────────────────── */
-const Etape4 = ({ form, orderNumber, total }) => {
-  const pm = PAYMENT_METHODS.find((p) => p.value === form.payment_method);
-  return (
-    <div className="card cde-carte cde-fin on-dark">
-      <p className="eyebrow cde-fin-surtitre">Commande enregistrée</p>
-      <p className="cde-numero">{orderNumber}</p>
-      <p className="cde-fin-note">Notez ce numéro pour suivre votre commande.</p>
-
-      <div className="cde-paiement-note">
-        <p className="eyebrow">Instructions de paiement — {pm?.label}</p>
-        <p className="cde-fin-instructions">{pm?.instructions}</p>
-        <div className="cde-fin-montant">
-          <span className="eyebrow">Montant à payer</span>
-          <span className="cde-fin-total">{formatFCFA(total)}</span>
-        </div>
-      </div>
-
-      <div className="cde-actions cde-actions--centre">
-        <Link to={`/commande/suivi/${orderNumber}`} className="btn btn--accent btn--auto">
-          Suivre ma commande
-        </Link>
-        <Link to="/boutique" className="btn btn--ghost btn--auto">
-          Retour à la boutique
-        </Link>
-      </div>
-    </div>
-  );
-};
+/* Plus d'étape 4 « commande enregistrée, instructions de paiement » : elle
+   ne servait qu'aux moyens payés hors ligne, retirés. Après paiement,
+   PayDunya renvoie le client vers /commande/suivi/<numéro>. */
 
 /* ══════════════════════════════════════════════════════════════════════════ */
 const CommandePage = () => {
@@ -328,7 +293,6 @@ const CommandePage = () => {
   const { items, clearCart } = useCartStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [orderNumber, setOrderNumber] = useState('');
 
   useEffect(() => {
     if (searchParams.get('payment') === 'cancel') {
@@ -339,7 +303,6 @@ const CommandePage = () => {
   const [form, setForm] = useState({
     customer_name: '', customer_phone: '', customer_email: '',
     delivery_address: '', delivery_zone: 'dakar_centre',
-    payment_method: 'cash_on_delivery',
   });
 
   const zone = DELIVERY_ZONES.find((z) => z.value === form.delivery_zone);
@@ -347,8 +310,9 @@ const CommandePage = () => {
   const deliveryFee = zone?.fee ?? 1500;
   const total = subtotal + deliveryFee;
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const nbPieces = items.reduce((n, i) => n + i.quantity, 0);
 
-  if (items.length === 0 && step < 4) {
+  if (items.length === 0) {
     // La page /panier n'existe plus : un panier vide renvoie à la boutique,
     // qui est le seul endroit où le remplir.
     navigate('/boutique');
@@ -364,7 +328,6 @@ const CommandePage = () => {
       customer_email: form.customer_email,
       delivery_address: form.delivery_address,
       delivery_zone: form.delivery_zone,
-      payment_method: form.payment_method,
       /* Le champ est parti de l'écran mais reste dans la charge utile :
          l'API l'attend, et le laisser tomber ferait une requête incomplète.
          Il part donc toujours vide. */
@@ -377,20 +340,12 @@ const CommandePage = () => {
     };
 
     try {
-      if (form.payment_method === 'card') {
-        const res = await apiClient.post('/paiement/initier/', payload);
-        sessionStorage.setItem(`order_phone_${res.data.order_number}`, fullPhone);
-        if (form.customer_email) sessionStorage.setItem(`order_email_${res.data.order_number}`, form.customer_email);
-        clearCart();
-        window.location.href = res.data.invoice_url;
-      } else {
-        const res = await apiClient.post('/orders/', payload);
-        sessionStorage.setItem(`order_phone_${res.data.order_number}`, fullPhone);
-        if (form.customer_email) sessionStorage.setItem(`order_email_${res.data.order_number}`, form.customer_email);
-        setOrderNumber(res.data.order_number);
-        clearCart();
-        setStep(4);
-      }
+      // Toujours PayDunya : plus de création directe par /orders/, retirée.
+      const res = await apiClient.post('/paiement/initier/', payload);
+      sessionStorage.setItem(`order_phone_${res.data.order_number}`, fullPhone);
+      if (form.customer_email) sessionStorage.setItem(`order_email_${res.data.order_number}`, form.customer_email);
+      clearCart();
+      window.location.href = res.data.invoice_url;
     } catch (err) {
       const msg = err.response?.data?.detail || err.response?.data || 'Erreur lors de la commande.';
       toast.error(typeof msg === 'string' ? msg : JSON.stringify(msg));
@@ -398,40 +353,40 @@ const CommandePage = () => {
     }
   };
 
-  const termine = step === 4;
-
   return (
     <>
       <SEOHead title="Commande" url="/commande" noindex />
 
       <div className="catalogue-page">
         <section className="catalogue-entete">
-          <h1 className="catalogue-titre">{termine ? 'Merci' : 'Commande'}</h1>
+          <span className="eyebrow">Paiement sécurisé</span>
+          <h1 className="catalogue-titre">Commande</h1>
           <span className="filet-titre" aria-hidden="true" />
+          {/* La ligne de décompte des en-têtes de gestion : ce qu'on achète,
+              et ce que cela fait — le total est visible dès le premier écran,
+              sans attendre le récapitulatif. */}
+          <p className="cde-compte">
+            {nbPieces} pièce{nbPieces > 1 ? 's' : ''} · {formatFCFA(total)}
+          </p>
         </section>
 
         <div className="catalogue-corps">
-          {!termine && (
-            <div className="cde-frise-cadre">
-              <Frise courante={step} />
-            </div>
-          )}
+          <div className="cde-frise-cadre">
+            <Frise courante={step} />
+          </div>
 
-          <div className={termine ? 'cde-colonne' : 'cde-plan'}>
+          <div className="cde-plan">
             <div>
               {step === 1 && <Etape1 form={form} set={set} setStep={setStep} />}
-              {step === 2 && <Etape2 form={form} set={set} setStep={setStep} />}
+              {step === 2 && <Etape2 setStep={setStep} />}
               {step === 3 && (
                 <Etape3 form={form} zone={zone} setStep={setStep}
                   handleConfirm={handleConfirm} loading={loading} />
               )}
-              {termine && <Etape4 form={form} orderNumber={orderNumber} total={total} />}
             </div>
 
-            {!termine && (
-              <Recapitulatif items={items} subtotal={subtotal}
-                deliveryFee={deliveryFee} total={total} />
-            )}
+            <Recapitulatif items={items} subtotal={subtotal}
+              deliveryFee={deliveryFee} total={total} />
           </div>
         </div>
       </div>
@@ -454,16 +409,36 @@ const CommandePage = () => {
           .cde-recap { position: sticky; top: calc(var(--bande-h, 0px) + 9rem); }
         }
 
-        /* Les cartes reprennent le chrome du site, comme celle du compte. */
-        .cde-carte {
-          background: var(--surface-chrome);
+        /* ── LES CADRES ──
+           Un encadrement de laiton sur le fond de la page, jamais un aplat :
+           la surface de l'Espace Gestion (.gx-cadre), à la demande. Les cartes
+           étaient blanches (theme-clair). Sur l'indigo, les tokens sombres
+           du site suffisent : écru 15,85:1, atténué 6,79:1, laiton 7,14:1. */
+        .cde-cadre {
           padding: clamp(var(--s-5), 3.5vw, var(--s-7));
+          border: 1px solid var(--line-dark-accent);
+          border-radius: var(--r-3);
+        }
+        /* Champs arrondis, comme ceux des tiroirs de l'Espace Gestion. */
+        .cde-cadre .field { border-radius: 1.2rem; }
+
+        /* La ligne sous le filet du titre — le décompte des en-têtes de
+           gestion. */
+        .cde-compte {
+          margin: var(--s-4) 0 0;
+          font-family: var(--font-body);
+          font-size: var(--t-sm);
+          color: var(--text-muted);
+          font-variant-numeric: tabular-nums;
         }
 
+        /* Le titre d'une étape : laiton, comme le titre d'un tiroir. */
         .cde-titre {
+          font-family: var(--font-display);
           font-size: var(--t-h3);
           font-weight: 600;
           letter-spacing: var(--ls-tight);
+          color: var(--gp-brass-400);
           margin-bottom: var(--s-6);
         }
 
@@ -530,10 +505,14 @@ const CommandePage = () => {
           .cde-champ--large { grid-column: 1 / -1; }
         }
         .cde-champ { display: block; }
+        /* L'intitulé en capitales de laiton — l'en-tête de colonne des
+           tableaux de l'Espace Gestion. Il était atténué. */
         .cde-champ .eyebrow {
           display: block;
           margin-bottom: var(--s-2);
-          color: var(--text-muted);
+          font-size: 1.15rem;
+          letter-spacing: 0.16em;
+          color: var(--gp-brass-400);
         }
         .cde-requis { color: var(--text-accent); }
         .cde-zone { resize: vertical; line-height: var(--lh-body); }
@@ -583,7 +562,12 @@ const CommandePage = () => {
           border-bottom: 1px solid var(--line);
         }
         .cde-releve > div:last-child { padding-bottom: 0; border-bottom: 0; }
-        .cde-releve dt { color: var(--text-muted); margin-bottom: var(--s-2); }
+        .cde-releve dt {
+          margin-bottom: var(--s-2);
+          font-size: 1.15rem;
+          letter-spacing: 0.16em;
+          color: var(--gp-brass-400);
+        }
         .cde-releve dd { font-size: var(--t-body); }
         .cde-releve-second,
         .cde-releve-delai {
@@ -621,9 +605,11 @@ const CommandePage = () => {
 
         /* ── Le récapitulatif ── */
         .cde-recap-titre {
+          font-family: var(--font-display);
           font-size: var(--t-h3);
           font-weight: 600;
           letter-spacing: var(--ls-tight);
+          color: var(--gp-brass-400);
           margin-bottom: var(--s-5);
         }
         .cde-articles { display: flex; flex-direction: column; }

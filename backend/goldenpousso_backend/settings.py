@@ -327,5 +327,5 @@ else:
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Golden Pousso <noreply@goldenpousso.com>')
-CONTACT_PHONE = os.environ.get('CONTACT_PHONE', '+221 XX XXX XX XX')
+CONTACT_PHONE = os.environ.get('CONTACT_PHONE', '+221 77 751 47 95')
 CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'contact@goldenpousso.com')

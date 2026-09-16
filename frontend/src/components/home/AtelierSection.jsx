@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import apiClient from '../../api/client';
 import Reveal from '../Reveal';
 import CldImg from '../CldImg';
 import useTexteSection from '../../hooks/useTexteSection';
@@ -19,9 +17,10 @@ import useTexteSection from '../../hooks/useTexteSection';
  * bloc de texte à droite. Le seul passage de la page d'accueil où la maison
  * parle en son nom avait exactement le poids visuel d'une grille de produits.
  *
- * Elle est désormais un PANNEAU PLEINE LARGEUR, borné de deux filets de
- * laiton, sur l'écru de la page. Il a été indigo un temps ; le fond est revenu
- * à #FAF6EE à la demande, et les filets portent seuls la délimitation.
+ * Elle est désormais un PANNEAU PLEINE LARGEUR sur l'indigo du chrome
+ * (#161B2D), à la demande, sans filet de laiton autour — retiré à la demande,
+ * il se fond dans ses voisines sombres. Il a été indigo #0F1320 d'abord, puis
+ * écru #FAF6EE un temps.
  * Trois gestes, pas un de plus :
  *
  *   1. la lettrine de laiton — l'unique endroit du site, hors hero, où la
@@ -43,7 +42,13 @@ import useTexteSection from '../../hooks/useTexteSection';
  * seuil, le diluer sur chaque section lui ôterait tout effet.
  */
 
-const VISUEL_SECOURS = ['/images/atailleur.webp', '/images/hero.jpg'];
+/* Les deux photos, fichiers statiques du front, à la demande : elles ne
+   viennent plus ni du backend ni d'un stockage distant (Cloudinary, R2). Elles
+   étaient publiées dans l'Espace Gestion → « Contenu du site » (devenue
+   « Vidéos de l'accueil ») ; le bloc et le
+   modèle `AtelierImage` ont été retirés avec cette bascule.
+   Pour les changer : remplacer les fichiers de `public/images/maison/`. */
+const VISUELS = ['/images/maison/maison-1.webp', '/images/maison/maison-2.webp'];
 
 /* Le lieu, écrit ici et non en base. La maison ne déménagera pas d'une saison
    à l'autre, et une valeur qui ne bouge jamais n'a pas besoin d'un formulaire
@@ -53,29 +58,8 @@ const VISUEL_SECOURS = ['/images/atailleur.webp', '/images/hero.jpg'];
 const LIEU = 'Maison de couture — Dakar';
 
 const AtelierSection = () => {
-  // Les deux visuels viennent du back-office : Espace Gestion → Contenu du
-  // site → « Notre savoir-faire ». Ils sont distincts de la photo de la page
-  // À propos, d'où le groupe `accueil` renvoyé par l'API. Les fichiers
-  // locaux ne servent que de repli tant que rien n'a été mis en ligne.
-  const [visuels, setVisuels] = useState(VISUEL_SECOURS);
   const textes = useTexteSection('accueil-atelier',
     { titre: 'L’élégance africaine' });
-
-  useEffect(() => {
-    apiClient.get('/atelier-image/')
-      .then(({ data }) => {
-        const lot = data.accueil ?? [];
-        if (!lot.length) return;
-        // Chaque photo va à la place que lui donne son `order` : publier la
-        // seule photo de droite ne doit pas la faire atterrir à gauche.
-        const parOrdre = (n) => lot.find((i) => i.order === n)?.image_url;
-        setVisuels([
-          parOrdre(0) ?? VISUEL_SECOURS[0],
-          parOrdre(1) ?? VISUEL_SECOURS[1],
-        ]);
-      })
-      .catch(() => {});
-  }, []);
 
   return (
     <section className="man">
@@ -85,9 +69,9 @@ const AtelierSection = () => {
           Pleine largeur, donc `--r-0` : un rayon contre le bord de la fenêtre
           y ferait une encoche.
 
-          Fond écru, comme la page : le panneau ne se distingue plus par sa
-          couleur mais par ses deux filets de laiton, en haut et en bas. */}
-      <div className="man-panneau">
+          Fond #161B2D, l'indigo du chrome : voir « .man-panneau.on-dark ».
+          « .on-dark » bascule d'un coup les tokens de texte et de filet. */}
+      <div className="man-panneau on-dark">
         <div className="container man-grille">
 
           <Reveal className="man-texte" variant="up">
@@ -136,7 +120,7 @@ const AtelierSection = () => {
               décors différents, la paire se lirait comme deux emprunts. */}
           <Reveal className="man-visuels" variant="scale" delay={140}>
             <div className="media man-visuel-a">
-              <CldImg src={visuels[0]} alt="L’atelier Golden Pousso à Pikine"
+              <CldImg src={VISUELS[0]} alt="L’atelier Golden Pousso à Pikine"
                    sizes="(max-width: 900px) 92vw, 32vw" widths={[400, 800]} />
             </div>
 
@@ -145,7 +129,7 @@ const AtelierSection = () => {
                 un `.media` (overflow: hidden) ne peut pas faire. */}
             <span className="man-cadre" aria-hidden="true" />
             <div className="media man-visuel-b">
-              <CldImg src={visuels[1]} alt=""
+              <CldImg src={VISUELS[1]} alt=""
                    sizes="(max-width: 900px) 58vw, 19vw" widths={[400, 800]} />
             </div>
           </Reveal>
@@ -155,32 +139,49 @@ const AtelierSection = () => {
 
       <style>{`
         /* ── Le panneau ────────────────────────────────────────────────────
-           Fond écru — la valeur de « --surface », soit #FAF6EE, celui de la page.
-           Ce sont les deux filets de laiton, en haut et en bas, qui délimitent
-           la bande : l'or reste structurel, il borne au lieu de décorer.
+           Fond #161B2D, l'indigo du chrome — bande de coordonnées, barre de
+           navigation —, à la demande. Plus de filets de laiton
+           en haut et en bas : retirés à la demande, la bande se fond dans ses
+           voisines, du même indigo.
 
-           L'espace intérieur est plus serré que du temps où le panneau était
-           indigo. Un aplat sombre porte 128 px de vide sans qu'on les
-           remarque ; sur un écru continu, les mêmes 128 px s'ajoutent aux 80
-           du rythme de section et ouvrent un trou de près de 200 px au-dessus
-           du titre, que plus aucun changement de couleur ne justifie. */
-        /* Quand la section suit directement le hero, son espace du haut est
-           resserré. Le hero finit en dégradé vers un aplat d'écru franc, et
-           cette zone vide fait DÉJÀ la séparation : la reprendre en entier
-           par-dessus la compte deux fois, et le panneau tombe trop bas.
+           L'espace intérieur a été resserré pendant la période écrue — un
+           écru continu ajoutait 128 px de vide aux 80 du rythme de section —
+           et n'a pas bougé au retour du fond sombre. */
+        /* Juste après le hero — sa place dans l'ordre actuel : plus d'écart
+           du haut. Le hero finit sur le même
+           #161B2D (son fondu vers l'écru a été retiré à la demande) ; les
+           32 px qu'on gardait ici, justifiés par cette fin écrue, feraient
+           désormais une bande d'écru entre deux fonds sombres. Les deux
+           bandes se fondent, sans séparateur.
 
-           La règle est adossée au voisinage (« le hero, puis nous ») plutôt
-           qu'écrite en dur sur .man : déplacée ailleurs dans la page, la
-           section retrouve seule le rythme commun, sans qu'on ait à y
-           repenser. C'est cette section-ci qui hérite du resserrement que
-           portait « En mouvement » du temps où elle suivait le hero. */
-        main > section:first-of-type + .man { padding-top: var(--s-6); }
+           Adossé au voisinage (« le hero, puis nous ») plutôt qu'écrit en dur
+           sur .man : déplacée ailleurs, la section retrouve seule le rythme
+           commun. */
+        main > section:first-of-type + .man { padding-top: 0; }
+
+        /* Juste après « Aperçu de la boutique », elle aussi en #161B2D : plus
+           d'écart du haut. Sinon une bande d'écru de 80 px s'ouvrirait entre
+           deux fonds sombres. Les deux bandes se fondent, sans séparateur.
+           Adossé au voisinage, comme la règle ci-dessus. */
+        .em.on-dark + .man { padding-top: 0; }
 
         .man-panneau {
-          background: var(--surface);
           border-radius: var(--r-0);
-          border-block: 1px solid var(--line-accent);
           padding-block: clamp(var(--s-7), 6vw, var(--s-8));
+        }
+
+        /* Le fond : #161B2D (« --surface-chrome »), et non celui que pose
+           « .on-dark » (#0F1320, un cran plus sombre). « .on-dark » ne sert ici
+           qu'à basculer les tokens de texte, de filet et d'accent ; le fond et
+           « --surface » sont repris par cette double classe, plus spécifique
+           que « .on-dark » seule. « --surface » compte : c'est la couleur de
+           l'anneau qui détache la petite photo de la grande, il doit se fondre
+           dans le fond. Contrastes mesurés sur ce fond (styles.css,
+           « --surface-chrome ») : écru 15,85:1, laiton clair 7,14:1, texte
+           atténué 6,79:1. */
+        .man-panneau.on-dark {
+          background: var(--surface-chrome);
+          --surface: var(--surface-chrome);
         }
 
         /* Colonne de texte plus large que celle des photos : c'est la parole

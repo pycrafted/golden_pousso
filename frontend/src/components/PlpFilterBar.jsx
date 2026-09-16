@@ -174,12 +174,29 @@ export const PlpFilterBar = ({
     ? (sortOptions.find((o) => o.value === ordering)?.label ?? sortOptions[0].label)
     : '';
 
+  const pilule = ({ cle, label, actif, onToggle }) => (
+    <button
+      key={cle}
+      type="button"
+      aria-pressed={actif}
+      onClick={onToggle}
+      className={`gp-pilule${actif ? ' gp-pilule--actif' : ''}`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div className="gp-barre">
       <div className="gp-barre-rang">
 
         {/* ── Filtres, à gauche ── */}
         <div className="gp-barre-gauche">
+          {/* L'ordre, à la demande : rayons et sous-catégories d'abord, puis
+              les autres bascules, puis « Prix », TOUJOURS juste à gauche de
+              « En promotion », qui ferme la rangée. */}
+          {bascules.filter((b) => b.cle !== 'on_sale').map(pilule)}
+
           {prixFiltrable && (
             <div className="gp-pop" ref={refPrix}>
               <button
@@ -206,17 +223,7 @@ export const PlpFilterBar = ({
             </div>
           )}
 
-          {bascules.map(({ cle, label, actif, onToggle }) => (
-            <button
-              key={cle}
-              type="button"
-              aria-pressed={actif}
-              onClick={onToggle}
-              className={`gp-pilule${actif ? ' gp-pilule--actif' : ''}`}
-            >
-              {label}
-            </button>
-          ))}
+          {bascules.filter((b) => b.cle === 'on_sale').map(pilule)}
         </div>
 
         {/* ── Tri, à droite ── */}
@@ -333,9 +340,22 @@ export const PlpFilterBar = ({
           border-color: var(--line-accent);
           color: var(--text-accent);
         }
+        /* Sur fond sombre (la boutique), le crème de « --surface-gold » garde
+           sa valeur claire pendant que « --text-accent » passe au laiton
+           clair : ~2,2:1, illisible. La pilule active y devient pleine,
+           indigo sur laiton : 7,74:1. Son chevron, laiton lui aussi,
+           disparaîtrait : il reprend l'encre de la pilule. */
+        .on-dark .gp-pilule--actif {
+          background: var(--gp-brass-400);
+          border-color: var(--gp-brass-400);
+          color: var(--gp-indigo-900);
+        }
+        .on-dark .gp-pilule--actif .gp-fleche { color: inherit; }
+        /* Anneau collé à la pilule, sans décalage : elle a sa propre
+           bordure, un écart dessinait un second cadre. */
         .gp-pilule:focus-visible {
           outline: 2px solid var(--text-accent);
-          outline-offset: 2px;
+          outline-offset: 0;
         }
         /* Le chevron du tri prend le laiton : c'est le seul repère coloré de
            la rangée, il désigne l'action qui ouvre un choix. */
@@ -354,6 +374,14 @@ export const PlpFilterBar = ({
         /* Le panneau s'aligne désormais sur le bord DROIT de sa pilule : à
            gauche, une pilule posée près du bord droit de l'écran aurait
            ouvert son panneau de 30 rem dans le vide, hors cadre. */
+        /* Sur fond sombre, le panneau se lève d'un cran (indigo-700) : à la
+           couleur de la page, il ne s'en détacherait que par son filet. La
+           piste du prix (« --surface-sunk ») passe à l'indigo-900 pour rester
+           visible dessus. Écru 13,62:1, écru à 62 % 6,13:1, laiton 6,14:1. */
+        .on-dark .gp-panneau {
+          --surface: var(--gp-indigo-700);
+          --surface-sunk: var(--gp-indigo-900);
+        }
         .gp-panneau--prix { right: 0; width: 30rem; padding: var(--s-5); }
         .gp-panneau--tri  { right: 0; min-width: 22rem; padding: var(--s-2); }
         /* Panneau collé au bord droit de l'écran en petit écran : il sortirait
@@ -440,13 +468,17 @@ export const PlpFilterBar = ({
           box-shadow: var(--shadow-lift);
           cursor: grab;
         }
+        /* Le focus du curseur de prix se lit sur sa poignée seule, anneau
+           collé à sa bordure. L'anneau global se posait aussi sur toute la
+           piste : deux indicateurs pour un seul élément. */
+        .gp-prix-piste input[type="range"]:focus-visible { outline: none; }
         .gp-prix-piste input[type="range"]:focus-visible::-webkit-slider-thumb {
           outline: 2px solid var(--text-accent);
-          outline-offset: 2px;
+          outline-offset: 0;
         }
         .gp-prix-piste input[type="range"]:focus-visible::-moz-range-thumb {
           outline: 2px solid var(--text-accent);
-          outline-offset: 2px;
+          outline-offset: 0;
         }
 
         .gp-prix-bornes {

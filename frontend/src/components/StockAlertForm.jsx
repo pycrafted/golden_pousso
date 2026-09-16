@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import apiClient from '../api/client';
-import { COLORS, FONT_BODY } from '../theme';
+// Champ et bouton du système (« .field », bouton plein) : les COLORS de
+// theme.js, figées pour un fond clair, étaient illisibles sur le site indigo.
+import { FONT_BODY } from '../theme';
 
 const StockAlertForm = ({ productSlug }) => {
   const [email, setEmail] = useState('');
@@ -38,18 +40,14 @@ const StockAlertForm = ({ productSlug }) => {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Votre email pour être averti(e)"
-        style={{
-          flex: 1, minWidth: '18rem', padding: '1.2rem 1.4rem',
-          border: '1px solid #CEC0A0', background: 'transparent',
-          fontFamily: FONT_BODY, fontSize: '1.3rem', color: COLORS.ink,
-          outline: 'none', boxSizing: 'border-box',
-        }}
+        className="field"
+        style={{ flex: 1, minWidth: '18rem', fontSize: '1.3rem' }}
       />
       <button
         type="submit"
         disabled={loading}
         style={{
-          padding: '1.2rem 2.4rem', background: COLORS.ink, color: COLORS.cream, border: 'none',
+          padding: '1.2rem 2.4rem', background: 'var(--action-fill)', color: 'var(--action-fill-text)', border: 'none',
           fontFamily: FONT_BODY, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
           fontSize: '1.1rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1,
         }}

@@ -7,6 +7,17 @@ import useAuthStore from '../store/authStore';
 import CldImg from './CldImg';
 import apiClient from '../api/client';
 import { COLORS } from '../theme';
+import { useLienWhatsApp } from '../store/coordonneesStore';
+
+/* WhatsApp, dans la barre, à la demande — il était une bulle flottante posée
+   par le Layout, qui recouvrait le tiroir du panier. Même message de départ
+   que la bulle. Pour tous les visiteurs : on peut vouloir écrire avant
+   d'avoir un compte.
+
+   ⚠ Le NUMÉRO n'est plus écrit ici : c'est celui de l'Espace Gestion →
+   Coordonnées, lu par `useLienWhatsApp`. Seul le message de départ reste une
+   constante — il ne change pas d'une saison à l'autre. */
+const MESSAGE_WHATSAPP = 'Bonjour Golden Pousso, je souhaite des informations sur vos créations.';
 
 const C = {
   dark: COLORS.ink,
@@ -158,6 +169,11 @@ const Navbar = () => {
   const [sticky, setSticky] = useState(false);
   const conteneur = useRef(null);
 
+  /* Le numéro vient de l'Espace Gestion → Coordonnées : le même que celui de
+     la bande, juste au-dessus. */
+  const lienWhatsApp = useLienWhatsApp(MESSAGE_WHATSAPP);
+  const ouvrirWhatsApp = () => window.open(lienWhatsApp, '_blank', 'noopener,noreferrer');
+
   /* Publie la hauteur de la barre dans --nav-h, sur le modèle de --bande-h
      (voir BandeCoordonnees) : BandePromo en a besoin pour occuper exactement
      l'écran sous les deux barres collantes. Une hauteur écrite en dur
@@ -244,10 +260,12 @@ const Navbar = () => {
     return () => { document.body.style.overflow = ''; };
   }, [navOpen]);
 
-  // « Accueil » n'est plus dans la liste : c'est le nom de la maison, à
-  // gauche, qui ramène à la page d'accueil — la convention que tout visiteur
-  // connaît déjà. Une entrée de menu en plus disait la même chose deux fois.
-  /* « Boutique » ouvre la liste, avant les rayons : c'est l'entrée qui les
+  /* « Accueil » ouvre la liste, juste avant « Boutique », à la demande. Il
+     en avait été retiré — le nom de la maison, à gauche, ramène déjà à
+     l'accueil — mais tous les visiteurs ne savent pas qu'un logo se clique.
+     Il est écrit en dur, comme « Boutique » : c'est une page, pas un rayon.
+
+     « Boutique » suit, avant les rayons : c'est l'entrée qui les
      contient tous, elle passe donc avant ceux qu'elle regroupe. Elle est
      écrite en dur et non tirée de l'API — ce n'est pas une catégorie, c'est
      une page.
@@ -258,8 +276,11 @@ const Navbar = () => {
      doit s'afficher, le faire passer par la moulinette ne changerait rien
      mais ferait croire qu'il en a besoin. */
   const navLinks = [
+    { to: '/', label: 'Accueil' },
     { to: '/boutique', label: 'Boutique' },
-    ...categories.map((cat) => ({
+    /* Les catégories PRINCIPALES seulement : une sous-catégorie se range sous
+       son rayon, elle n'a pas de place dans la barre. */
+    ...categories.filter((cat) => !cat.parent).map((cat) => ({
       to: `/categorie/${cat.slug}`,
       label: cat.name.charAt(0).toUpperCase() + cat.name.slice(1).toLowerCase(),
     })),
@@ -410,6 +431,9 @@ const Navbar = () => {
                 <i className="bx bx-cog" style={{ fontSize: '2.2rem' }}></i>
               </IconBtn>
             )}
+            <IconBtn onClick={ouvrirWhatsApp} title="Nous écrire sur WhatsApp">
+              <i className="bx bxl-whatsapp" style={{ fontSize: '2.2rem' }}></i>
+            </IconBtn>
             <ProfileDropdown />
             <div style={{ position: 'relative' }}>
               <IconBtn onClick={() => setCartOpen((o) => !o)} title="Panier">
@@ -506,20 +530,8 @@ const Navbar = () => {
               }}>
                 Votre Panier
               </h2>
-              {totalItems > 0 && (
-                <span style={{
-                  background: 'rgba(198,164,61,0.12)',
-                  border: '1px solid rgba(198,164,61,0.25)',
-                  color: C.gold,
-                  fontSize: '1.1rem',
-                  fontFamily: 'var(--font-body)',
-                  letterSpacing: '0.08em',
-                  padding: '0.25rem 0.9rem',
-                  borderRadius: '999px',
-                }}>
-                  {totalItems}
-                </span>
-              )}
+              {/* Plus de pastille du nombre d'articles à côté du titre, à la
+                  demande : le compteur de l'icône du panier le dit déjà. */}
             </div>
             <button
               onClick={() => setCartOpen(false)}
@@ -778,6 +790,33 @@ const Navbar = () => {
                   Espace Gestion
                 </button>
               )}
+
+              {/* La sortie, ici aussi. Sous 1 080 px, les icônes de la barre
+                  — dont celle de déconnexion — sont masquées ; le bouton
+                  « Se déconnecter » de la page profil, seule autre sortie,
+                  a été retiré à la demande. Sans cette entrée, on ne pouvait
+                  plus se déconnecter depuis un téléphone. */}
+              {isAuthenticated && (
+                <button
+                  type="button"
+                  className="nav-mobile-sortie"
+                  onClick={() => { setNavOpen(false); logout(); navigate('/'); }}
+                >
+                  <i className="bx bx-log-out" aria-hidden="true"></i>
+                  Se déconnecter
+                </button>
+              )}
+
+              {/* WhatsApp : sous 1 080 px, l'icône de la barre est masquée
+                  avec les autres — l'entrée du menu la remplace. */}
+              <button
+                type="button"
+                className="nav-mobile-whatsapp"
+                onClick={() => { setNavOpen(false); ouvrirWhatsApp(); }}
+              >
+                <i className="bx bxl-whatsapp" aria-hidden="true"></i>
+                WhatsApp
+              </button>
             </div>
 
 
@@ -790,6 +829,32 @@ const Navbar = () => {
 
       {/* Inline styles for responsive + hover effects */}
       <style>{`
+        /* L'entrée « Se déconnecter » du menu mobile : le dessin exact de ses
+           voisines (« Mes commandes »…), en classe plutôt qu'en style en
+           ligne, et son survol en CSS plutôt qu'en gestionnaires JS. Écru sur
+           l'encre du menu ; laiton clair au survol, 7,74:1. */
+        .nav-mobile-sortie,
+        .nav-mobile-whatsapp {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+          padding: 1.2rem 2rem;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          background: none;
+          color: var(--gp-ecru-50);
+          font-family: var(--font-body);
+          font-size: 1.4rem;
+          cursor: pointer;
+          transition: border-color 0.2s, color 0.2s;
+        }
+        .nav-mobile-sortie .bx,
+        .nav-mobile-whatsapp .bx { font-size: 1.8rem; }
+        .nav-mobile-sortie:hover,
+        .nav-mobile-whatsapp:hover {
+          border-color: var(--gp-brass-400);
+          color: var(--gp-brass-400);
+        }
+
         @media (max-width: 1080px) {
           .desktop-nav { display: none !important; }
           .nav-icons { display: none !important; }

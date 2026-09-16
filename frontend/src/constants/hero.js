@@ -5,7 +5,8 @@
  *
  * ── Pourquoi ils ne sont plus dans le back-office ───────────────────────────
  * Ils y ont vécu : publiés dans l'Espace Gestion, stockés sur Cloudflare R2,
- * lus par le hero via /atelier-image/. Deux choses n'allaient pas.
+ * lus par le hero via /atelier-image/ (API retirée depuis). Deux choses
+ * n'allaient pas.
  *
  * D'abord le service. Sans domaine personnalisé, R2 ne sert que par son
  * adresse `r2.dev`, que Cloudflare bride volontairement et annonce comme

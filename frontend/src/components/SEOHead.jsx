@@ -6,10 +6,16 @@ const DEFAULT_IMAGE = '/og-image.jpg';
 const BASE_URL = 'https://goldenpousso.sn';
 
 const SEOHead = ({ title, description, image, url, type = 'website', noindex = false }) => {
-  /* Le tiret cadratin qui joignait le nom à la devise a été retiré : une
-     virgule suffit, et l'onglet ne portait plus le même séparateur selon
-     qu'une page avait un titre propre ou non. */
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME}, Couture Africaine Haut de Gamme`;
+  /* UN SEUL SÉPARATEUR sur tout le site, la barre verticale, à la demande —
+     y compris sur la page d'accueil, qui n'a pas de titre propre et joignait
+     son nom à sa devise par une virgule (un tiret cadratin avant cela). Trois
+     ponctuations pour la même jointure, c'était trois façons de nommer la
+     maison dans un onglet.
+
+     ⚠ La même chaîne est écrite dans `index.html` : le document la porte
+     avant que React ne monte. Changer l'une sans l'autre fait clignoter
+     l'onglet au premier rendu. */
+  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | Couture Africaine Haut de Gamme`;
   const metaDesc = description || DEFAULT_DESCRIPTION;
   const metaImage = image || DEFAULT_IMAGE;
   const canonical = url ? `${BASE_URL}${url}` : BASE_URL;

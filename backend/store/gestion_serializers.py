@@ -1,25 +1,41 @@
 """Serializers dédiés à l'espace Gestion (back-office) — jamais utilisés par l'API publique."""
 from rest_framework import serializers
-from django.db.models import Sum
+from django.core.exceptions import ValidationError as DjangoValidationError
 from accounts.models import Customer
 from .models import (
     Category, Product, ProductImage, ProductVariant,
-    Order, Review, ContactMessage, StockAlert, HeroBanner, AtelierImage, ShowcaseVideo,
+    Order, ShowcaseVideo, Coordonnees,
 )
 
 
 class GestionCategorySerializer(serializers.ModelSerializer):
+    """Nom et parent, à la demande — plus de photo, de description, de statut,
+    d'ordre ni de type (`structurel`, retiré à la demande avec la colonne
+    « Type » de l'Espace Gestion, qui reconnaît désormais les cinq rayons par
+    leur slug). Le verrou des rayons reste, lui, dans le modèle."""
+
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'description', 'image', 'is_active', 'order']
+        fields = ['id', 'name', 'slug', 'parent']
         extra_kwargs = {'slug': {'required': False}}
+
+    def validate(self, attrs):
+        # ModelSerializer ne passe pas par Model.clean() : la règle de l'arbre
+        # est rejouée ici, sur l'instance modifiée ou une catégorie neuve.
+        if 'parent' in attrs:
+            categorie = self.instance or Category(name=attrs.get('name', ''))
+            try:
+                categorie.verifier_parent(attrs['parent'])
+            except DjangoValidationError as erreur:
+                raise serializers.ValidationError({'parent': erreur.messages})
+        return attrs
 
 
 
 class GestionProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
-        fields = ['id', 'product', 'image', 'alt_text', 'is_primary', 'order']
+        fields = ['id', 'product', 'image', 'is_primary', 'order']
 
 
 class GestionProductVariantSerializer(serializers.ModelSerializer):
@@ -37,10 +53,10 @@ class GestionProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'slug', 'category', 'category_name', 'description',
-            'price', 'old_price', 'stock', 'is_active', 'is_featured', 'is_new',
-            'video', 'images', 'variants', 'created_at', 'updated_at',
+            'price', 'old_price', 'stock',
+            'images', 'variants', 'created_at', 'updated_at',
         ]
-        extra_kwargs = {'slug': {'required': False}, 'video': {'required': False}}
+        extra_kwargs = {'slug': {'required': False}}
 
 
 class GestionOrderItemSerializer(serializers.ModelSerializer):
@@ -59,79 +75,43 @@ class GestionOrderSerializer(serializers.ModelSerializer):
             'delivery_address', 'delivery_zone', 'delivery_fee', 'subtotal', 'total',
             'payment_method', 'payment_status', 'notes', 'items', 'created_at', 'updated_at',
         ]
-        read_only_fields = [f for f in fields if f not in ('status', 'payment_status')]
+        # Seul le statut se modifie. Le paiement n'est plus modifiable à la
+        # main, à la demande : seul le retour de PayDunya le marque payé.
+        read_only_fields = [f for f in fields if f != 'status']
+
+    def validate_status(self, valeur):
+        """Une commande payée ne revient jamais « En attente ».
+
+        L'Espace Gestion ne liste que des commandes payées (voir la vue), que
+        le retour de PayDunya a déjà passées « Payée ». « En attente »
+        voulait dire « en attente de paiement » : il n'a plus de sens ici.
+        """
+        if valeur == 'pending':
+            raise serializers.ValidationError(
+                "Une commande payée ne peut pas revenir « En attente »."
+            )
+        return valeur
 
 
-class GestionReviewSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.name', read_only=True)
-    customer_name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Review
-        fields = ['id', 'product', 'product_name', 'customer_name', 'rating', 'comment', 'photo', 'is_approved', 'created_at']
-        read_only_fields = ['id', 'product', 'product_name', 'customer_name', 'rating', 'comment', 'photo', 'created_at']
-
-    def get_customer_name(self, obj):
-        return obj.customer.get_full_name() or obj.customer.first_name or obj.customer.phone
-
-
-class GestionContactMessageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ContactMessage
-        fields = ['id', 'name', 'contact', 'subject', 'message', 'is_read', 'created_at']
-        read_only_fields = ['id', 'name', 'contact', 'subject', 'message', 'created_at']
-
-
-class GestionStockAlertSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.name', read_only=True)
-
-    class Meta:
-        model = StockAlert
-        fields = ['id', 'product', 'product_name', 'email', 'notified', 'created_at']
-
-
-class GestionHeroBannerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = HeroBanner
-        fields = ['id', 'image', 'is_active', 'updated_at']
-
-
-class GestionAtelierImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AtelierImage
-        fields = ['id', 'image', 'emplacement', 'is_active', 'order', 'updated_at']
+# Plus de sérialiseurs pour les messages de contact ni pour les alertes de
+# réassort : leurs pages de l'Espace Gestion ont été supprimées à la demande.
 
 
 class GestionShowcaseVideoSerializer(serializers.ModelSerializer):
-    #: Clé d'un objet déjà déposé sur R2 par le navigateur, via l'URL signée de
-    #: `lien-envoi`. Le fichier ne transite alors PAS par le serveur : on ne
-    #: reçoit ici que son emplacement. Voir la vue pour le pourquoi.
-    video_cle = serializers.CharField(write_only=True, required=False, allow_blank=True)
-
     class Meta:
         model = ShowcaseVideo
-        fields = ['id', 'title', 'video', 'video_lien', 'video_cle', 'poster', 'product', 'order', 'is_active', 'created_at']
-        # Facultatif pour pouvoir MODIFIER un titre ou un ordre sans renvoyer
-        # le fichier, qui pèse des dizaines de mégaoctets. Voir `validate` :
-        # à la CRÉATION, il redevient obligatoire.
-        extra_kwargs = {'video': {'required': False}}
+        # Plus de `video` ni de `video_cle` : une vidéo se fournit par son
+        # lien Cloudflare uniquement, à la demande.
+        fields = ['id', 'video_lien', 'poster', 'order', 'created_at']
 
     def validate(self, attrs):
-        """Une séquence sans fichier n'est pas une séquence.
-
-        `required: False` ci-dessus ne devait servir qu'aux modifications. À la
-        création, il laissait enregistrer une ligne vide : elle apparaissait
-        « Visible » dans l'Espace Gestion et produisait une tuile blanche sur
-        la page d'accueil, sans que rien n'indique ce qui manquait. C'est
-        exactement ce qui est arrivé en production.
-        """
-        fourni = attrs.get('video') or attrs.get('video_cle') or attrs.get('video_lien')
-        if self.instance is None and not fourni:
-            raise serializers.ValidationError({
-                'video_lien': "Collez le lien de la vidéo, ou choisissez un "
-                              "fichier : une séquence sans l'un des deux "
-                              "n'apparaîtrait pas sur le site.",
-            })
+        if self.instance is None and ShowcaseVideo.objects.count() >= ShowcaseVideo.MAX:
+            # Quatre au plus, à la demande : la section d'accueil les aligne
+            # toutes sur une ligne.
+            raise serializers.ValidationError(
+                f"{ShowcaseVideo.MAX} vidéos au maximum : supprimez-en une "
+                "pour en ajouter une autre."
+            )
         return attrs
 
     def validate_video_lien(self, valeur):
@@ -144,65 +124,153 @@ class GestionShowcaseVideoSerializer(serializers.ModelSerializer):
         navigateur bloque le contenu mixte sans rien dire.
         """
         valeur = (valeur or '').strip()
-        if valeur and not valeur.startswith('https://'):
+        if not valeur.startswith('https://'):
             raise serializers.ValidationError(
                 "Le lien doit commencer par https:// — une adresse en http "
                 "serait bloquée par le navigateur."
             )
         return valeur
 
-    def validate_video_cle(self, valeur):
-        """La clé vient du serveur, elle doit y ressembler.
-
-        C'est le serveur qui a nommé l'objet en délivrant l'URL signée. Une clé
-        qui ne commence pas par `videos/` désignerait autre chose que la vidéo
-        qu'on vient de déposer — au mieux une erreur, au pire une photo du
-        catalogue rattachée par mégarde à une séquence.
-        """
-        valeur = (valeur or '').strip()
-        if valeur and not valeur.startswith('videos/'):
-            raise serializers.ValidationError("Clé de dépôt invalide.")
-        return valeur
-
-    def _poser_la_cle(self, instance, cle):
-        """Rattache l'objet déjà déposé, sans le relire ni le réécrire.
-
-        Assigner `.name` plutôt que `.save()` est délibéré : le fichier est
-        DÉJÀ sur le bucket. Passer par le champ le retéléchargerait pour le
-        renvoyer aussitôt — exactement le trajet qu'on cherche à supprimer.
-        """
-        instance.video.name = cle
-        instance.save(update_fields=['video'])
-        return instance
-
-    def create(self, validated_data):
-        cle = validated_data.pop('video_cle', '')
-        instance = super().create(validated_data)
-        return self._poser_la_cle(instance, cle) if cle else instance
-
-    def update(self, instance, validated_data):
-        cle = validated_data.pop('video_cle', '')
-        instance = super().update(instance, validated_data)
-        return self._poser_la_cle(instance, cle) if cle else instance
-
 
 # ── Clients ──
 
 class GestionCustomerSerializer(serializers.ModelSerializer):
-    order_count = serializers.SerializerMethodField()
-    total_spent = serializers.SerializerMethodField()
+    """Un compte utilisateur : identité, type (client ou admin, `is_staff`) et
+    état (`is_active` — un compte désactivé ne peut plus se connecter, et ses
+    jetons déjà délivrés sont refusés).
+
+    Plus de nombre de commandes ni de total dépensé, à la demande — retirés
+    avec leurs colonnes de la page « Comptes utilisateurs ».
+
+    ── Un compte se crée et se modifie ici, à la demande ───────────────────────
+    L'identité (prénom, nom, téléphone, e-mail) était en lecture seule : un
+    compte ne pouvait naître que sur le site, par l'inscription. L'Espace
+    Gestion le crée maintenant lui-même — c'est ainsi qu'on ouvre l'accès à un
+    second admin sans passer par `createsuperuser`.
+
+    ⚠ **Le téléphone est l'identifiant de connexion** (`/auth/login/` cherche le
+    compte par son numéro) : il ne peut donc pas être partagé, et il est repris
+    dans `username`, comme le fait l'inscription du site. Un numéro changé ici
+    change le numéro de connexion.
+
+    Le mot de passe s'écrit, ne se lit jamais : obligatoire à la création,
+    facultatif ensuite — laissé vide, il n'est pas touché. C'est le seul moyen
+    de dépanner un client qui a perdu le sien, le site n'ayant pas de
+    réinitialisation par e-mail.
+    """
+
+    password = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, min_length=6,
+        style={'input_type': 'password'},
+    )
 
     class Meta:
         model = Customer
-        fields = ['id', 'first_name', 'last_name', 'phone', 'email', 'is_staff', 'date_joined', 'order_count', 'total_spent']
-        read_only_fields = ['id', 'first_name', 'last_name', 'phone', 'email', 'date_joined', 'order_count', 'total_spent']
+        fields = ['id', 'first_name', 'last_name', 'phone', 'email',
+                  'is_staff', 'is_active', 'date_joined', 'password']
+        read_only_fields = ['id', 'date_joined']
+        extra_kwargs = {
+            # Un compte sans nom ni numéro ne se reconnaît dans aucune liste,
+            # et ne peut pas se connecter.
+            'first_name': {'required': True, 'allow_blank': False},
+            'phone': {'required': True, 'allow_blank': False},
+            'email': {'required': False, 'allow_blank': True},
+        }
 
-    def get_order_count(self, obj):
-        if not obj.phone:
-            return 0
-        return Order.objects.filter(customer_phone__endswith=obj.phone).count()
+    def validate_phone(self, valeur):
+        valeur = valeur.strip()
+        autres = Customer.objects.all()
+        if self.instance:
+            autres = autres.exclude(pk=self.instance.pk)
+        if autres.filter(phone=valeur).exists():
+            raise serializers.ValidationError('Ce numéro est déjà associé à un compte.')
+        return valeur
 
-    def get_total_spent(self, obj):
-        if not obj.phone:
-            return 0
-        return Order.objects.filter(customer_phone__endswith=obj.phone, payment_status='paid').aggregate(t=Sum('total'))['t'] or 0
+    def validate(self, attrs):
+        if self.instance is None and not attrs.get('password'):
+            raise serializers.ValidationError(
+                {'password': 'Un mot de passe est requis pour créer un compte.'})
+        return attrs
+
+    @staticmethod
+    def _identifiant(telephone, pk=None):
+        """Le `username` tiré du numéro : ses seuls chiffres et lettres.
+
+        Django n'accepte pas d'espace dans un `username` — le numéro s'écrit
+        « 77 751 47 95 ». Le téléphone, lui, est conservé tel qu'il est saisi :
+        c'est ce que le client retapera pour se connecter, et l'inscription du
+        site le garde déjà ainsi.
+
+        Deux présentations d'un même numéro donneraient le même identifiant :
+        un suffixe est ajouté plutôt que de laisser la base refuser
+        l'enregistrement par une erreur 500.
+        """
+        base = ''.join(c for c in telephone if c.isalnum()) or 'compte'
+        autres = Customer.objects.exclude(pk=pk) if pk else Customer.objects.all()
+        candidat, rang = base, 1
+        while autres.filter(username=candidat).exists():
+            rang += 1
+            candidat = f'{base}-{rang}'
+        return candidat
+
+    def create(self, validated_data):
+        mot_de_passe = validated_data.pop('password')
+        identifiant = self._identifiant(validated_data['phone'])
+        # Comme l'inscription du site (`RegisterSerializer`) : un e-mail interne
+        # tient lieu de valeur par défaut — Django en attend un, le site n'en
+        # demande pas.
+        validated_data['email'] = validated_data.get('email') or f'{identifiant}@goldenpousso.local'
+        utilisateur = Customer(username=identifiant, **validated_data)
+        utilisateur.set_password(mot_de_passe)
+        utilisateur.save()
+        return utilisateur
+
+    def update(self, instance, validated_data):
+        mot_de_passe = validated_data.pop('password', '')
+        ancien_telephone = instance.phone
+        utilisateur = super().update(instance, validated_data)
+
+        champs = []
+        # Le `username` suit le numéro — mais seulement s'il le suivait déjà :
+        # un compte créé par `createsuperuser` porte un nom choisi à la main,
+        # qu'on ne va pas remplacer dans son dos.
+        ancienne_base = ''.join(c for c in ancien_telephone if c.isalnum())
+        suivait = utilisateur.username in (ancien_telephone, ancienne_base) or (
+            ancienne_base and utilisateur.username.split('-')[0] == ancienne_base)
+        if utilisateur.phone != ancien_telephone and ancien_telephone and suivait:
+            utilisateur.username = self._identifiant(utilisateur.phone, pk=utilisateur.pk)
+            champs.append('username')
+
+        if mot_de_passe:
+            utilisateur.set_password(mot_de_passe)
+            champs.append('password')
+
+        if champs:
+            utilisateur.save(update_fields=champs)
+        return utilisateur
+
+
+class GestionCoordonneesSerializer(serializers.ModelSerializer):
+    """Les trois coordonnées de la boutique, saisies dans l'Espace Gestion.
+
+    Les trois champs sont obligatoires : une bande à laquelle il manque le
+    téléphone ou l'adresse laisse un libellé sans valeur. `telephone_lien` est
+    renvoyé pour que le formulaire montre le lien d'appel qu'il fabrique — il
+    ne se saisit pas.
+    """
+    telephone_lien = serializers.CharField(read_only=True)
+    whatsapp = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Coordonnees
+        fields = ['adresse', 'telephone', 'telephone_lien', 'whatsapp', 'email', 'updated_at']
+        read_only_fields = ['updated_at']
+        extra_kwargs = {
+            'adresse': {'allow_blank': False},
+            'telephone': {'allow_blank': False},
+        }
+
+    def validate_telephone(self, valeur):
+        if not any(c.isdigit() for c in valeur):
+            raise serializers.ValidationError("Un numéro de téléphone contient des chiffres.")
+        return valeur.strip()
