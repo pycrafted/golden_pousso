@@ -24,6 +24,16 @@ def _liste_env(nom, defaut=''):
 
 ALLOWED_HOSTS = _liste_env('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
+# Render publie lui-même le nom de domaine du service (« xxx.onrender.com ») dans
+# RENDER_EXTERNAL_HOSTNAME. On l'ajoute toujours : c'est par ce nom que Render
+# interroge le service pour ses vérifications de santé, et c'est l'accès de
+# secours à l'admin le jour où le DNS du domaine personnalisé casse ou que son
+# certificat expire. L'oublier dans ALLOWED_HOSTS fait repartir ces requêtes en
+# 400, sans autre trace qu'une ligne DisallowedHost.
+_hote_render = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '').strip()
+if _hote_render and _hote_render not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_hote_render)
+
 JAZZMIN_SETTINGS = {
     'site_title': 'Golden Pousso Admin',
     'site_header': 'Golden Pousso',
