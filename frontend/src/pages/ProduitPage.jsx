@@ -1101,7 +1101,7 @@ const FEUILLE = `
       white-space: nowrap;
     }
     .fp-barre-qte { font-size: 1.4rem; color: var(--text-on-dark-muted); }
-    /* `.btn` passe en pleine largeur sous 767 px : ici il partage la ligne
+    /* .btn passe en pleine largeur sous 767 px : ici il partage la ligne
        avec le prix, d'ou le flex qui lui rend une largeur propre. */
     .fp-barre-cta { flex: 1; min-width: 0; width: auto; }
 
