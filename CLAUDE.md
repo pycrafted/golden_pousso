@@ -959,8 +959,20 @@ tienne dans 90 vw — la somme des ratios des pièces, `--bp-rangee`, calculée
 depuis `PIECES`. **Toutes les pièces s'y voient entières, de la coiffe à
 l'ourlet**, pieds sur la même ligne de sol, à la hauteur de la bande moins
 `--bp-air` (`--s-6`) en haut et en bas. Elles
-s'affichent à toutes les largeurs ; sur un téléphone,
-cinq silhouettes dans la largeur les rendent petites (~160 px de haut). À cinq
+s'affichent à toutes les largeurs. ⚠ **Au téléphone (sous 560 px), une
+pièce à la fois**, à la demande, au seuil des catalogues et de l'aperçu :
+la rangée devient une **pile**, chaque pièce prenant la page moins le titre
+(~690 px sur un écran de 860) et l'on descend de l'une à l'autre. En rangée,
+cinq silhouettes dans la largeur d'un téléphone ne faisaient plus que
+~160 px de haut. La bande y perd sa hauteur calculée (`height: auto`) et la
+rangée sort de l'absolu. ⚠ La hauteur d'une pièce empilée est **posée**, pas
+laissée en `auto` : en chargement différé, une image dont la CSS laisse les
+deux dimensions libres n'a aucune taille tant qu'elle n'est pas arrivée
+(les attributs `width`/`height` ne donnent qu'un rapport) — quatre pièces
+sur cinq mesuraient 0 × 0 et la page sautait à leur arrivée. C'est aussi
+pourquoi l'`echelle` d'une pièce passe désormais par la variable
+`--bp-echelle` et non par une hauteur en ligne, qui l'aurait emporté sur
+cette règle. À cinq
 pièces, la rangée est plus large que haute : même en 1 920 × 1 080, c'est la
 largeur qui borne la bande — elle n'occupe plus l'écran entier, et les
 espaces entre pièces se resserrent. Les

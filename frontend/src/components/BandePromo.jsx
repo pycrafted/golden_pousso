@@ -133,7 +133,11 @@ const BandePromo = () => {
             width={piece.largeur}
             height={piece.hauteur}
             className="bp-piece"
-            style={piece.echelle ? { height: `${piece.echelle * 100}%` } : undefined}
+            /* L'échelle passe par une variable, pas par une hauteur en ligne :
+               posée en ligne, elle l'emporterait sur la feuille et la pièce
+               garderait la hauteur de la RANGÉE au téléphone, où elles sont
+               empilées une par une. */
+            style={piece.echelle ? { '--bp-echelle': piece.echelle } : undefined}
             loading="lazy"
             decoding="async"
           />
@@ -271,7 +275,7 @@ const BandePromo = () => {
            toutes les images : la classe l'emporte sur l'élément. */
         .bp-piece {
           flex: none;
-          height: 100%;
+          height: calc(var(--bp-echelle, 1) * 100%);
           width: auto;
           display: block;
           /* Ni ombre portée ni lueur : le fond reste l'indigo UNIFORME de la
@@ -282,6 +286,48 @@ const BandePromo = () => {
              l'historique git. Les détourages, eux, sont propres : hors
              silhouette, l'écart au fond est nul, liseré d'anticrénelage mis à
              part. */
+        }
+
+        /* ── Au téléphone : une pièce à la fois ────────────────────────────
+           À la demande, et au seuil des catalogues et de l'aperçu (560 px).
+           En rangée, cinq silhouettes dans la largeur d'un téléphone font
+           ~160 px de haut : on voit une vitrine, pas des vêtements. Empilées,
+           chacune prend la hauteur de l'écran moins le titre, et l'on descend
+           de l'une à l'autre.
+
+           La bande perd donc sa hauteur calculée (« height: auto ») : c'est
+           la pile qui la donne. Et la rangée sort de l'absolu — placée sous
+           le titre par « inset », elle aurait recouvert la page entière. */
+        @media (max-width: 560px) {
+          .bp { height: auto; }
+          .bp-cadre {
+            position: static;
+            inset: auto;
+            z-index: auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            justify-items: center;
+            gap: var(--s-7);
+            padding: var(--bp-air) var(--page-pad) var(--s-8);
+          }
+          /* La pièce entière dans l'écran : la page moins le titre. La
+             HAUTEUR est posée, la largeur se déduit du ratio du fichier.
+             ⚠ Ne pas mettre les deux en « auto » : une image en chargement
+             différé n'a alors aucune taille tant qu'elle n'est pas arrivée
+             (les attributs width/height ne donnent qu'un rapport, pas une
+             dimension), la bande se replie et la page saute quand les
+             fichiers tombent. Mesuré : quatre pièces sur cinq à 0 × 0.
+
+             À cette hauteur, la plus large des cinq fait 333 px — elle tient
+             dans un téléphone de 400 px moins ses marges. « contain » est le
+             garde-fou si une pièce plus large arrive : elle rétrécira au lieu
+             de s'écraser. */
+          .bp-piece {
+            height: calc(var(--bp-echelle, 1) * (var(--hp-utile, calc(100svh - var(--bande-h, 0px) - var(--nav-h, 0px))) - var(--bp-titre)));
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+          }
         }
       `}</style>
     </section>
