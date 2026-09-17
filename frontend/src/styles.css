@@ -501,8 +501,26 @@ img {
   gap: var(--s-5) var(--s-4);
 }
 @media (max-width: 1280px) { .catalogue-grille { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 900px)  { .catalogue-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 560px)  { .catalogue-grille { grid-template-columns: minmax(0, 1fr); } }
+/* ⚠ DEUX COLONNES JUSQU'EN BAS, à la demande. La grille tombait à UNE
+   colonne sous 560 px : une pièce par écran, 471 px de défilement par pièce,
+   donc ~11 300 px — dix-sept écrans — pour parcourir les 24 pièces d'une
+   page. On ne balaie pas un catalogue de mode dans ces conditions, et la
+   décision d'achat en habillement est comparative : on trie vingt
+   silhouettes du regard avant de s'arrêter sur une. C'est pourquoi Zara,
+   ASOS, Shein et Zalando sont tous en deux colonnes sur téléphone.
+
+   Ce n'était d'ailleurs pas un arbitrage mais une incohérence : la fiche
+   produit affiche DÉJÀ ses pièces similaires en deux colonnes sur la même
+   largeur d'écran (`.fp-recos-grille`), avec exactement la même carte.
+
+   Troisième gain, invisible : `widths={[300, 600]}` redevient exact. En une
+   colonne la photo était rendue dans 335 px CSS, soit 1 005 px réels sur un
+   écran à trois fois la densité — la variante 600 px était étirée de 68 %,
+   donc molle. À 159 px de carte, elle tombe juste.
+
+   Le panneau vitré de la carte ne tient pas dans cette largeur : il se
+   resserre sous 560 px (voir `.pc-panneau` dans `ProductCard.jsx`). */
+@media (max-width: 900px)  { .catalogue-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4) var(--s-3); } }
 
 /* ── L'état vide ────────────────────────────────────────────────────────────
    Ni une erreur, ni un cul-de-sac : un constat et une porte. Les trois
@@ -1082,10 +1100,77 @@ body:has(.site-page) { background: var(--surface-chrome); }
 }
 
 
-/* ═══════════════ RESPONSIVE ═════════════════════════════════════════════ */
+/* ═══════════════ RESPONSIVE ═════════════════════════════════════════════
+   LE TÉLÉPHONE EST LE FORMAT PRINCIPAL : 80 % des visiteurs. Ce n'est pas
+   une adaptation du dessin de bureau, c'est le cas de base.
+
+   ── L'ÉCHELLE DES POINTS DE RUPTURE ──────────────────────────────────────
+   Le projet en comptait DIX-NEUF, inventés fichier par fichier : 480, 520,
+   560, 640, 700, 760, 767, 768, 900, 1024, 1080, 1081, 1100, 1280. Il y
+   avait 760 ET 767 ET 768. Deux éléments voisins changeaient donc de forme à
+   huit pixels d'écart, et entre les deux s'ouvrait une largeur d'écran où la
+   page était incohérente. C'est la cause mécanique de la plupart des
+   cassures. Quatre valeurs suffisent :
+
+     480 px   petit téléphone      — sous ce seuil, une seule colonne partout
+     768 px   téléphone / tablette — LE SEUIL TACTILE : cibles à 44 px,
+                                     champs à 16 px, chrome allégé
+     900 px   tablette / ordinateur — les dispositions à colonnes s'ouvrent
+    1280 px   grand écran          — la densité maximale
+
+   ⚠ Une variable CSS ne peut PAS servir dans une media query : `@media
+   (max-width: var(--bp-md))` n'existe pas. L'échelle est donc une
+   convention, tenue à la main. Écrire les bornes hautes à la valeur moins un
+   (`max-width: 767px`) pour qu'elles soient complémentaires de `min-width:
+   768px` sans se recouvrir d'un pixel.
+
+   Deux exceptions légitimes, et elles sont documentées là où elles vivent :
+   `Navbar.jsx` bascule en menu à 1080 px — c'est la largeur à laquelle la
+   rangée de liens cesse de tenir, une valeur dictée par le contenu, pas par
+   l'appareil ; `gestion.css` replie ses tableaux en cartes à 760 px, seuil
+   propre au back-office. Toute AUTRE valeur ajoutée doit revenir dans
+   l'échelle ci-dessus. */
+
+/* ── Le chrome allégé sous le seuil tactile ─────────────────────────────────
+   La bande de coordonnées passait à TROIS lignes sur un téléphone : chaque
+   entrée est insécable, et deux d'entre elles demandent 529 px côte à côte
+   pour 335 px disponibles. Elle mesurait ~107 px, la barre 77 px : 184 px
+   d'en-tête collé en permanence, soit 28 à 33 % de l'écran d'un iPhone SE —
+   contre 121 px sur un ordinateur, six fois plus haut. Le téléphone payait
+   le plus cher sur l'écran le plus court.
+
+   Masquée, `--bande-h` retombe à 0 px et la barre se recale en haut : le
+   chrome passe à 77 px, soit 11,6 %. Les coordonnées restent atteignables —
+   l'icône WhatsApp de la barre et le menu mobile les portent.
+
+   Bénéfice second : le risque de débordement horizontal disparaît avec elle.
+   Ses valeurs viennent de la base, et une adresse un peu plus longue saisie
+   dans l'Espace Gestion aurait élargi tout le document. */
+@media (max-width: 767px) {
+  .bande-coordonnees { display: none; }
+}
 
 @media (max-width: 767px) {
   .btn { width: 100%; }
   .btn--auto { width: auto; }
   .rule { margin: var(--s-4) 0; }
+
+  /* ── Le flash gris au tap ────────────────────────────────────────────────
+     Android peint un rectangle gris translucide sur tout élément touché, en
+     suivant sa boîte — donc carré sur un bouton en pilule. Le site a ses
+     propres états `:active` ; celui du système les contredit. */
+  a, button, [role="button"], summary, label { -webkit-tap-highlight-color: transparent; }
+}
+
+/* ── LES CIBLES TACTILES ────────────────────────────────────────────────────
+   44 x 44 px est le minimum d'Apple, 48 celui de Google. La pulpe d'un pouce
+   couvre 45 à 55 px : en dessous, on rate, et sur ce site on rate VERS une
+   action voisine — un cœur au lieu d'une fiche, une corbeille au lieu d'un
+   crayon.
+
+   `pointer: coarse` et non une largeur d'écran : c'est le DOIGT qui impose
+   cette taille, pas la taille de l'écran. Une tablette de 1024 px se touche
+   aussi, un petit portable à écran tactile également. */
+@media (pointer: coarse) {
+  .catalogue-vide-action { min-height: 4.4rem; display: inline-flex; align-items: center; }
 }

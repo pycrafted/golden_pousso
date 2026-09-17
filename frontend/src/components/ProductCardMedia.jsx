@@ -12,7 +12,10 @@ import CldImg from './CldImg';
 const ProductCardMedia = ({
   product,
   hovered = false,
-  sizes = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw',
+  /* Aligné sur les paliers de `.catalogue-grille` — 2 / 3 / 4 colonnes.
+     Voir le commentaire de `PLPCard` : un `sizes` qui ment à la grille fait
+     télécharger deux fois trop, ou trop peu et l'image est étirée. */
+  sizes = '(max-width: 900px) 50vw, (max-width: 1280px) 33vw, 25vw',
   widths = [300, 600],
   eager = false,
   placeholder = 'Photo bientôt',

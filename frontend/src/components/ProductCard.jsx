@@ -329,6 +329,37 @@ const ProductCard = ({
           .pc-fleche { opacity: 1; transform: translateX(0); }
           .pc-panneau { background: rgba(15, 19, 32, 0.62); }
         }
+
+        /* ── Le panneau à deux colonnes de grille ───────────────────────────
+           La grille tient deux colonnes jusqu'aux plus petits écrans : une
+           carte y fait ~159 px de large, et le panneau n'en a que 143 une
+           fois son padding retiré. Sa rangée d'origine — vignette de 36 px,
+           gouttière, texte, flèche de 16 px — n'y laissait que 71 px au nom
+           et au prix : le nom, tronqué en ellipse, serait tombé à trois
+           lettres.
+
+           La vignette et la flèche s'effacent donc : la vignette montre la
+           seconde photo de la pièce, un agrément, et la flèche ne fait que
+           répéter que la carte est cliquable. Le nom passe sur deux lignes,
+           le prix dessous. Ce qui reste est ce qu'on lit vraiment pour
+           choisir. */
+        @media (max-width: 560px) {
+          .pc-panneau {
+            left: 8px; right: 8px; bottom: 8px;
+            gap: 4px;
+            padding: 8px 10px;
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .pc-vignette, .pc-fleche { display: none; }
+          .pc-nom {
+            white-space: normal;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-height: 1.3;
+          }
+        }
       `}</style>
     </article>
   );

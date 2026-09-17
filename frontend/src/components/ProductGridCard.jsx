@@ -8,14 +8,27 @@ import ProductCard from './ProductCard';
    `PLPCard` n'est plus qu'un habillage de `ProductCard`, conservé pour ne pas
    toucher aux imports de CategoriePage et BoutiquePage.
 
-   Les grilles PLP tiennent 4 colonnes en desktop, d'où le `sizes` plus serré
-   que la valeur par défaut du composant. */
+   ⚠ LE `sizes` DOIT SUIVRE LA GRILLE, sinon le navigateur choisit la
+   mauvaise variante — et l'erreur est invisible en développement.
+
+   Il annonçait 640 px et 1024 px quand la grille, elle, bascule à 900 px et
+   1280 px (`.catalogue-grille`, styles.css). Deux plages mentaient :
+     · 561-640 px : la carte occupait la moitié de l'écran, le navigateur
+       téléchargeait une image PLEINE largeur — deux fois trop lourde, sur
+       les connexions où cela se paie le plus cher ;
+     · 1025-1280 px : trois colonnes, donc 33 vw, mais 25 vw annoncés — une
+       image trop petite, ÉTIRÉE, donc visiblement molle sur des photos de
+       tissu brodé.
+
+   Les trois bornes correspondent maintenant exactement aux trois paliers de
+   la grille : 2 colonnes, 3, puis 4. Toucher à l'une, c'est toucher à
+   l'autre. */
 export const PLPCard = ({ product, index, onModifie }) => (
   <ProductCard
     product={product}
     index={index}
     onModifie={onModifie}
-    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+    sizes="(max-width: 900px) 50vw, (max-width: 1280px) 33vw, 25vw"
   />
 );
 

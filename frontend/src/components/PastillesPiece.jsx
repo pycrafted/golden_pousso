@@ -183,6 +183,40 @@ const PastillesPiece = ({ product, epuise = false, onAjouterPanier, onModifie, o
         .pc-pastille:active { transform: scale(0.9); }
 
         .pc-coeur.is-aime { color: var(--gp-terra-700); }
+
+        /* ── Au doigt : 44 px, le minimum tactile ───────────────────────────
+           36 px, c'est 8 de moins que le seuil d'Apple et 12 de moins que
+           celui de Google, pour une pulpe de pouce qui en couvre 45 a 55. Et
+           ces pastilles sont posees SUR une photo elle-meme cliquable : rater
+           le coeur d'un demi-centimetre ne fait pas rien, cela CHANGE DE PAGE.
+           C'est la pire sorte d'erreur de cible — silencieuse.
+
+           L'icone garde ses 16 px : c'est la zone sensible qui grandit, le
+           dessin ne bouge presque pas. */
+        @media (pointer: coarse) {
+          .pc-pastille { width: 4.4rem; height: 4.4rem; }
+        }
+
+        /* ── Deux colonnes de grille : la pile ne peut plus etre une pile ───
+           Le catalogue tient deux colonnes jusqu'aux plus petits ecrans, ou
+           une carte fait ~159 x 213 px. Un administrateur voit QUATRE
+           pastilles : a 44 px avec leurs gouttieres, elles feraient 200 px de
+           haut — 94 % de la carte. La photo de la piece disparaitrait sous
+           ses propres outils d'administration.
+
+           Elles passent donc en carre de deux sur deux : 96 px de haut, et la
+           silhouette reste lisible. Un visiteur, qui n'en voit que deux
+           (coeur et panier), garde sa colonne. */
+        @media (max-width: 560px) {
+          .pc-pastilles {
+            top: var(--s-2);
+            right: var(--s-2);
+            flex-flow: row wrap;
+            justify-content: flex-end;
+            gap: var(--s-1);
+            max-width: calc(2 * 4.4rem + var(--s-1));
+          }
+        }
       `}</style>
     </>
   );

@@ -122,8 +122,21 @@ const BandeCoordonnees = () => {
     publier();
     const observateur = new ResizeObserver(publier);
     observateur.observe(el);
+    /* ⚠ La bande est MASQUÉE sous 768 px (voir `.bande-coordonnees` dans
+       styles.css) : trois lignes de coordonnées y volaient près d'un tiers
+       de l'écran, en permanence. `getBoundingClientRect()` d'un élément en
+       `display: none` vaut zéro, donc `--bande-h` retombe à 0 px et la barre
+       de navigation se recale d'elle-même en haut.
+
+       Cette écoute du seuil est une ceinture : les navigateurs publient bien
+       une observation 0 x 0 quand un élément cesse d'être rendu, mais la
+       spécification écarte les éléments non rendus de la liste des
+       observations. Republier au franchissement lève le doute. */
+    const seuil = window.matchMedia('(max-width: 767px)');
+    seuil.addEventListener('change', publier);
     return () => {
       observateur.disconnect();
+      seuil.removeEventListener('change', publier);
       document.documentElement.style.removeProperty('--bande-h');
     };
   }, []);
@@ -131,7 +144,7 @@ const BandeCoordonnees = () => {
   return (
     <div
       ref={ref}
-      className="on-dark"
+      className="on-dark bande-coordonnees"
       style={{
         /* `on-dark` pose `--surface-dark` ; le chrome est un cran plus clair.
            Les tokens de texte, de filet et d'accent de la classe restent
