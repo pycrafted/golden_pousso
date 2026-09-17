@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../store/cartStore';
+import { useInstallable } from '../hooks/useInstallation';
 import useSettingsStore, { formatPrice, CURRENCIES, LANGUAGES } from '../store/settingsStore';
 import useFavorisStore from '../store/favorisStore';
 import useAuthStore from '../store/authStore';
@@ -201,6 +202,7 @@ const ProfileDropdown = () => {
 const Navbar = () => {
   const [navOpen, setNavOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const installable = useInstallable();
   const [sticky, setSticky] = useState(false);
   const conteneur = useRef(null);
 
@@ -990,6 +992,28 @@ const Navbar = () => {
                 <i className="bx bxl-whatsapp" aria-hidden="true"></i>
                 WhatsApp
               </button>
+
+              {/* ── Installer l'application ──────────────────────────────────
+                  LE CHEMIN PERMANENT, qui remplace l'insistance. L'invitation
+                  du bas d'ecran ne parait qu'apres trois pages et se tait
+                  trente jours si on la refuse : sans cette entree, quelqu'un
+                  qui change d'avis n'aurait plus aucun moyen d'installer.
+                  Elle ne s'affiche que la ou l'installation est REELLEMENT
+                  possible — proposer une porte qui ne s'ouvre pas est pire
+                  que ne rien proposer. */}
+              {installable && (
+                <button
+                  type="button"
+                  className="nav-mobile-whatsapp"
+                  onClick={() => {
+                    setNavOpen(false);
+                    window.dispatchEvent(new Event('gp:installer'));
+                  }}
+                >
+                  <i className="bx bx-download" aria-hidden="true"></i>
+                  Installer l&apos;application
+                </button>
+              )}
             </div>
 
 

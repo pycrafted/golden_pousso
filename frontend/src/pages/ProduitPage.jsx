@@ -115,6 +115,22 @@ const ProduitPage = () => {
      d'eux ne serait pas execute au meme rang a chaque rendu. */
   const [refActions, actionsVisibles] = useEstVisible();
 
+  /* La hauteur de la barre d'achat, publiee pour que l'invitation a
+     installer l'application se pose AU-DESSUS et non par-dessus. */
+  const barreAchat = useRef(null);
+  useEffect(() => {
+    const el = barreAchat.current;
+    const racine = document.documentElement;
+    if (!el) { racine.style.removeProperty('--barre-achat-h'); return undefined; }
+    const publier = () => racine.style.setProperty(
+      '--barre-achat-h', `${Math.ceil(el.getBoundingClientRect().height)}px`,
+    );
+    publier();
+    const obs = new ResizeObserver(publier);
+    obs.observe(el);
+    return () => { obs.disconnect(); racine.style.removeProperty('--barre-achat-h'); };
+  }, [actionsVisibles]);
+
   /* Le NIVEAU de la loupe se règle, à la demande : molette sur la photo, ou
      « − / + » en haut à gauche. Il valait 1,55, fixe. Au bout de la plage,
      la molette rend la main à la page : tourner vers le bas au niveau le plus
@@ -608,7 +624,7 @@ const ProduitPage = () => {
             l'ecran, et jamais sur une piece epuisee, ou l'on propose a la
             place d'etre prevenu du retour en atelier. */}
         {!epuise && !actionsVisibles && (
-          <div className="fp-barre-achat" role="group" aria-label="Acheter">
+          <div className="fp-barre-achat" ref={barreAchat} role="group" aria-label="Acheter">
             <span className="fp-barre-prix">
               {formatPrice(prix, currency)}
               {qte > 1 && <span className="fp-barre-qte"> x {qte}</span>}

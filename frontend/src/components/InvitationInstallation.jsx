@@ -1,236 +1,243 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import {
+  useInstallable, lancerInstallation, refuser, silenceEnCours,
+  compterPage, assezParcouru, estSafariIOS,
+} from '../hooks/useInstallation';
 
 /**
- * L'invitation à installer l'application — en plein écran, avant tout, sur
- * téléphone.
+ * L'invitation à installer l'application.
  * ---------------------------------------------------------------------------
- * À la demande : tout téléphone qui arrive sur le site et n'a pas l'icône sur
- * son écran d'accueil se la voit proposer, à chaque visite, avant de pouvoir
- * faire quoi que ce soit — comme un bandeau de consentement.
+ * ⚠ ELLE NE BLOQUE RIEN, ET NE MASQUE RIEN. C'était d'abord un panneau plein
+ * écran posé à l'arrivée, avant tout contenu. Trois raisons de ne pas le
+ * garder :
  *
- * ── CE QUE LE NAVIGATEUR PERMET, ET CE QU'IL NE PERMET PAS ─────────────────
- * Il n'existe aucune API pour « installer » de force, ni même pour savoir si
- * l'application est déjà posée sur l'écran d'accueil quand on navigue dans le
- * navigateur. Trois situations, trois traitements :
+ * 1. Google PÉNALISE au classement les interstitiels qui masquent le contenu
+ *    sur mobile — c'est une règle explicite, et le site fait 80 % de son
+ *    trafic sur téléphone. On payait la demande d'installation en visibilité.
+ * 2. Un visiteur qui arrive n'a aucune raison d'installer : il ne sait pas
+ *    encore chez qui il est. On demandait au pire moment.
+ * 3. Les navigateurs intégrés à Facebook, Instagram et WhatsApp — beaucoup de
+ *    trafic à Dakar — NE SAVENT PAS installer. Le panneau les bloquait devant
+ *    une porte qui ne s'ouvre pas.
  *
- * 1. ANDROID / CHROME — l'événement `beforeinstallprompt` est capté, et son
- *    `prompt()` ouvre la vraie boîte d'installation du système. ⚠ Chrome
- *    EXIGE un geste de l'utilisateur pour l'appeler : impossible de l'ouvrir
- *    tout seul au chargement. D'où ce panneau, dont le bouton porte le geste.
- *    Pas de sortie : l'installation est possible, elle est donc demandée.
+ * Ce qui la remplace suit ce que Google recommande vraiment :
  *
- * 2. IPHONE / SAFARI — `beforeinstallprompt` N'EXISTE PAS. Apple n'offre
- *    aucune API : l'ajout à l'écran d'accueil passe obligatoirement par le
- *    menu « Partager » de l'utilisateur. On ne peut donc que l'expliquer —
- *    et comme rien ne permet de vérifier qu'il l'a fait, le panneau doit
- *    offrir une sortie. Sans elle, le site serait définitivement inaccessible
- *    sur iPhone.
- *
- * 3. TOUT LE RESTE — navigateurs intégrés à Facebook, Instagram, WhatsApp,
- *    Firefox Android, et les ordinateurs. ⚠ AUCUN NE SAIT INSTALLER. Les
- *    bloquer fermerait la boutique à tout le trafic venu des réseaux
- *    sociaux, qui est considérable à Dakar. Le panneau ne s'affiche pas.
- *
- * ── Ce qui fait disparaître le panneau ────────────────────────────────────
- * L'application lancée depuis l'écran d'accueil tourne en `display-mode:
- * standalone` (et `navigator.standalone` sur iPhone) : le panneau ne s'y
- * affiche jamais. Il disparaît aussi à l'instant où l'installation aboutit,
- * sur l'événement `appinstalled`.
+ * — une BANDE en bas d'écran, qui ne recouvre pas le contenu et ne décale
+ *   rien (elle est `fixed`, donc aucun saut de mise en page — le CLS reste à
+ *   zéro, et c'est une mesure qui compte pour le classement) ;
+ * — montrée APRÈS TROIS PAGES, quand le visiteur a montré de l'intérêt ;
+ * — refusée, elle se tait TRENTE JOURS ;
+ * — et surtout, une entrée permanente « Installer l'application » dans le
+ *   menu mobile : le chemin reste ouvert sans jamais rien demander. C'est
+ *   elle qui remplace l'insistance.
  */
 
-const estInstallee = () =>
-  window.matchMedia('(display-mode: standalone)').matches
-  || window.matchMedia('(display-mode: fullscreen)').matches
-  || window.navigator.standalone === true;
-
-const estTelephone = () => window.matchMedia('(max-width: 900px)').matches;
-
-/* iPhone et iPad. `maxTouchPoints` rattrape les iPad récents, qui se
-   présentent comme des Mac dans leur chaîne d'identification. */
-const estIOS = () =>
-  /iphone|ipod|ipad/i.test(navigator.userAgent)
-  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-/* Safari seul sait ajouter à l'écran d'accueil sur iPhone. Les navigateurs
-   intégrés aux applications (Facebook, Instagram…) n'exposent pas
-   `navigator.standalone` : c'est le signal qui les distingue. */
-const estSafariIOS = () => estIOS() && typeof navigator.standalone === 'boolean';
-
 const InvitationInstallation = () => {
-  const [mode, setMode] = useState(null);   // null | 'android' | 'ios'
-  const differe = useRef(null);             // l'événement retenu
+  const installable = useInstallable();
+  const { pathname } = useLocation();
+  /* `pret` est pose par le minuteur, `ferme` par le visiteur. La visibilite
+     se DEDUIT des deux et des conditions : rien n'est ecrit dans un etat
+     depuis le corps d'un effet, ce qui evite un rendu en cascade. */
+  const [pret, setPret] = useState(false);
+  const [ferme, setFerme] = useState(false);
+  const [expliquer, setExpliquer] = useState(false);
+
+  /* Chaque page vue est comptée, toutes visites confondues : l'invitation
+     attend un vrai parcours, pas un passage. */
+  useEffect(() => { compterPage(); }, [pathname]);
 
   useEffect(() => {
-    if (estInstallee() || !estTelephone()) return undefined;
+    if (!installable || silenceEnCours() || !assezParcouru()) return undefined;
+    if (!window.matchMedia('(max-width: 900px)').matches) return undefined;
+    /* Un temps de pose : la bande ne monte pas pendant que la page se peint,
+       elle attend que le visiteur soit posé sur son contenu. */
+    const t = setTimeout(() => setPret(true), 1200);
+    return () => clearTimeout(t);
+  }, [installable, pathname]);
 
-    /* Chrome envoie l'événement peu après le chargement, une fois les
-       critères d'installation vérifiés (manifeste, service worker, icônes
-       192 et 512). Le retenir empêche la bannière native de Chrome et nous
-       laisse la main sur le moment. */
-    const surInvite = (e) => {
-      e.preventDefault();
-      differe.current = e;
-      setMode('android');
-    };
-
-    const surInstallee = () => { differe.current = null; setMode(null); };
-
-    window.addEventListener('beforeinstallprompt', surInvite);
-    window.addEventListener('appinstalled', surInstallee);
-
-    /* iPhone : aucun événement à attendre, le panneau s'affiche de lui-même.
-       Un court délai laisse la page peindre son premier écran — un panneau
-       posé sur du vide donne l'impression d'une erreur de chargement. */
-    let minuteur;
-    if (estSafariIOS()) {
-      minuteur = setTimeout(() => setMode((m) => m ?? 'ios'), 600);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', surInvite);
-      window.removeEventListener('appinstalled', surInstallee);
-      clearTimeout(minuteur);
-    };
-  }, []);
-
-  /* Le panneau couvre la page : celle-ci ne doit pas défiler derrière.
-     `position: fixed` et non `overflow: hidden`, qui ne bloque pas Safari
-     iOS — le même verrou que le tiroir du panier et ceux de l'Espace
-     Gestion. */
-  useEffect(() => {
-    if (!mode) return undefined;
-    const y = window.scrollY;
-    const avant = {
-      position: document.body.style.position,
-      top: document.body.style.top,
-      width: document.body.style.width,
-      overflow: document.body.style.overflow,
-    };
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${y}px`;
-    document.body.style.width = '100%';
-    document.body.style.overflow = 'hidden';
-    return () => {
-      Object.assign(document.body.style, avant);
-      window.scrollTo(0, y);
-    };
-  }, [mode]);
-
-  if (!mode) return null;
+  const visible = pret && !ferme && installable && !silenceEnCours();
 
   const installer = async () => {
-    const evt = differe.current;
-    if (!evt) return;
-    differe.current = null;
-    evt.prompt();
-    const { outcome } = await evt.userChoice;
-    /* Refusée, l'invitation se retire pour cette visite : Chrome ne rejoue
-       pas `beforeinstallprompt` dans la foulée, un panneau qui resterait
-       n'aurait plus de bouton qui fonctionne. Elle reviendra à la visite
-       suivante, comme demandé. */
-    if (outcome !== 'accepted') setMode(null);
+    const issue = await lancerInstallation();
+    if (issue === 'expliquer') { setExpliquer(true); return; }
+    setFerme(true);
+    if (issue === 'refusee') refuser();
   };
 
+  /* Le menu mobile porte la même action : il la demande par un événement,
+     pour n'avoir pas à connaître ce composant. Déclaré APRÈS `installer` —
+     une fonction fléchée en `const` n'est pas remontée, et l'écouteur posé
+     au-dessus ne pouvait pas l'atteindre. */
+  useEffect(() => {
+    const surDemande = () => (estSafariIOS() ? setExpliquer(true) : installer());
+    window.addEventListener('gp:installer', surDemande);
+    return () => window.removeEventListener('gp:installer', surDemande);
+  }, []);
+
+  const plusTard = () => { refuser(); setFerme(true); };
+
+  if (!installable) return null;
+
   return (
-    <div className="inv-voile" role="dialog" aria-modal="true" aria-labelledby="inv-titre">
-      <div className="inv-carte on-dark">
-        <img src="/icons/icon-192.png" alt="" className="inv-logo" width="88" height="88" />
-
-        <p className="eyebrow inv-sur-titre">Golden Pousso</p>
-        <h2 id="inv-titre" className="inv-titre">Installez la boutique sur votre téléphone</h2>
-        <p className="inv-texte">
-          Un accès direct depuis votre écran d’accueil, en plein écran, et des
-          pages qui s’ouvrent plus vite même quand le réseau faiblit.
-        </p>
-
-        {mode === 'android' ? (
-          <button type="button" className="btn btn--accent inv-action" onClick={installer}>
-            Installer l’application
+    <>
+      {visible && (
+        <div className="ins-bande" role="complementary" aria-label="Installer l'application">
+          <img src="/icons/icon-192.png" alt="" className="ins-logo" width="44" height="44" />
+          <p className="ins-texte">
+            <strong>Golden Pousso</strong>
+            <span>Sur votre écran d’accueil, en un geste</span>
+          </p>
+          <button type="button" className="ins-oui" onClick={installer}>Installer</button>
+          <button type="button" className="ins-non" onClick={plusTard} aria-label="Plus tard">
+            <i className="bx bx-x" aria-hidden="true" />
           </button>
-        ) : (
-          <>
-            <ol className="inv-etapes">
+        </div>
+      )}
+
+      {expliquer && (
+        <div className="ins-voile" onClick={() => setExpliquer(false)}>
+          <div
+            className="ins-feuille on-dark"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ins-titre"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img src="/icons/icon-192.png" alt="" className="ins-feuille-logo" width="64" height="64" />
+            <h2 id="ins-titre" className="ins-titre">Ajouter à l’écran d’accueil</h2>
+            {/* Sur iPhone, Apple n'offre aucune API : l'ajout passe
+                obligatoirement par le menu « Partager ». On ne peut que
+                montrer la marche à suivre. */}
+            <ol className="ins-etapes">
               <li>
                 Touchez <strong>Partager</strong>
-                <span className="inv-glyphe" aria-hidden="true">
+                <span className="ins-glyphe" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
                        strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 15V3m0 0L8.5 6.5M12 3l3.5 3.5" />
                     <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
                   </svg>
                 </span>
-                en bas de l’écran
+                dans la barre du bas
               </li>
-              <li>Faites défiler et choisissez <strong>Sur l’écran d’accueil</strong></li>
+              <li>Faites défiler, puis <strong>Sur l’écran d’accueil</strong></li>
               <li>Touchez <strong>Ajouter</strong></li>
             </ol>
-            {/* ⚠ Cette sortie est indispensable : rien ne permet de savoir que
-                l'ajout a été fait, et sans elle l'iPhone resterait bloqué sur
-                ce panneau pour toujours. */}
-            <button type="button" className="inv-passer" onClick={() => setMode(null)}>
-              Continuer sans installer
+            <button type="button" className="btn btn--accent ins-compris" onClick={() => { setExpliquer(false); setFerme(true); }}>
+              J’ai compris
             </button>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
-        .inv-voile {
+        /* ── La bande ───────────────────────────────────────────────────────
+           Posée en bas : le pouce y est, et le haut de l'ecran reste au
+           contenu. Au-dessus de la barre d'achat de la fiche produit, qui
+           publie sa hauteur — sans quoi les deux se superposeraient. */
+        .ins-bande {
           position: fixed;
-          inset: 0;
-          z-index: 2000;
+          left: var(--s-3);
+          right: var(--s-3);
+          bottom: calc(var(--s-3) + var(--barre-achat-h, 0px) + env(safe-area-inset-bottom, 0px));
+          z-index: 950;
+          display: flex;
+          align-items: center;
+          gap: var(--s-3);
+          padding: var(--s-2) var(--s-2) var(--s-2) var(--s-3);
+          background: var(--surface-chrome);
+          border: 1px solid var(--line-dark-accent);
+          border-radius: var(--r-3);
+          box-shadow: var(--shadow-overlay);
+          animation: fadeUp var(--dur-3) var(--ease) both;
+        }
+        .ins-logo { width: 4.4rem; height: 4.4rem; border-radius: 1.2rem; flex-shrink: 0; }
+        .ins-texte { min-width: 0; flex: 1; display: flex; flex-direction: column; line-height: 1.3; }
+        .ins-texte strong {
+          font-family: var(--font-display);
+          font-size: var(--t-sm);
+          font-weight: 600;
+          color: var(--gp-ecru-50);
+        }
+        .ins-texte span {
+          font-size: var(--t-xs);
+          color: rgba(250, 246, 238, 0.62);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .ins-oui {
+          flex-shrink: 0;
+          min-height: 4rem;
+          padding: 0 var(--s-4);
+          border: 0;
+          border-radius: var(--r-pill);
+          background: var(--gp-brass-400);
+          color: var(--gp-indigo-900);
+          font-family: var(--font-body);
+          font-size: var(--t-xs);
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .ins-non {
+          flex-shrink: 0;
           display: grid;
           place-items: center;
-          padding: var(--s-4);
-          padding-bottom: calc(var(--s-4) + env(safe-area-inset-bottom, 0px));
-          background: rgba(15, 19, 32, 0.92);
-          -webkit-backdrop-filter: blur(10px);
-          backdrop-filter: blur(10px);
-          animation: fadeUp var(--dur-2) var(--ease) both;
+          width: 4rem;
+          height: 4rem;
+          border: 0;
+          border-radius: var(--r-pill);
+          background: none;
+          color: rgba(250, 246, 238, 0.62);
+          font-size: 2.2rem;
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
         }
-        .inv-carte {
+        .ins-non:hover { color: var(--gp-ecru-50); }
+
+        /* ── La feuille d'explication (iPhone) ───────────────────────────── */
+        .ins-voile {
+          position: fixed;
+          inset: 0;
+          z-index: 1500;
+          display: grid;
+          place-items: end center;
+          padding: var(--s-3);
+          padding-bottom: calc(var(--s-3) + env(safe-area-inset-bottom, 0px));
+          background: rgba(15, 19, 32, 0.72);
+          -webkit-backdrop-filter: blur(8px);
+          backdrop-filter: blur(8px);
+        }
+        .ins-feuille {
           width: 100%;
           max-width: 40rem;
-          max-height: 100%;
-          overflow-y: auto;
-          overscroll-behavior: contain;
-          padding: var(--s-6) var(--s-5);
+          padding: var(--s-5);
           text-align: center;
           background: var(--surface-chrome);
           border: 1px solid var(--line-dark-accent);
           border-radius: var(--r-3);
+          animation: fadeUp var(--dur-2) var(--ease) both;
         }
-        .inv-logo {
-          width: 8.8rem;
-          height: 8.8rem;
-          border-radius: var(--r-3);
-          margin-bottom: var(--s-4);
-        }
-        .inv-sur-titre { color: var(--gp-brass-400); }
-        .inv-titre {
-          margin: var(--s-2) 0 var(--s-3);
+        .ins-feuille-logo { width: 6.4rem; height: 6.4rem; border-radius: 1.6rem; }
+        .ins-titre {
+          margin: var(--s-3) 0 var(--s-4);
           font-family: var(--font-display);
           font-size: var(--t-h3);
           font-weight: 600;
           color: var(--text-on-dark);
         }
-        .inv-texte {
-          margin: 0 auto var(--s-5);
-          max-width: 32rem;
-          font-size: var(--t-body);
-          line-height: var(--lh-body);
-          color: var(--text-on-dark-muted);
-        }
-        .inv-action { width: 100%; }
-
-        .inv-etapes {
+        .ins-etapes {
           margin: 0 0 var(--s-5);
           padding: 0;
           list-style: none;
           counter-reset: etape;
           text-align: left;
         }
-        .inv-etapes li {
+        .ins-etapes li {
           counter-increment: etape;
           position: relative;
           padding: var(--s-2) 0 var(--s-2) 4rem;
@@ -238,7 +245,7 @@ const InvitationInstallation = () => {
           line-height: 1.5;
           color: var(--text-on-dark);
         }
-        .inv-etapes li::before {
+        .ins-etapes li::before {
           content: counter(etape);
           position: absolute;
           left: 0;
@@ -253,8 +260,8 @@ const InvitationInstallation = () => {
           font-weight: 700;
           color: var(--gp-brass-400);
         }
-        .inv-etapes strong { color: var(--gp-brass-400); font-weight: 600; }
-        .inv-glyphe {
+        .ins-etapes strong { color: var(--gp-brass-400); font-weight: 600; }
+        .ins-glyphe {
           display: inline-grid;
           place-items: center;
           width: 2rem;
@@ -263,28 +270,15 @@ const InvitationInstallation = () => {
           margin: 0 0.2rem;
           color: var(--gp-brass-400);
         }
-        .inv-glyphe svg { width: 1.8rem; height: 1.8rem; }
+        .ins-glyphe svg { width: 1.8rem; height: 1.8rem; }
+        .ins-compris { width: 100%; }
 
-        .inv-passer {
-          min-height: 4.4rem;
-          padding: 0 var(--s-3);
-          border: 0;
-          background: none;
-          font-family: var(--font-body);
-          font-size: var(--t-xs);
-          letter-spacing: var(--ls-eyebrow);
-          text-transform: uppercase;
-          color: var(--text-on-dark-muted);
-          cursor: pointer;
-          -webkit-tap-highlight-color: transparent;
-        }
-        .inv-passer:hover { color: var(--text-on-dark); }
-
+        @media (min-width: 901px) { .ins-bande { display: none; } }
         @media (prefers-reduced-motion: reduce) {
-          .inv-voile { animation: none; }
+          .ins-bande, .ins-feuille { animation: none; }
         }
       `}</style>
-    </div>
+    </>
   );
 };
 
