@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ProductCardMedia from './ProductCardMedia';
+import CldImg from './CldImg';
 import PastillesPiece from './PastillesPiece';
 import useCartStore from '../store/cartStore';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
@@ -147,7 +148,22 @@ const ProductCard = ({
         <div className="pc-panneau">
           {(product.secondary_image || product.primary_image) && (
             <span className="pc-vignette">
-              <img src={product.secondary_image || product.primary_image} alt="" loading="lazy" />
+              {/* ⚠ `CldImg` et NON un `<img>` brut, comme partout ailleurs sur
+                  le site. C'était le seul `<img>` direct du catalogue : il
+                  servait l'URL Cloudinary d'ORIGINE — une photo de catalogue
+                  d'un à trois mégaoctets — pour peindre une vignette de
+                  36 x 44 px. À 24 cartes par page, la boutique réclamait donc
+                  24 originaux pour des images de la taille d'un ongle, et le
+                  `loading="lazy"` ne faisait qu'étaler la facture sans la
+                  réduire. Sur une connexion dakaroise, c'est la différence
+                  entre une boutique qui s'affiche et une boutique qu'on
+                  quitte. `CldImg` réécrit l'URL en `w_80` / `w_160`. */}
+              <CldImg
+                src={product.secondary_image || product.primary_image}
+                alt=""
+                sizes="44px"
+                widths={[80, 160]}
+              />
             </span>
           )}
           <span className="pc-texte">

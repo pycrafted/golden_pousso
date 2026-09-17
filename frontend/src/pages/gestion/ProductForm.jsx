@@ -712,6 +712,12 @@ const ProductForm = ({ product, categories, categorieFixe, onClose, onSaved }) =
         /* Champs arrondis, à la demande — 1,2 rem, au lieu des 2 px (--r-1)
            des champs du site : ils répondent aux pilules du tiroir. */
         .pf-tiroir .field { font-size: 1.4rem; border-radius: 1.2rem; }
+        /* 16 px sous le seuil tactile : en dessous, iOS Safari zoome au
+           focus, le tiroir déborde de l'écran et le bouton d'enregistrement
+           sort de vue. Voir styles.css, près de .field. */
+        @media (max-width: 767px) {
+          .pf-tiroir .field { font-size: 1.6rem; }
+        }
         .pf-tiroir input[type="number"] { font-variant-numeric: tabular-nums; }
         .pf-texte { min-height: 10rem; resize: vertical; }
 

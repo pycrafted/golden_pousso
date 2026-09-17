@@ -290,7 +290,7 @@ const Etape3 = ({ form, zone, setStep, handleConfirm, loading }) => {
 const CommandePage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { items, clearCart } = useCartStore();
+  const { items } = useCartStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -344,7 +344,22 @@ const CommandePage = () => {
       const res = await apiClient.post('/paiement/initier/', payload);
       sessionStorage.setItem(`order_phone_${res.data.order_number}`, fullPhone);
       if (form.customer_email) sessionStorage.setItem(`order_email_${res.data.order_number}`, form.customer_email);
-      clearCart();
+      /* ⚠ LE PANIER N'EST PAS VIDÉ ICI, et c'est délibéré.
+         Il l'était juste avant cette redirection. Or le geste le plus courant
+         du mobile est le balayage depuis le bord gauche : le client qui
+         hésite devant la page PayDunya revient en arrière — et retombait sur
+         un tunnel au panier vide, aussitôt renvoyé vers la boutique. Nom,
+         téléphone, adresse, articles : tout était perdu, il devait tout
+         refaire. Le chemin de rattrapage que cette page prévoit pourtant
+         (`?payment=cancel` → « Vous pouvez réessayer ») ne pouvait donc
+         jamais fonctionner : il n'y avait plus rien à réessayer.
+
+         Le panier est désormais vidé à la CONFIRMATION du paiement, sur la
+         page de suivi — ce qui suit la règle du backend, où seul le retour
+         PayDunya marque une commande payée. Ce repère dit à cette page
+         quelle commande vient d'être lancée : sans lui, consulter une
+         ancienne commande payée viderait un panier tout neuf. */
+      sessionStorage.setItem('panier_a_vider', res.data.order_number);
       window.location.href = res.data.invoice_url;
     } catch (err) {
       const msg = err.response?.data?.detail || err.response?.data || 'Erreur lors de la commande.';

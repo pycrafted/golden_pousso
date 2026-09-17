@@ -146,6 +146,17 @@
 .gl .field,
 .gx-tiroir .field,
 .gx-dialogue .field { font-size: 1.4rem; border-radius: 1.2rem; }
+
+/* 16 px sous le seuil tactile : en dessous, iOS Safari zoome au focus et la
+   mise en page saute — voir le commentaire complet dans `styles.css`, près de
+   `.field`. La règle est répétée ici parce que ces sélecteurs sont plus
+   spécifiques que celui du site : sans elle, ils gagneraient et les champs de
+   l'Espace Gestion resteraient à 14 px. */
+@media (max-width: 767px) {
+  .gl .field,
+  .gx-tiroir .field,
+  .gx-dialogue .field { font-size: 1.6rem; }
+}
 .gl,
 .gx-tiroir,
 .gx-dialogue { color-scheme: dark; }

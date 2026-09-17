@@ -291,11 +291,35 @@ const Navbar = () => {
     return () => document.removeEventListener('keydown', auClavier);
   }, [cartOpen]);
 
-  // Lock body scroll when mobile menu open
+  /* ── Le verrou de défilement, pour LES DEUX panneaux ──────────────────────
+     Il ne valait que pour le menu : le tiroir du panier ouvert, un glissement
+     du doigt faisait défiler la boutique derrière, et l'on ne retrouvait pas
+     sa place en refermant.
+
+     ⚠ `body { overflow: hidden }` NE BLOQUE PAS Safari iOS — c'est un défaut
+     connu du moteur, et le verrou précédent ne servait donc probablement à
+     rien sur iPhone, là où il importait le plus. La méthode qui marche
+     partout est de figer le corps en `fixed` à la position courante, puis de
+     la restituer : on mémorise le décalage, on le repose en `top` négatif,
+     et on rend la page à l'endroit exact où on l'avait laissée. */
   useEffect(() => {
-    document.body.style.overflow = navOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [navOpen]);
+    if (!navOpen && !cartOpen) return undefined;
+    const y = window.scrollY;
+    const avant = {
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
+      overflow: document.body.style.overflow,
+    };
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${y}px`;
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      Object.assign(document.body.style, avant);
+      window.scrollTo(0, y);
+    };
+  }, [navOpen, cartOpen]);
 
   /* « Accueil » ouvre la liste, juste avant « Boutique », à la demande. Il
      en avait été retiré — le nom de la maison, à gauche, ramène déjà à
@@ -495,24 +519,55 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Hamburger (mobile) */}
-          <button
-            onClick={() => setNavOpen(true)}
-            style={{
-              position: 'absolute', right: '2rem', top: '50%', transform: 'translateY(-50%)',
-              background: 'none', border: 'none', color: C.cream, cursor: 'pointer',
-              fontSize: '2.6rem', padding: '0.4rem', display: 'none',
-              alignItems: 'center', justifyContent: 'center', zIndex: 2,
-            }}
-            className="hamburger-btn"
-            aria-label="Menu"
-          >
-            <svg width="24" height="18" viewBox="0 0 24 18" fill="none">
+          {/* ── Actions du petit écran : LE PANIER, puis le menu ──────────────
+              ⚠ Le panier est ici, et PAS seulement dans `.nav-icons`.
+
+              `.nav-icons` est masqué sous 1080 px. Or l'icône panier en était
+              le seul enfant à pouvoir ouvrir le tiroir — `setCartOpen` n'existe
+              nulle part ailleurs —, le menu mobile n'offrait aucune entrée
+              « Panier », et il n'y a pas de route `/panier`. Le tunnel d'achat
+              lui-même ne se rejoint que par un bouton placé DANS ce tiroir.
+
+              Autrement dit : un client sur téléphone remplissait son panier et
+              n'avait plus aucun moyen de l'ouvrir ni de payer. Sur un site dont
+              le trafic est mobile à 80 %, c'était la vente entière qui était
+              fermée. Le panier est donc rendu deux fois — une fois pour le
+              grand écran dans `.nav-icons`, une fois ici pour le petit — et
+              chaque exemplaire n'est visible que dans son domaine. */}
+          <div className="nav-actions-mobile">
+            <button
+              onClick={() => setCartOpen((o) => !o)}
+              className="nav-tactile"
+              aria-label={totalItems > 0 ? `Panier, ${totalItems} article${totalItems > 1 ? 's' : ''}` : 'Panier, vide'}
+            >
+              <i className="bx bx-cart" style={{ fontSize: '2.2rem' }}></i>
+              {totalItems > 0 && (
+                <span style={{
+                  position: 'absolute', top: '0.2rem', right: '0.2rem',
+                  background: C.gold, color: C.dark, borderRadius: '50%',
+                  width: '1.8rem', height: '1.8rem', fontSize: '0.95rem',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 700, lineHeight: 1, fontFamily: 'var(--font-body)',
+                }}>
+                  {totalItems > 9 ? '9+' : totalItems}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setNavOpen(true)}
+              className="nav-tactile hamburger-btn"
+              aria-label="Menu"
+              aria-expanded={navOpen}
+              aria-controls="menu-mobile"
+            >
+              <svg width="24" height="18" viewBox="0 0 24 18" fill="none" aria-hidden="true">
                 <rect x="0" y="0" width="24" height="2.5" rx="1.25" fill="#FAF6EE"/>
                 <rect x="0" y="7.75" width="24" height="2.5" rx="1.25" fill="#FAF6EE"/>
                 <rect x="0" y="15.5" width="24" height="2.5" rx="1.25" fill="#FAF6EE"/>
               </svg>
-          </button>
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -780,11 +835,38 @@ const Navbar = () => {
           background: C.dark,
           zIndex: 1200,
           transform: navOpen ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'transform 0.38s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.38s',
           display: 'flex',
           flexDirection: 'column',
           padding: '3rem',
-        }}>
+          /* ⚠ LE PANNEAU DOIT DÉFILER. Il ne le faisait pas : sept liens à
+             91 px, plus la ligne de fermeture et le bloc du bas, font environ
+             900 px de contenu dans un panneau « fixed » haut comme la fenêtre.
+             Sur un iPhone SE (667 px, ~553 px une fois les barres de Safari
+             affichées), près de 350 px passaient sous le bord — « Connexion »,
+             « WhatsApp » et « Se déconnecter » étaient hors d'atteinte, sur
+             TOUS les téléphones courants. Un débordement d'élément « fixed »
+             ne crée aucun ascenseur : le contenu était simplement perdu.
+
+             `contain` empêche le geste, arrivé en butée, d'entraîner la page
+             derrière. Et la réserve du bas tient compte de la barre gestuelle
+             des téléphones sans bouton d'accueil. */
+          overflowY: 'auto',
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch',
+          paddingBottom: 'calc(3rem + env(safe-area-inset-bottom, 0px))',
+          /* Fermé, le panneau sortait de l'écran par un `transform` mais
+             restait dans l'arbre d'accessibilité : un lecteur d'écran
+             traversait ses sept liens avant d'atteindre la page, et la
+             tabulation envoyait le focus hors champ. */
+          visibility: navOpen ? 'visible' : 'hidden',
+        }}
+        id="menu-mobile"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu"
+        aria-hidden={navOpen ? undefined : 'true'}
+        >
           {/* Close */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4rem' }}>
             <button
@@ -946,15 +1028,47 @@ const Navbar = () => {
           color: var(--gp-brass-400);
         }
 
+        /* ── Les actions du petit écran ────────────────────────────────────
+           Panier et menu. Masquées au-dessus de 1080 px, où .nav-icons prend
+           le relais avec la série complète. C'est le conteneur qui décide,
+           pas chaque bouton : un seul endroit à lire pour savoir qui
+           s'affiche où.
+           ⚠ Aucun accent grave ici : ce commentaire vit dans le gabarit
+           <style>{...}, qu'un backtick refermerait. */
+        .nav-actions-mobile { display: none; }
+
+        /* 44 px : le minimum tactile. Le hamburger faisait 32 x 26 px — 43 %
+           de la surface d'une cible correcte — pour la SEULE commande de
+           navigation du téléphone. L'icône garde sa taille, c'est la zone
+           sensible autour d'elle qui grandit. */
+        .nav-tactile {
+          position: relative;
+          width: 4.4rem;
+          height: 4.4rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          background: none;
+          border: none;
+          border-radius: var(--r-pill);
+          color: rgba(250, 246, 238, 0.85);
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+          transition: color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+        }
+        .nav-tactile:hover { color: var(--gp-brass-400); background: rgba(255, 255, 255, 0.07); }
+        .nav-tactile:active { background: rgba(255, 255, 255, 0.12); }
+
         @media (max-width: 1080px) {
           .desktop-nav { display: none !important; }
           .nav-icons { display: none !important; }
-          .hamburger-btn { display: flex !important; }
           .nav-selectors { display: none !important; }
-          .nav-inner { padding: 0 1.6rem !important; min-height: 4.8rem; grid-template-columns: auto auto !important; }
-        }
-        @media (min-width: 1081px) {
-          .hamburger-btn { display: none !important; }
+          .nav-actions-mobile { display: flex; align-items: center; gap: 0.2rem; }
+          /* Le logo prend la place qui reste, les actions se calent à droite.
+             La grille était en « auto auto » du temps où le hamburger était
+             en position absolue et ne comptait pas comme colonne. */
+          .nav-inner { padding: 0 1.2rem 0 1.6rem !important; min-height: 5.6rem; grid-template-columns: 1fr auto !important; }
         }
         .desktop-nav::-webkit-scrollbar { display: none; }
         .desktop-nav { scrollbar-width: none; -ms-overflow-style: none; }

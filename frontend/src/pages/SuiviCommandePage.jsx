@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
+import useCartStore from '../store/cartStore';
 
 const formatFCFA = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' FCFA';
 
@@ -56,7 +57,22 @@ const SuiviCommandePage = () => {
     const email = searchParams.get('email') || sessionStorage.getItem(`order_email_${orderNumber}`) || '';
     const params = phone ? { phone } : email ? { email } : {};
     apiClient.get(`/orders/${orderNumber}/`, { params })
-      .then((r) => setOrder(r.data))
+      .then((r) => {
+        setOrder(r.data);
+        /* C'est ICI que le panier se vide, pas avant la redirection vers
+           PayDunya : tant que le paiement n'est pas confirmé, le client doit
+           pouvoir revenir en arrière et retrouver sa commande intacte.
+
+           Le repère posé par le tunnel dit quelle commande vient d'être
+           lancée. Sans lui, un client qui consulte une ancienne commande
+           payée verrait son panier du jour s'effacer. On le retire aussitôt :
+           le panier ne se vide qu'une fois. */
+        if (r.data.payment_status === 'paid'
+            && sessionStorage.getItem('panier_a_vider') === orderNumber) {
+          sessionStorage.removeItem('panier_a_vider');
+          useCartStore.getState().clearCart();
+        }
+      })
       .catch((err) => {
         if (err.response?.status === 403) setAccessDenied(true);
         else setError(true);
@@ -174,7 +190,6 @@ const SuiviCommandePage = () => {
   return (
     <>
       <SEOHead title={`Commande #${order.order_number}`} url={`/commande/suivi/${order.order_number}`} noindex />
-      <Navbar />
 
       <div style={{ background: '#161B2D', minHeight: '100vh', color: '#FAF6EE', paddingTop: '12rem', paddingBottom: '10rem' }}>
         <div style={{ maxWidth: '86rem', margin: '0 auto', padding: '0 4rem' }}>

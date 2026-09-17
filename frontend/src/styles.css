@@ -1017,6 +1017,33 @@ body:has(.site-page) { background: var(--surface-chrome); }
 
 .field[aria-invalid="true"] { border-color: var(--field-bord-erreur, var(--gp-danger)); }
 
+/* ── LE PIXEL QUI FAIT SAUTER LA PAGE SUR IPHONE ────────────────────────────
+   iOS Safari ZOOME automatiquement sur tout champ dont la taille de police
+   calculée est STRICTEMENT inférieure à 16 px, et il ne dézoome jamais seul :
+   le visiteur reste dans une page élargie, décalée, qu'il doit pincer pour
+   remettre d'aplomb. Avec `--t-body` à 1,5 rem, les champs étaient à 15 px.
+   Il manquait UN pixel, et il se payait à chaque tap, sur tous les
+   formulaires du site — tunnel d'achat compris.
+
+   ⚠ Ne PAS « corriger » cela en posant `maximum-scale=1` ou
+   `user-scalable=no` sur le viewport : cela supprime le symptôme en
+   interdisant au visiteur de zoomer du tout. Une maison de couture a des
+   clientes presbytes ; leur retirer le pincement pour épargner un réglage de
+   police est un mauvais échange.
+
+   16 px seulement sous le seuil tactile : au-delà, le dessin du site garde
+   ses champs à 15 px, où aucun zoom ne se déclenche.
+
+   Le fichier `pages/gestion/gestion.css` et le bloc `<style>` de
+   `pages/gestion/ProductForm.jsx` redescendent leurs champs à 1,4 rem : ils
+   portent la même règle, chacun chez soi — une règle posée ici ne les
+   rattraperait pas, leur sélecteur étant plus spécifique. */
+@media (max-width: 767px) {
+  .field,
+  select.field,
+  textarea.field { font-size: 1.6rem; }
+}
+
 .label {
   display: block;
   margin-bottom: var(--s-2);
