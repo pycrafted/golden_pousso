@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import BandeCoordonnees from './BandeCoordonnees';
 import Navbar from './Navbar';
+import InvitationInstallation from './InvitationInstallation';
 import Loader from './Loader';
 
 /**
@@ -51,6 +52,11 @@ const Chrome = () => (
         plus dur a atteindre au pouce — alors que « ajoute au panier » est le
         seul retour visible d'un ajout sur telephone. Il passe en bas au
         doigt, au-dessus de la barre gestuelle. */}
+    {/* L'invitation a installer l'application — en plein ecran, avant tout,
+        sur telephone. Posee ici : elle coiffe les DEUX mises en page, le
+        site et l'Espace Gestion, et survit au changement de page. */}
+    <InvitationInstallation />
+
     <Toaster
       position={typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
         ? 'bottom-center' : 'top-right'}
