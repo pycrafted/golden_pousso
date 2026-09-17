@@ -394,6 +394,26 @@ const VideoCardsSection = () => {
         .em-son:hover { background: var(--em-rose); color: #fff; }
         .em-son svg { width: 16px; height: 16px; }
 
+        /* ── Au téléphone : une vidéo par ligne ────────────────────────────
+           À la demande, et comme la grille des catalogues au même seuil
+           (560 px, voir « .catalogue-grille » dans styles.css) : la bande qui
+           défilait de côté devient une pile, chaque vidéo en pleine largeur.
+           Le glissement latéral disparaît — deux gestes concurrents sur un
+           téléphone, l'un pour la bande, l'autre pour la page — et l'on
+           parcourt tout d'un seul doigt vers le bas. */
+        @media (max-width: 560px) {
+          .em-bande {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: var(--s-5);
+            overflow: visible;
+            scroll-snap-type: none;
+            margin: 0;
+            padding: 0;
+          }
+          .em-tuile { width: auto; }
+        }
+
         @media (min-width: 640px) {
           .em-tuile { width: 36vw; }
         }

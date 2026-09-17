@@ -1109,7 +1109,12 @@ adossées au voisinage : un nouvel ordre les réactive ou les éteint seul.
 fond : le reste de son dessin est celui de la source — sauf la disposition
 de ses tuiles, à la demande : **toutes sur une ligne**, alignées (une sur
 deux descendait de 48 px, par rangées de trois ou quatre), et bornées en
-hauteur à la page (`--em-haut-max`, lu sur `--hp-utile`). Quand la section suit le panneau
+hauteur à la page (`--em-haut-max`, lu sur `--hp-utile`). ⚠ **Au téléphone
+(sous 560 px), une vidéo par ligne**, à la demande, au même seuil que la
+grille des catalogues : la bande qui défilait de côté devient une pile,
+chaque vidéo en pleine largeur — un seul geste, vers le bas, au lieu de deux
+concurrents. Entre 560 et 1 024 px, elle reste une bande qui se glisse au
+doigt. Quand la section suit le panneau
 de « Le mot de la maison », elle s'y joint sans marge (`.man + .uv.on-dark`) :
 une marge ouvrirait une bande d'écru entre deux fonds sombres. De même, la
 vitrine (`BandePromo`, 4) s'y joint quand elle la suit (`.uv + .bp`) — c'est
