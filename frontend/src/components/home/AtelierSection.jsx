@@ -349,6 +349,14 @@ const AtelierSection = () => {
           .man-signature { max-width: none; }
         }
 
+        /* Au téléphone, le texte seul, à la demande : les photos, passées
+           devant lui, occupaient à elles seules un écran entier avant la
+           première ligne. Les images, en chargement différé, ne sont alors
+           pas téléchargées. */
+        @media (max-width: 768px) {
+          .man-visuels { display: none; }
+        }
+
         @media (max-width: 520px) {
           .man-prose p:first-of-type::first-letter {
             font-size: 5.6rem;

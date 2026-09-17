@@ -879,6 +879,11 @@ repris à la virgule près : la refonte est de mise en page, pas d'écriture.
 Le lieu en sur-titre est la constante `LIEU` du composant — le champ `surtitre`
 de la clé `accueil-atelier` reste, comme avant, sans effet.
 
+**Au téléphone (≤ 768 px), le texte seul**, à la demande : le diptyque
+(`.man-visuels`) est masqué — passé devant la prose, il occupait un écran
+entier avant la première ligne. Chargées en différé, les photos n'y sont
+pas téléchargées.
+
 **Ses deux photos sont des fichiers statiques du front**, à la demande :
 `frontend/public/images/maison/maison-1.webp` et `maison-2.webp`, listés dans
 la constante `VISUELS` du composant — plus de requête, ni backend, ni
