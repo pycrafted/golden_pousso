@@ -5,4 +5,4 @@ Disallow: /panier
 Disallow: /commande
 Disallow: /mon-compte
 
-Sitemap: https://goldenpousso.sn/sitemap.xml
+Sitemap: https://golden-pousso.com/sitemap.xml

@@ -10,7 +10,19 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-6+8q847blh%o63o9_#f@1
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+def _liste_env(nom, defaut=''):
+    """Une variable d'environnement en liste : « a.com, b.com » -> ['a.com', 'b.com'].
+
+    ⚠ Les espaces sont RETIRÉS. Sans cela, un « , » suivi d'une espace — la
+    façon naturelle d'écrire une liste — donne un hôte nommé « b.com » avec
+    une espace devant, que Django ne reconnaît jamais : toutes les requêtes
+    repartent en 400 « Bad Request », sans autre explication qu'une ligne
+    DisallowedHost dans les journaux.
+    """
+    return [v.strip() for v in os.environ.get(nom, defaut).split(',') if v.strip()]
+
+
+ALLOWED_HOSTS = _liste_env('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
 JAZZMIN_SETTINGS = {
     'site_title': 'Golden Pousso Admin',
@@ -200,7 +212,7 @@ R2_ACCOUNT_ID        = os.environ.get('CLOUDFLARE_R2_ACCOUNT_ID', '')
 R2_ACCESS_KEY_ID     = os.environ.get('CLOUDFLARE_R2_ACCESS_KEY_ID', '')
 R2_SECRET_ACCESS_KEY = os.environ.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY', '')
 R2_BUCKET_NAME       = os.environ.get('CLOUDFLARE_R2_BUCKET', '')
-# Domaine personnalisé branché sur le bucket (ex. media.goldenpousso.com). L'adresse
+# Domaine personnalisé branché sur le bucket (ex. media.golden-pousso.com). L'adresse
 # r2.dev de Cloudflare est limitée en débit et réservée aux tests : à ne pas utiliser ici.
 R2_PUBLIC_DOMAIN     = os.environ.get('CLOUDFLARE_R2_PUBLIC_DOMAIN', '')
 
@@ -257,8 +269,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
-    _cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
-    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
+    CORS_ALLOWED_ORIGINS = _liste_env('CORS_ALLOWED_ORIGINS')
     CORS_ALLOWED_ORIGIN_REGEXES = [r'^https://golden-pousso[\w-]*\.vercel\.app$']
 
 # Sécurité production (activée si DEBUG=False)
@@ -315,6 +326,15 @@ PAYDUNYA_MODE = os.environ.get('PAYDUNYA_MODE', 'test')
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
 BACKEND_URL = os.environ.get('BACKEND_URL', 'http://localhost:8000')
 
+# Les origines de confiance pour le CSRF — l'admin Django et l'Espace Gestion
+# postent depuis ces adresses. Django 4+ exige le SCHÉMA (https://), pas un
+# simple nom d'hôte : sans elles, la connexion à /admin/ sur le domaine
+# personnalisé échoue avec « CSRF verification failed », alors que tout le
+# reste marche.
+CSRF_TRUSTED_ORIGINS = _liste_env('CSRF_TRUSTED_ORIGINS') or [
+    u for u in (BACKEND_URL, FRONTEND_URL) if u.startswith('https://')
+]
+
 # Email — console en dev, SMTP en prod
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -326,6 +346,6 @@ else:
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Golden Pousso <noreply@goldenpousso.com>')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Golden Pousso <noreply@golden-pousso.com>')
 CONTACT_PHONE = os.environ.get('CONTACT_PHONE', '+221 77 751 47 95')
-CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'contact@goldenpousso.com')
+CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'contact@golden-pousso.com')

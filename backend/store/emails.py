@@ -58,7 +58,7 @@ Vous pouvez suivre votre commande sur :
 ────────────────────────────────
 Pour toute question, contactez-nous :
   WhatsApp / Tel : {getattr(settings, 'CONTACT_PHONE', '+221 77 751 47 95')}
-  Email          : {getattr(settings, 'CONTACT_EMAIL', 'contact@goldenpousso.com')}
+  Email          : {getattr(settings, 'CONTACT_EMAIL', 'contact@golden-pousso.com')}
 
 Merci pour votre confiance !
 L'équipe Golden Pousso — La couture africaine autrement !
@@ -73,7 +73,7 @@ def send_order_confirmation_email(order):
         send_mail(
             subject=_order_subject(order),
             message=_build_order_body(order),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'Golden Pousso <noreply@goldenpousso.com>'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'Golden Pousso <noreply@golden-pousso.com>'),
             recipient_list=[order.customer_email],
             fail_silently=True,
         )
@@ -100,7 +100,7 @@ L'équipe Golden Pousso
             send_mail(
                 subject=subject,
                 message=body,
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'Golden Pousso <noreply@goldenpousso.com>'),
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'Golden Pousso <noreply@golden-pousso.com>'),
                 recipient_list=[alert.email],
                 fail_silently=True,
             )
@@ -134,7 +134,7 @@ L'équipe Golden Pousso
         send_mail(
             subject=f"Golden Pousso — Commande #{order.order_number} {status_label}",
             message=body,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'Golden Pousso <noreply@goldenpousso.com>'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'Golden Pousso <noreply@golden-pousso.com>'),
             recipient_list=[order.customer_email],
             fail_silently=True,
         )

@@ -571,7 +571,7 @@ class Coordonnees(models.Model):
 
     ADRESSE_DEFAUT = 'Pikine Tally Boumack'
     TELEPHONE_DEFAUT = '77 751 47 95'
-    EMAIL_DEFAUT = 'contact@goldenpousso.sn'
+    EMAIL_DEFAUT = 'contact@golden-pousso.com'
 
     adresse = models.CharField(
         max_length=200, verbose_name='Adresse',

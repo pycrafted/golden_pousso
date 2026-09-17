@@ -40,10 +40,10 @@ PAYDUNYA_PRIVATE_KEY=live_private_nTgOJKVB6Pt7p3TUuwFBc90qRRn
 PAYDUNYA_TOKEN=Wo3hlyRsFDPaokBPmvVQ
 PAYDUNYA_MODE=live
 
-FRONTEND_URL=https://www.goldenpousso.sn
-BACKEND_URL=https://api.goldenpousso.sn
-CORS_ALLOWED_ORIGINS=https://www.goldenpousso.sn
-ALLOWED_HOSTS=api.goldenpousso.sn
+FRONTEND_URL=https://golden-pousso.com
+BACKEND_URL=https://api.golden-pousso.com
+CORS_ALLOWED_ORIGINS=https://golden-pousso.com
+ALLOWED_HOSTS=api.golden-pousso.com
 ```
 
 > **Important :** Générer une nouvelle `SECRET_KEY` Django solide :
@@ -59,8 +59,8 @@ Dans **Intégrez notre API → Golden Pousso → Modifier** :
 
 | Champ | Valeur production |
 |---|---|
-| URL du site Web | `https://www.goldenpousso.sn` |
-| Endpoint IPN | `https://api.goldenpousso.sn/api/v1/paiement/callback/` |
+| URL du site Web | `https://golden-pousso.com` |
+| Endpoint IPN | `https://api.golden-pousso.com/api/v1/paiement/callback/` |
 | Activer le mode production | **Oui** |
 
 ---

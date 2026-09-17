@@ -31,7 +31,7 @@ export const COORDONNEES_DEFAUT = {
   telephone: '77 751 47 95',
   telephone_lien: '+221777514795',
   whatsapp: '221777514795',
-  email: 'contact@goldenpousso.sn',
+  email: 'contact@golden-pousso.com',
 };
 
 /**

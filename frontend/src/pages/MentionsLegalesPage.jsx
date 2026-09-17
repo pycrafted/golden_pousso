@@ -178,12 +178,12 @@ const MentionsLegalesPage = () => {
               <Highlight label="Forme juridique"  value="Entreprise individuelle" />
               <Highlight label="Adresse"          value="Pikine Tally Boumack, Tableau Gazelle N.2372, Dakar, Sénégal" />
               <Highlight label="Téléphone"        value="77 751 47 95 (téléphone et WhatsApp)" />
-              <Highlight label="Email"            value="contact@goldenpousso.sn" />
+              <Highlight label="Email"            value="contact@golden-pousso.com" />
               <Highlight label="Directeur de publication" value="Équipe Golden Pousso" />
               <Highlight label="Hébergement"      value="Vercel Inc. · 340 Pine Street, San Francisco, CA 94104, USA" />
             </div>
             <P>
-              Le site goldenpousso.sn est édité par Golden Pousso, maison de mode africaine basée à Dakar, Sénégal, spécialisée dans la création et la vente de vêtements et accessoires inspirés des traditions ouest-africaines.
+              Le site golden-pousso.com est édité par Golden Pousso, maison de mode africaine basée à Dakar, Sénégal, spécialisée dans la création et la vente de vêtements et accessoires inspirés des traditions ouest-africaines.
             </P>
           </LegalSection>
 
@@ -192,7 +192,7 @@ const MentionsLegalesPage = () => {
 
             <H3>1. Objet</H3>
             <P>
-              Les présentes conditions générales de vente (CGV) régissent les relations contractuelles entre Golden Pousso et tout client effectuant un achat sur le site goldenpousso.sn ou via WhatsApp.
+              Les présentes conditions générales de vente (CGV) régissent les relations contractuelles entre Golden Pousso et tout client effectuant un achat sur le site golden-pousso.com ou via WhatsApp.
             </P>
 
             <H3>2. Produits et prix</H3>
@@ -251,7 +251,7 @@ const MentionsLegalesPage = () => {
 
             <H3>Vos droits</H3>
             <P>
-              Vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles. Pour exercer ces droits, contactez-nous par e-mail à contact@goldenpousso.sn ou par WhatsApp au 77 751 47 95.
+              Vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles. Pour exercer ces droits, contactez-nous par e-mail à contact@golden-pousso.com ou par WhatsApp au 77 751 47 95.
             </P>
 
             <H3>Sécurité</H3>
@@ -285,7 +285,7 @@ const MentionsLegalesPage = () => {
                 Une question d'ordre légal ?
               </p>
               <p style={{ fontSize: '1.5rem', fontFamily: 'var(--font-body)', color: C.cream }}>
-                Contactez-nous par e-mail à <span style={{ color: C.gold }}>contact@goldenpousso.sn</span>
+                Contactez-nous par e-mail à <span style={{ color: C.gold }}>contact@golden-pousso.com</span>
               </p>
             </div>
             <a

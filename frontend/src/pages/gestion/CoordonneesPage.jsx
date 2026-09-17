@@ -128,7 +128,7 @@ const CoordonneesPage = () => {
                 type="email"
                 value={form.email}
                 onChange={(e) => set('email', e.target.value)}
-                placeholder="Ex. contact@goldenpousso.sn"
+                placeholder="Ex. contact@golden-pousso.com"
                 maxLength={254}
                 autoComplete="off"
                 required

@@ -1211,7 +1211,7 @@ CLOUDFLARE_R2_ACCOUNT_ID=...     # vidéos — les 5 variables R2 vont ensemble,
 CLOUDFLARE_R2_ACCESS_KEY_ID=...  # s'il en manque une, les vidéos retombent
 CLOUDFLARE_R2_SECRET_ACCESS_KEY=...  # sur Cloudinary
 CLOUDFLARE_R2_BUCKET=...
-CLOUDFLARE_R2_PUBLIC_DOMAIN=media.goldenpousso.com
+CLOUDFLARE_R2_PUBLIC_DOMAIN=media.golden-pousso.com
 ```
 
 Plus aucune vidéo n'est envoyée au serveur (liens Cloudflare uniquement, voir
