@@ -7,6 +7,7 @@ import PastillesPiece from '../components/PastillesPiece';
 import SEOHead from '../components/SEOHead';
 import StockAlertForm from '../components/StockAlertForm';
 import apiClient from '../api/client';
+import { useEstVisible } from '../hooks/useInView';
 import useCartStore from '../store/cartStore';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
@@ -101,6 +102,18 @@ const ProduitPage = () => {
   const [zoom, setZoom] = useState(false);
   const [origine, setOrigine] = useState({ x: 50, y: 50 });
   const [hdDemandee, setHdDemandee] = useState(false);
+  /* Le point de depart d'un geste tactile, pour distinguer une tape — qui
+     bascule le zoom — d'un deplacement, qui promene la zone regardee. */
+  const departTouche = useRef(null);
+
+  /* La barre d'achat collante n'apparait que lorsque le bouton d'origine a
+     quitte l'ecran : tant qu'il est visible, deux boutons identiques a
+     quelques centimetres l'un de l'autre ne feraient que du bruit.
+
+     ⚠ Declare ICI, avec les autres hooks : la page sort par plusieurs
+     `return` anticipes — chargement, erreur — et un hook appele apres l'un
+     d'eux ne serait pas execute au meme rang a chaque rendu. */
+  const [refActions, actionsVisibles] = useEstVisible();
 
   /* Le NIVEAU de la loupe se règle, à la demande : molette sur la photo, ou
      « − / + » en haut à gauche. Il valait 1,55, fixe. Au bout de la plage,
@@ -266,6 +279,65 @@ const ProduitPage = () => {
     setHdDemandee(true);
   };
 
+  /* ── LA LOUPE AU DOIGT ─────────────────────────────────────────────────
+     Elle n'existait QUE pour le pointeur fin : quatre verrous concordants
+     — la molette, le suivi du pointeur, la regle de grossissement et
+     l'affichage meme de la commande — etaient enfermes dans la meme media
+     query. Sur un telephone, aucun moyen d'approcher une piece. On vend du
+     bazin brode et de la couture main : un client qui ne peut pas voir le
+     tissu ne peut pas decider, et c'est 80 % des visiteurs.
+
+     Le plus cher etait deja paye : sur un ecran a trois fois la densite, le
+     navigateur reclame ~1 125 px et telecharge donc DEJA la variante
+     1 600 px. Les pixels etaient la, c'est l'interface qui etait fermee.
+
+     Au doigt il n'y a pas de survol : le modele souris — la photo suit le
+     curseur — n'a pas d'equivalent. On le remplace par le geste attendu sur
+     un telephone : une tape agrandit au point touche, une seconde tape rend
+     la vue d'ensemble, et le doigt pose deplace la zone regardee. Les
+     boutons « moins / plus » reglent le facteur, comme a la souris. */
+  const tactile = () => !MQ_POINTEUR_FIN?.matches;
+
+  const pointEnPourcents = (touche, el) => {
+    const r = el.getBoundingClientRect();
+    return {
+      x: Math.min(100, Math.max(0, ((touche.clientX - r.left) / r.width) * 100)),
+      y: Math.min(100, Math.max(0, ((touche.clientY - r.top) / r.height) * 100)),
+    };
+  };
+
+  const surToucheDebut = (e) => {
+    if (!zoomable || !tactile()) return;
+    if (e.target.closest('.fp-vues, .pc-pastilles, .fp-loupe')) return;
+    const t = e.touches[0];
+    departTouche.current = { x: t.clientX, y: t.clientY, bouge: false };
+    if (zoom) setOrigine(pointEnPourcents(t, e.currentTarget));
+  };
+
+  const surToucheBouge = (e) => {
+    if (!zoom || !tactile() || !departTouche.current) return;
+    const t = e.touches[0];
+    // Au-dela de 8 px, le geste est un deplacement et non une tape : il ne
+    // doit donc plus basculer le zoom quand le doigt se leve.
+    if (Math.hypot(t.clientX - departTouche.current.x, t.clientY - departTouche.current.y) > 8) {
+      departTouche.current.bouge = true;
+    }
+    setOrigine(pointEnPourcents(t, e.currentTarget));
+  };
+
+  const surToucheFin = (e) => {
+    if (!zoomable || !tactile()) return;
+    const depart = departTouche.current;
+    departTouche.current = null;
+    if (!depart || depart.bouge) return;
+    if (e.target.closest('.fp-vues, .pc-pastilles, .fp-loupe')) return;
+    if (zoom) { setZoom(false); return; }
+    const t = e.changedTouches[0];
+    setOrigine(pointEnPourcents(t, e.currentTarget));
+    setZoom(true);
+    setHdDemandee(true);
+  };
+
   return (
     <div className="fp">
       <SEOHead
@@ -293,12 +365,27 @@ const ProduitPage = () => {
               inline : la règle de grossissement reste dans la feuille, avec le
               garde-fou « pointeur fin » qu'un style inline ne saurait pas
               porter. */}
+          {/* ⚠ La bande de vues est SOEUR du visuel, pas son enfant.
+              Elle y etait, posee en surimpression sur le bas de la photo.
+              Mais `.fp-visuel` porte un `aspect-ratio` et un
+              `overflow: hidden` : elle ne pouvait donc pas en sortir pour
+              passer dessous en petit ecran, elle y aurait ete rognee.
+
+              Ce conteneur est `position: relative` et le visuel le remplit
+              entierement : la bande, en `inset: auto 0 0 0`, se pose donc
+              exactement au meme endroit qu'avant sur un grand ecran. Le
+              dessin de bureau ne bouge pas d'un pixel. */}
+          <div className="fp-galerie">
           <div
             ref={visuelRef}
             className={`fp-visuel ${zoomable ? 'peut-zoomer' : ''} ${zoom ? 'est-zoom' : ''}`}
             style={{ '--zx': `${origine.x}%`, '--zy': `${origine.y}%`, '--zniveau': niveau }}
             onMouseMove={suivrePointeur}
             onMouseLeave={() => setZoom(false)}
+            onTouchStart={surToucheDebut}
+            onTouchMove={surToucheBouge}
+            onTouchEnd={surToucheFin}
+            onTouchCancel={() => { departTouche.current = null; }}
           >
             {courant ? (
               <>
@@ -352,6 +439,8 @@ const ProduitPage = () => {
                 <button type="button" onClick={() => changerNiveau(LOUPE.pas)} disabled={niveau >= LOUPE.max} aria-label="Augmenter le zoom">+</button>
               </div>
             )}
+
+          </div>
 
             {/* La bande montre TOUTES les vues, y compris celle affichée :
                 masquer la première la rendait inatteignable dès le premier
@@ -474,7 +563,7 @@ const ProduitPage = () => {
               </div>
             ) : (
               <>
-                <div className="fp-actions">
+                <div className="fp-actions" ref={refActions}>
                   <div className="fp-qte" role="group" aria-label="Quantité">
                     <button
                       type="button"
@@ -506,6 +595,29 @@ const ProduitPage = () => {
             )}
           </div>
         </div>
+
+        {/* ── LA BARRE D'ACHAT, EN BAS D'ECRAN, SOUS 900 PX ─────────────────
+            Le bouton « Ajouter au panier » se trouve a environ 1 200 px du
+            haut de la fiche : photo, titre, prix, description, couleur,
+            taille, quantite. Sur un telephone, c'est DEUX ECRANS de
+            defilement avant de pouvoir acheter — et une fois descendu, le
+            prix n'est plus visible : on valide sans voir ce qu'on paye.
+
+            La barre porte donc les deux : le montant a gauche, l'action a
+            droite. Elle n'apparait que lorsque le bouton d'origine a quitte
+            l'ecran, et jamais sur une piece epuisee, ou l'on propose a la
+            place d'etre prevenu du retour en atelier. */}
+        {!epuise && !actionsVisibles && (
+          <div className="fp-barre-achat" role="group" aria-label="Acheter">
+            <span className="fp-barre-prix">
+              {formatPrice(prix, currency)}
+              {qte > 1 && <span className="fp-barre-qte"> x {qte}</span>}
+            </span>
+            <button type="button" onClick={ajouterAuPanier} className="btn btn--primary fp-barre-cta">
+              Ajouter au panier
+            </button>
+          </div>
+        )}
 
         {similar.length > 0 && (
           <div className="fp-recos">
@@ -589,6 +701,10 @@ const FEUILLE = `
   }
 
   /* ── Galerie ── */
+  /* Porte le reperage de la bande de vues, qui etait celui du visuel.
+     Le visuel le remplit : rien ne change sur un grand ecran. */
+  .fp-galerie { position: relative; }
+
   .fp-visuel {
     position: relative;
     aspect-ratio: 4 / 5;
@@ -625,15 +741,26 @@ const FEUILLE = `
      que le poids d'un second décodage à l'écran. */
   .fp-hd { opacity: 0; }
 
+  /* LE GROSSISSEMENT N'EST PLUS RESERVE A LA SOURIS. Ces trois regles
+     vivaient dans une media query « pointeur fin » : au doigt, la photo ne
+     s'agrandissait jamais, quel que soit le reglage. Elles sont pilotees par
+     l'etat — la classe est-zoom —, pose par un geste delibere : survol a la
+     souris, tape au doigt. Rien ne se declenche tout seul. */
+  .fp-visuel > img {
+    transform-origin: var(--zx, 50%) var(--zy, 50%);
+    transition: scale var(--dur-2) var(--ease), opacity var(--dur-1) var(--ease);
+  }
+  .fp-visuel.est-zoom > img { scale: var(--zniveau, 1.5); }
+  .fp-visuel.est-zoom .fp-hd { opacity: 1; }
+
+  /* Agrandie, la photo se parcourt au doigt : sans cela le navigateur prend
+     le geste pour un defilement et emporte la fiche vers le bas au moment ou
+     l'on examine une broderie. Uniquement pendant le zoom — hors zoom, la
+     page doit defiler normalement sous le doigt. */
+  .fp-visuel.est-zoom { touch-action: none; }
+
   @media (hover: hover) and (pointer: fine) {
     .fp-visuel.peut-zoomer { cursor: zoom-in; }
-    .fp-visuel > img {
-      transform-origin: var(--zx, 50%) var(--zy, 50%);
-      transition: scale var(--dur-2) var(--ease), opacity var(--dur-1) var(--ease);
-    }
-    .fp-visuel.est-zoom > img { scale: var(--zniveau, 1.5); }
-
-    .fp-visuel.est-zoom .fp-hd { opacity: 1; }
   }
 
   /* Le grossissement reste — c'est la fonction même de la loupe ; seule sa
@@ -642,25 +769,29 @@ const FEUILLE = `
     .fp-visuel > img { transition: none; }
   }
   /* La commande de zoom : la pastille écrue des cartes (indigo dessus),
-     en haut à gauche — le coin droit est aux pastilles cœur, panier… Elle
-     n'existe qu'au pointeur fin, là où la loupe existe. */
-  .fp-loupe { display: none; }
-  @media (hover: hover) and (pointer: fine) {
-    .fp-loupe {
-      position: absolute;
-      top: var(--s-3);
-      left: var(--s-3);
-      z-index: 3;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.2rem;
-      padding: 0.3rem;
-      border-radius: var(--r-pill);
-      background: rgba(250, 246, 238, 0.92);
-      backdrop-filter: blur(8px);
-      color: var(--gp-indigo-900);
-      cursor: default;
-    }
+     en haut à gauche — le coin droit est aux pastilles cœur, panier…
+     Elle s'affiche PARTOUT depuis que la loupe fonctionne au doigt ; elle
+     etait masquee hors pointeur fin, donc invisible sur un telephone. */
+  .fp-loupe {
+    position: absolute;
+    top: var(--s-3);
+    left: var(--s-3);
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.3rem;
+    border-radius: var(--r-pill);
+    background: rgba(250, 246, 238, 0.92);
+    backdrop-filter: blur(8px);
+    color: var(--gp-indigo-900);
+    cursor: default;
+  }
+
+  /* 30 px a la souris, 44 au doigt : le minimum tactile. */
+  @media (pointer: coarse) {
+    .fp-loupe { top: var(--s-2); left: var(--s-2); }
+    .fp-loupe button { width: 4.4rem; height: 4.4rem; font-size: 2.2rem; }
   }
   .fp-loupe button {
     display: grid;
@@ -918,12 +1049,78 @@ const FEUILLE = `
     gap: var(--s-5);
   }
 
+  /* ── La barre d'achat collante ──────────────────────────────────────────
+     Elle n'existe QUE sous 900 px : au-dessus, la colonne d'achat est a
+     cote de la photo et le bouton reste a l'ecran.
+
+     Le fond reprend le chrome du site, avec un filet de laiton au-dessus —
+     la meme matiere que la barre de navigation, a l'autre bout de l'ecran.
+     La reserve du bas tient compte de la barre gestuelle des telephones
+     sans bouton d'accueil ; sans elle, l'indicateur du systeme se pose sur
+     le bouton d'achat. */
+  .fp-barre-achat { display: none; }
+
   @media (max-width: 900px) {
-    .fp { padding-top: 8rem; }
+    .fp-barre-achat {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 900;
+      display: flex;
+      align-items: center;
+      gap: var(--s-3);
+      padding: var(--s-3) var(--page-pad);
+      padding-bottom: calc(var(--s-3) + env(safe-area-inset-bottom, 0px));
+      background: var(--surface-chrome);
+      border-top: 1px solid var(--line-dark-accent);
+      animation: fadeUp var(--dur-2) var(--ease) both;
+    }
+    .fp-barre-prix {
+      font-family: var(--font-display);
+      font-size: 1.9rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--gp-brass-400);
+      white-space: nowrap;
+    }
+    .fp-barre-qte { font-size: 1.4rem; color: var(--text-on-dark-muted); }
+    /* `.btn` passe en pleine largeur sous 767 px : ici il partage la ligne
+       avec le prix, d'ou le flex qui lui rend une largeur propre. */
+    .fp-barre-cta { flex: 1; min-width: 0; width: auto; }
+
+    /* La barre couvre le bas de la page : sans cette reserve, les dernieres
+       pieces de « Dans le meme esprit » finiraient dessous. */
+    .fp-recos { padding-bottom: 8rem; }
+  }
+
+  @media (max-width: 900px) {
+    /* 80 px de vide en tete de page etaient un reliquat de l'epoque ou la
+       barre de navigation passait en « fixed » au defilement et sortait donc
+       du flux. Elle est « sticky » depuis : elle occupe sa place, rien n'a a
+       etre compense. L'ecart revient au rythme du site. */
+    .fp { padding-top: var(--section-y); }
     .fp-grille { grid-template-columns: 1fr; gap: var(--s-6); }
     .fp-recos-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .fp-vues { gap: 0.6rem; padding: var(--s-6) var(--s-2) var(--s-2); }
-    .fp-vue { width: 4.6rem; }
+
+    /* ── LA BANDE DE VUES SORT DE LA PHOTO ───────────────────────────────
+       Elle etait posee EN SURIMPRESSION sur le bas du visuel, avec un
+       degrade sombre par-dessus : 101 px sur une photo de 419 px, soit
+       24 % — le quart inferieur. Sur un vetement cadre en pied, ce quart
+       porte l'ourlet, la retombee du tissu et les chaussures. Sur un
+       boubou, c'est precisement ce qui dit si la coupe tombe droit.
+
+       En dessous, elle ne coute qu'une soixantaine de pixels de page et
+       rend la piece entiere. Le degrade n'a plus lieu d'etre : il ne
+       servait qu'a detacher les miniatures du vetement. */
+    .fp-vues {
+      position: static;
+      gap: 0.6rem;
+      padding: var(--s-2) 0 0;
+      background: none;
+      scroll-snap-type: x proximity;
+    }
+    .fp-vue { width: 5.2rem; scroll-snap-align: start; }
   }
 `;
 
