@@ -1005,6 +1005,14 @@ mouvement qui subsiste est le défilé des tableaux de fond, toutes les six
 secondes, coupé si le visiteur demande moins d'animations. Il finit sur
 `#161B2D`, sans fondu : voir « La jonction avec le hero », plus haut.
 
+**Au téléphone (≤ 768 px), le hero montre la dame en blanc**, à la demande :
+les tableaux, trop larges pour un portrait, y sont masqués, et
+`.hero-silhouette` pose `promo/piece-blanche.webp` en pied, centrée, sur un
+halo de laiton, fondue dans un voile d'indigo qui monte du bas ; emblème,
+titre et filet descendent en bas de page, sur l'indigo franc. C'est un
+`<picture>` dont la seule source est réservée au petit écran : l'ordinateur
+ne télécharge pas la photo.
+
 Ses tableaux s'affichent **entiers, à leurs proportions** (`object-fit:
 contain`), à la demande : en `cover`, dans une page de la pagination plus
 basse que l'écran, ils étaient agrandis d'un tiers et amputés d'un quart par

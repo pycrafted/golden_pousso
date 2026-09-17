@@ -44,11 +44,14 @@ import { TABLEAUX_HERO, LARGEUR_TABLEAU } from '../constants/hero';
  * Sans eux il reste l'indigo plein : la parole tient seule, elle ne dépend
  * pas de l'image.
  *
- * ── La photo disparaît sous 768 px, et c'est voulu ─────────────────────────
+ * ── Sous 768 px, les tableaux cèdent la place à la dame en blanc ──────────
  * Le hero y devient un portrait étroit. Un recadrage cover sur une image
  * large n'en garderait que la colonne centrale — c'est-à-dire précisément la
  * partie laissée VIDE pour le texte, les deux silhouettes tombant hors cadre
- * des deux côtés. Mieux vaut l'indigo franc qu'un fond amputé de son sujet.
+ * des deux côtés. Les tableaux y sont donc masqués, et le hero pose à leur
+ * place UNE pièce détourée, en pied (« .hero-silhouette », à la demande) :
+ * halo de laiton derrière le buste, voile d'indigo qui monte du bas, parole
+ * posée en bas de page sur l'indigo franc.
  *
  * ── La parole ──────────────────────────────────────────────────────────────
  * Trois niveaux, du plus fort au plus discret :
@@ -65,6 +68,10 @@ import { TABLEAUX_HERO, LARGEUR_TABLEAU } from '../constants/hero';
    l'original de 1 254 px : il s'affiche autour de 110 px, et les 1,8 Mo du
    fichier source auraient pesé sur la ligne de flottaison. */
 const LOGO = '/logo-embleme.png';
+
+/* La pièce du hero en petit écran : le détourage de la vitrine (BandePromo),
+   avec ses dimensions réelles. */
+const SILHOUETTE = { src: '/images/promo/piece-blanche.webp', largeur: 700, hauteur: 1448 };
 
 /* Ce que le hero dit. Tout ce qu'il dit.
    ---------------------------------------------------------------------------
@@ -150,6 +157,26 @@ const Hero = () => {
           />
         </span>
       ))}
+
+      {/* LE HERO DU TÉLÉPHONE — la dame en blanc, en fond, à la demande.
+          Sous 768 px les tableaux sont masqués (voir plus bas) et le hero
+          n'était qu'un aplat d'indigo. Il y pose une seule pièce détourée,
+          en pied, portrait comme l'écran.
+
+          Un <picture> dont la seule source est réservée au petit écran :
+          au-delà, le navigateur prend le <img> de repli, un gif vide de
+          quelques octets — l'ordinateur ne télécharge pas la photo. */}
+      <picture className="hero-silhouette" aria-hidden="true">
+        <source media="(max-width: 768px)" srcSet={SILHOUETTE.src} />
+        <img
+          src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+          alt=""
+          width={SILHOUETTE.largeur}
+          height={SILHOUETTE.hauteur}
+          fetchPriority="high"
+          decoding="async"
+        />
+      </picture>
 
       <div className="hero-contenu">
         {/* Attribut alt vide : le nom de la maison est déjà annoncé par la
@@ -371,14 +398,83 @@ const Hero = () => {
         /* Sur une ligne : cassé en deux (« DÉCOUVRIR LA / BOUTIQUE »), le
            libellé faisait bricolé. */
 
+        .hero-silhouette { display: none; }
+
         @media (max-width: 768px) {
-          .hero { padding: var(--s-8) var(--s-4); }
+          /* La parole descend en bas de page : la dame occupe le haut. */
+          .hero {
+            place-items: end center;
+            padding: var(--s-8) var(--s-4) var(--s-7);
+          }
           /* La photo disparaît : le hero devient un portrait étroit, et un
              recadrage cover n'en garderait que la colonne centrale — celle
              qu'on a justement laissée vide. Les deux silhouettes tomberaient
              hors cadre. */
           .hero-calque { display: none; }
           .hero-contenu { max-width: 100%; }
+
+          /* ── La dame en blanc ───────────────────────────────────────────
+             Trois couches, du fond vers la parole :
+             1. un halo de laiton derrière le buste (::before) — la lumière
+                d'une vitrine, pas un aplat : 16 % au cœur, rien au bord ;
+             2. la pièce, centrée, tête en haut, sur 94 % de la page ;
+             3. un voile d'indigo qui monte du bas (::after) : plein sous la
+                parole, transparent à mi-hauteur. La robe s'y fond sous la
+                taille ; la coiffe, le plastron brodé et les manches restent
+                entiers. Le titre se lit donc sur l'indigo franc, jamais sur
+                le blanc de la robe. */
+          .hero::before,
+          .hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+          }
+          .hero::before {
+            z-index: -2;
+            background: radial-gradient(
+              ellipse 70% 42% at 50% 34%,
+              rgba(198, 164, 61, 0.16),
+              rgba(198, 164, 61, 0) 70%
+            );
+          }
+          .hero::after {
+            z-index: -1;
+            background: linear-gradient(
+              to top,
+              #161B2D 0%,
+              #161B2D 30%,
+              rgba(22, 27, 46, 0.78) 46%,
+              rgba(22, 27, 46, 0) 66%
+            );
+          }
+
+          .hero-silhouette {
+            display: block;
+            position: absolute;
+            inset: var(--s-5) 0 0;
+            z-index: -1;
+            animation: hero-silhouette 1100ms var(--ease) both;
+          }
+          .hero-silhouette img {
+            display: block;
+            width: 100%;
+            height: 94%;
+            /* Entière dans sa boîte, tête en haut : les manches évasées
+               restent dans l'écran même sur un téléphone étroit. */
+            object-fit: contain;
+            object-position: center top;
+          }
+
+          .hero-logo { width: 6.4rem; margin-bottom: var(--s-4); }
+        }
+
+        @keyframes hero-silhouette {
+          from { opacity: 0; transform: translateY(1.6rem); }
+          to   { opacity: 1; transform: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hero-silhouette { animation: none; }
         }
       `}</style>
     </section>
