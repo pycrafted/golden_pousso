@@ -16,6 +16,8 @@ venv/
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+# Un build lance depuis la racine ecrit ici au lieu de frontend/dist/.
+dist/
 
 # Divers
 *.log
