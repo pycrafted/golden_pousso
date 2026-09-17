@@ -138,7 +138,7 @@ const SuiviCommandePage = () => {
               >
                 Rechercher →
               </button>
-              <p style={{ fontSize: '1.2rem', fontFamily: 'var(--font-body)', color: '#444', lineHeight: 1.6 }}>
+              <p style={{ fontSize: '1.2rem', fontFamily: 'var(--font-body)', color: 'var(--text-on-dark-muted)', lineHeight: 1.6 }}>
                 Le numéro de commande vous a été communiqué à la confirmation de votre commande.
               </p>
             </div>
@@ -257,7 +257,7 @@ const SuiviCommandePage = () => {
                         background: done ? '#B8960A' : '#1A1A1A',
                         border: `1px solid ${done ? '#B8960A' : '#2A2A2A'}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '1.2rem', color: done ? '#1A1208' : '#444',
+                        fontSize: '1.2rem', color: done ? '#1A1208' : 'var(--text-on-dark-muted)',
                         boxShadow: active ? '0 0 0 4px rgba(184,150,10,0.15)' : 'none',
                         transition: 'all 0.4s ease',
                       }}>
@@ -270,7 +270,7 @@ const SuiviCommandePage = () => {
                       <p style={{
                         fontSize: '1.1rem', fontFamily: 'var(--font-body)',
                         textTransform: 'uppercase', letterSpacing: '0.1em',
-                        color: done ? '#FAF6EE' : '#444',
+                        color: done ? '#FAF6EE' : 'var(--text-on-dark-muted)',
                         textAlign: 'center', lineHeight: 1.3,
                       }}>
                         {step.label}

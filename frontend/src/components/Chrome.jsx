@@ -46,7 +46,16 @@ const Chrome = () => (
       <Outlet />
     </Suspense>
 
-    <Toaster position="top-right" />
+    {/* En haut a droite, le toast se posait PAR-DESSUS la bande de
+        coordonnees et sur la croix de fermeture des tiroirs, dans le coin le
+        plus dur a atteindre au pouce — alors que « ajoute au panier » est le
+        seul retour visible d'un ajout sur telephone. Il passe en bas au
+        doigt, au-dessus de la barre gestuelle. */}
+    <Toaster
+      position={typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
+        ? 'bottom-center' : 'top-right'}
+      containerStyle={{ bottom: 'calc(1.6rem + env(safe-area-inset-bottom, 0px))' }}
+    />
   </>
 );
 

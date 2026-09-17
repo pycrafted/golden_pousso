@@ -164,6 +164,45 @@ export const Chargement = ({ lignes = 4 }) => (
 /* Échap ferme le calque. La boîte de confirmation, posée par-dessus un
    tiroir, écoute en capture et arrête l'événement : Échap ne referme qu'elle,
    pas le tiroir dessous. */
+/* ── Le defilement de la page, verrouille derriere un calque ───────────────
+   Sans lui, un geste commence sur la tete du tiroir, sur son pied ou sur le
+   voile faisait defiler la page DERRIERE : on refermait le tiroir et l'on se
+   retrouvait ailleurs dans le catalogue. (Le corps du tiroir, lui, avait
+   bien son `overscroll-behavior`, mais il ne couvre que le corps.)
+
+   Un compteur, et non un simple booleen : une boite de confirmation s'ouvre
+   PAR-DESSUS un tiroir, et en se fermant elle aurait rendu le defilement
+   alors que le tiroir est encore la.
+
+   `position: fixed` plutot que `overflow: hidden` : ce dernier ne bloque pas
+   Safari iOS, defaut connu du moteur. On memorise le decalage, on le repose
+   en `top` negatif, et on rend la page a l'endroit exact. */
+let calquesOuverts = 0;
+let decalageMemorise = 0;
+
+const useVerrouDefilement = () => {
+  useEffect(() => {
+    if (calquesOuverts === 0) {
+      decalageMemorise = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${decalageMemorise}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+    }
+    calquesOuverts += 1;
+    return () => {
+      calquesOuverts -= 1;
+      if (calquesOuverts === 0) {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, decalageMemorise);
+      }
+    };
+  }, []);
+};
+
 const useEchap = (onClose, actif = true, dessus = false) => {
   useEffect(() => {
     if (!actif) return undefined;
@@ -185,6 +224,7 @@ const useEchap = (onClose, actif = true, dessus = false) => {
 export const Tiroir = ({ titre, sousTitre, onClose, pied, children, fermable = true }) => {
   const titreId = useId();
   useEchap(fermable ? onClose : undefined, fermable);
+  useVerrouDefilement();
   return (
     <>
       <div className="gx-voile" onClick={fermable ? onClose : undefined} />
@@ -220,6 +260,7 @@ export const ConfirmDialog = ({ title, description, confirmLabel = 'Confirmer', 
   const [loading, setLoading] = useState(false);
   const titreId = useId();
   useEchap(onCancel, !loading, true);
+  useVerrouDefilement();
   const handleConfirm = async () => {
     setLoading(true);
     try {

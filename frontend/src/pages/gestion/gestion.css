@@ -559,6 +559,44 @@
   .gx-dialogue-actions .gx-btn { flex: 1; }
 }
 
+/* ══ LE BACK-OFFICE AU TELEPHONE ═══════════════════════════════════════════
+   La proprietaire gere son commerce depuis son smartphone : elle ajoute ses
+   pieces et suit ses commandes au telephone, pas au bureau. Ces regles ne
+   sont donc pas une concession, c'est son poste de travail. */
+
+@media (max-width: 767px) {
+  /* ⚠ LE PIED DE TIROIR DEBORDAIT — le tiroir « Commande » porte DEUX
+     boutons (« Supprimer » et « Mettre a jour le statut »), dans un flex
+     sans `flex-wrap`, tous deux en `white-space: nowrap` donc incapables de
+     retrecir : ~404 px de contenu pour ~343 disponibles. « Mettre a jour le
+     statut » sortait de l'ecran, et un element `fixed` ne defile pas
+     horizontalement : IL ETAIT IMPOSSIBLE DE PASSER UNE COMMANDE EN
+     LIVRAISON DEPUIS UN TELEPHONE. Le seul bouton entierement visible etait
+     celui qui supprime la commande definitivement.
+
+     Empiles, pleine largeur — et `column-reverse` met l'action principale
+     AU-DESSUS du bouton destructif, donc sous le pouce. */
+  .gx-tiroir-pied { flex-wrap: wrap; flex-direction: column-reverse; }
+  .gx-tiroir-pied .gx-btn { flex: 1 1 100%; width: 100%; }
+
+  /* Meme raisonnement pour la boite de confirmation : l'action sure revient
+     sous le pouce, le « Supprimer » s'eloigne. */
+  .gx-dialogue-actions { flex-direction: column-reverse; }
+  .gx-dialogue-actions .gx-btn { flex: 1 1 100%; width: 100%; }
+}
+
+/* Cibles tactiles — c'est le doigt qui impose la taille, pas l'ecran.
+   Crayon et corbeille faisaient 32 a 36 px, separes de 4 a 8, pour une
+   pulpe de pouce qui en couvre 45 a 55. Ici une erreur ne se rattrape pas :
+   une categorie emporte ses sous-categories, une commande ses lignes, une
+   piece ses photos et ses variantes. */
+@media (pointer: coarse) {
+  .gx-icone { width: 4.4rem; height: 4.4rem; }
+  .gx-btn--petit { min-height: 4.4rem; }
+  .gx-actions { gap: 1.2rem; }
+  .gx-label { font-size: 1.3rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gx-voile, .gx-tiroir.on-dark, .gx-dialogue.on-dark, .gx-squelette span { animation: none; }
 }

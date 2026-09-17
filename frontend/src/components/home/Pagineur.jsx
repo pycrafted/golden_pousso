@@ -71,6 +71,30 @@ const PAUSE_GESTE = 160;
 const ECHELLE_MIN = 0.7;
 const ECRAN_AJUSTE = '(min-width: 900px)';
 
+/* ⚠ LA PAGINATION HORIZONTALE N'EXISTE QU'AU-DELA DE 900 PX, a la demande.
+   En dessous, l'accueil est un document vertical ordinaire : les six
+   sections s'empilent et l'on defile.
+
+   Pourquoi : sur un telephone, ce carrousel superposait DEUX systemes de
+   defilement — un balayage lateral entre les pages, un defilement vertical
+   a l'interieur de chaque page trop haute (la reduction par `zoom` etant
+   deja desactivee sous 900 px). Le geste lateral entrait en concurrence
+   avec le balayage « retour » du navigateur, et surtout avec la bande de
+   « Apercu de la boutique », elle-meme un carrousel horizontal : un doigt
+   pose sur une vignette video faisait defiler les videos, jamais la page.
+   Le visiteur pouvait s'y croire coince — d'autant que le sommaire, seul
+   repere du nombre de sections et de la position, est masque sous 900 px.
+
+   En vertical, tout cela disparait et le navigateur rend gratuitement ce
+   que ~250 lignes de JS reproduisaient : molette, barre de defilement,
+   bouton retour, lecteur d'ecran.
+
+   Au-dela de 900 px rien ne change : souris, clavier et sommaire visible,
+   le format y est a son avantage. */
+const ECRAN_PAGINE = '(min-width: 900px)';
+const estPagine = () =>
+  typeof window === 'undefined' || window.matchMedia(ECRAN_PAGINE).matches;
+
 /* Durée d'un glissement : 750 ms pour une page, un peu plus pour un saut
    lointain — sans jamais traîner. */
 const DUREE = 750;
@@ -91,6 +115,7 @@ const Pagineur = ({ pages }) => {
   const sommaire = useRef(null);
   const [titres, setTitres] = useState([]);
   const [courante, setCourante] = useState(0);
+  const [pagine, setPagine] = useState(estPagine);
 
   const couranteRef = useRef(0);
   const cible = useRef(null);       // page visée par le glissement en cours
@@ -247,6 +272,8 @@ const Pagineur = ({ pages }) => {
     const el = cadre.current;
     if (!el) return undefined;
     const surRoue = (e) => {
+      // En vertical, la molette appartient au document.
+      if (!estPagine()) return;
       if (e.ctrlKey || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;
       const maintenant = performance.now();
       if (maintenant - derniereRoue.current > PAUSE_GESTE) gesteInterne.current = false;
@@ -283,6 +310,8 @@ const Pagineur = ({ pages }) => {
   /* ── Le clavier ───────────────────────────────────────────────────────── */
   useEffect(() => {
     const surTouche = (e) => {
+      // En vertical, les fleches et Page suiv./prec. defilent la page.
+      if (!estPagine()) return;
       if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
       if (e.target instanceof Element && e.target.closest(ZONES_CLAVIER)) return;
       const i = couranteRef.current;
@@ -396,6 +425,16 @@ const Pagineur = ({ pages }) => {
     return () => observateur.disconnect();
   }, [aSommaire]);
 
+  /* Le passage d'un mode a l'autre, a la rotation de l'ecran comme au
+     redimensionnement d'une fenetre de bureau. */
+  useEffect(() => {
+    const ecran = window.matchMedia(ECRAN_PAGINE);
+    const suivre = () => setPagine(ecran.matches);
+    suivre();
+    ecran.addEventListener('change', suivre);
+    return () => ecran.removeEventListener('change', suivre);
+  }, []);
+
   // Le glissement en cours s'arrête si la page d'accueil est quittée.
   useEffect(() => () => cancelAnimationFrame(anim.current), []);
 
@@ -415,7 +454,7 @@ const Pagineur = ({ pages }) => {
         ))}
       </div>
 
-      {total > 1 && (
+      {pagine && total > 1 && (
         <>
           <button
             type="button"
@@ -483,6 +522,44 @@ const Pagineur = ({ pages }) => {
       )}
 
       <style>{`
+        /* ── SOUS 900 PX : UN DOCUMENT VERTICAL ORDINAIRE ─────────────────
+           Le carrousel est deroule : les six sections s'empilent et l'on
+           defile. Voir ECRAN_PAGINE en tete de fichier pour le pourquoi.
+           Au-dela de 900 px, aucune de ces regles ne s'applique. */
+        @media (max-width: 899px) {
+          .hp {
+            height: auto;
+            min-height: 0;
+            /* clip et non hidden : garde le filet de securite contre un
+               debordement horizontal sans faire de .hp un conteneur de
+               defilement, ce qui casserait le sticky des barres. */
+            overflow-x: clip;
+            overflow-y: visible;
+          }
+          .hp-piste {
+            display: block;
+            height: auto;
+            overflow: visible;
+            scroll-snap-type: none;
+          }
+          .hp-page {
+            display: block;
+            height: auto;
+            overflow: visible;
+            scroll-snap-align: none;
+            scrollbar-gutter: auto;
+          }
+          /* Le rythme vertical du site reprend ses droits : chaque section
+             porte son ecart en haut, la valeur de --section-y de la racine. */
+          .hp .hp-page > section {
+            --section-y: clamp(6.4rem, 6vw, 8rem);
+            margin-block: 0;
+            zoom: 1;
+          }
+          .hp-page > .hero { min-height: var(--hp-h); }
+          .hp .hp-page > .man .man-panneau { padding-top: var(--section-y); }
+        }
+
         /* ── Le cadre ─────────────────────────────────────────────────────
            L'écran entier moins les deux barres collantes, qui publient leur
            hauteur (--bande-h, --nav-h) : la page d'accueil tient exactement

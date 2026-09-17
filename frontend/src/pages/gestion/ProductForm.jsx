@@ -251,42 +251,64 @@ const ProductAssets = ({ product, onChanged }) => {
 
   useEffect(() => { load(); }, [load]);
 
+  /* ⚠ PLUSIEURS PHOTOS A LA FOIS, et une jauge par photo.
+     Le champ n'acceptait qu'un fichier en modification (`multiple` n'etait
+     passe qu'a la creation) : pour ajouter cinq photos a une piece
+     existante, il fallait ouvrir la galerie, choisir, ATTENDRE LA FIN DE
+     L'ENVOI, recommencer. Cinq fois.
+
+     Et rien n'indiquait l'avancement : sur une 3G dakaroise, une photo
+     reduite pese 400 a 900 Ko, soit 15 a 70 secondes — pendant lesquelles
+     l'ecran ne bougeait pas. On ne pouvait pas distinguer un envoi lent
+     d'un envoi bloque. `onUploadProgress` d'axios donne le pourcentage. */
   const uploadImage = async (e) => {
-    const brut = e.target.files?.[0];
-    if (!brut) return;
+    const fichiers = Array.from(e.target.files || []);
+    if (fichiers.length === 0) return;
     // Le champ se vide TOUT DE SUITE : l'envoi peut durer, et un fichier qui
     // reste affiche pendant qu'il ne se passe rien laisse croire a un blocage.
     e.target.value = '';
 
-    const attente = toast.loading('Preparation de la photo...');
-    try {
-      // Reduite ici, avant l'envoi : une photo de boitier fait 35 Mo, dont le
-      // serveur ne tire jamais plus de 750 Ko. Voir utils/imageUpload.js.
-      const file = await reduirePourEnvoi(brut);
-      toast.loading(
-        file.size < brut.size
-          ? `Envoi (${Math.round(file.size / 1024)} Ko au lieu de ${Math.round(brut.size / 1024)})...`
-          : 'Envoi...',
-        { id: attente },
-      );
+    const attente = toast.loading('Preparation...');
+    const plusieurs = fichiers.length > 1;
+    let deja = images.length;
 
-      const fd = new FormData();
-      fd.append('product', product.id);
-      fd.append('image', file);
-      fd.append('is_primary', images.length === 0);
-      await apiClient.post('/gestion/product-images/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+    for (let i = 0; i < fichiers.length; i += 1) {
+      const brut = fichiers[i];
+      const rang = plusieurs ? `Photo ${i + 1}/${fichiers.length} — ` : '';
+      try {
+        // Reduite ici, avant l'envoi : une photo de boitier fait 35 Mo, dont
+        // le serveur ne tire jamais plus de 750 Ko. Voir utils/imageUpload.js.
+        const file = await reduirePourEnvoi(brut);
+        toast.loading(`${rang}envoi...`, { id: attente });
 
-      toast.success('Photo ajoutee', { id: attente });
+        const fd = new FormData();
+        fd.append('product', product.id);
+        fd.append('image', file);
+        fd.append('is_primary', deja === 0);
+        await apiClient.post('/gestion/product-images/', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (ev) => {
+            if (!ev.total) return;
+            toast.loading(`${rang}${Math.round((ev.loaded / ev.total) * 100)} %`, { id: attente });
+          },
+        });
+        deja += 1;
+      } catch (err) {
+        // Le message du serveur plutot qu'un « erreur » muet : sans lui, on
+        // ne peut pas distinguer un fichier trop lourd d'une session expiree.
+        const detail = err.response?.data;
+        const msg = typeof detail === 'string'
+          ? detail
+          : detail?.image?.[0] || detail?.detail || err.message;
+        toast.error(`${rang}echec : ${msg}`, { id: attente, duration: 8000 });
+        break;
+      }
+    }
+
+    if (deja > images.length) {
+      toast.success(deja - images.length > 1 ? `${deja - images.length} photos ajoutees` : 'Photo ajoutee', { id: attente });
       load();
       onChanged?.();
-    } catch (err) {
-      // Le message du serveur plutot qu'un « erreur » muet : sans lui, on ne
-      // peut pas distinguer un fichier trop lourd d'une session expiree.
-      const detail = err.response?.data;
-      const msg = typeof detail === 'string'
-        ? detail
-        : detail?.image?.[0] || detail?.detail || err.message;
-      toast.error(`Echec de l'envoi : ${msg}`, { id: attente, duration: 8000 });
     }
   };
 
@@ -396,7 +418,7 @@ const ProductAssets = ({ product, onChanged }) => {
           </ul>
         )}
         <div className="pf-ajout">
-          <BoutonFichier accept="image/*" onChange={uploadImage}>Ajouter une photo</BoutonFichier>
+          <BoutonFichier accept="image/*" multiple onChange={uploadImage}>Ajouter des photos</BoutonFichier>
         </div>
       </Bloc>
 

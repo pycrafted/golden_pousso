@@ -390,6 +390,71 @@ export const PlpFilterBar = ({
           .gp-panneau--prix { width: min(30rem, calc(100vw - 4rem)); }
         }
 
+        /* ── SOUS 768 PX : UNE SEULE RANGEE QUI DEFILE ────────────────────
+           Les pilules s'empilaient sur 4 ou 5 rangees — environ 250 px — et
+           la premiere photo de piece commencait vers 570 px, donc SOUS la
+           ligne de flottaison. Une boutique de mode dont le premier ecran ne
+           montre que des boutons gris ne vend pas.
+
+           En une rangee qui se fait defiler du doigt, la barre coute ~50 px
+           et la premiere rangee de cartes remonte a l'ecran. C'est le motif
+           de tous les sites de mode mobiles. */
+        @media (max-width: 767px) {
+          .gp-barre-gauche {
+            flex-wrap: nowrap;
+            justify-content: flex-start;
+            overflow-x: auto;
+            scroll-snap-type: x proximity;
+            scrollbar-width: none;
+            margin-left: 0;
+            padding-bottom: var(--s-1);
+            /* Les pilules touchent les bords de l'ecran quand on defile,
+               au lieu de s'arreter sur la gouttiere. */
+            margin-inline: calc(-1 * var(--page-pad));
+            padding-inline: var(--page-pad);
+          }
+          .gp-barre-gauche::-webkit-scrollbar { display: none; }
+          .gp-pop, .gp-pilule { scroll-snap-align: start; flex: 0 0 auto; }
+          .gp-pop--fin { margin-left: 0; }
+
+          /* Le panneau de prix etait ancre sur SA pilule, pas sur l'ecran :
+             la pilule n'etant presque jamais au bord droit, une partie du
+             panneau — dont la poignee du minimum — sortait par la gauche,
+             hors d'atteinte (un debordement vers la gauche ne cree aucune
+             barre de defilement). Il se cale maintenant sur la fenetre. */
+          .gp-panneau--prix {
+            position: fixed;
+            left: var(--page-pad);
+            right: var(--page-pad);
+            width: auto;
+            max-width: none;
+          }
+        }
+
+        /* Poignees du curseur de prix : 18 px, soit moins de la moitie du
+           minimum tactile, et la piste ne repond pas au clic
+           (pointer-events: none) — il fallait viser le disque exactement.
+           La zone passe a 44 px au doigt ; le disque visible garde sa taille
+           grace au contour interieur. */
+        @media (pointer: coarse) {
+          .gp-prix-piste input[type="range"]::-webkit-slider-thumb {
+            width: 4.4rem;
+            height: 4.4rem;
+            background: transparent;
+            border: 0;
+            box-shadow: inset 0 0 0 1.3rem var(--surface), inset 0 0 0 1.5rem var(--text-accent);
+          }
+          .gp-prix-piste input[type="range"]::-moz-range-thumb {
+            width: 4.4rem;
+            height: 4.4rem;
+            background: transparent;
+            border: 0;
+            box-shadow: inset 0 0 0 1.3rem var(--surface), inset 0 0 0 1.5rem var(--text-accent);
+          }
+          .gp-chip, .gp-effacer { min-height: 4.4rem; }
+          .gp-effacer { padding-inline: var(--s-3); }
+        }
+
         .gp-option {
           display: flex;
           align-items: center;
