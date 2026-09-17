@@ -501,26 +501,29 @@ img {
   gap: var(--s-5) var(--s-4);
 }
 @media (max-width: 1280px) { .catalogue-grille { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-/* ⚠ DEUX COLONNES JUSQU'EN BAS, à la demande. La grille tombait à UNE
-   colonne sous 560 px : une pièce par écran, 471 px de défilement par pièce,
-   donc ~11 300 px — dix-sept écrans — pour parcourir les 24 pièces d'une
-   page. On ne balaie pas un catalogue de mode dans ces conditions, et la
-   décision d'achat en habillement est comparative : on trie vingt
-   silhouettes du regard avant de s'arrêter sur une. C'est pourquoi Zara,
-   ASOS, Shein et Zalando sont tous en deux colonnes sur téléphone.
+/* ⚠ UNE SEULE COLONNE AU TÉLÉPHONE, à la demande (sous 560 px) : une pièce
+   par ligne, pleine largeur. La grille est restée un temps à DEUX colonnes
+   jusqu'en bas — l'argument était le balayage comparatif du catalogue de
+   mode (Zara, ASOS, Shein, Zalando sont tous en deux colonnes sur
+   téléphone) et le coût du défilement, ~11 300 px pour les 24 pièces d'une
+   page. Le choix inverse est assumé : la pièce prime sur le balayage, et la
+   pagination par 24 (voir `Pagination.jsx`) donne déjà un repère dans la
+   longueur.
 
-   Ce n'était d'ailleurs pas un arbitrage mais une incohérence : la fiche
-   produit affiche DÉJÀ ses pièces similaires en deux colonnes sur la même
-   largeur d'écran (`.fp-recos-grille`), avec exactement la même carte.
+   Entre 560 et 900 px — grandes tablettes, téléphone à l'horizontale — la
+   grille garde ses deux colonnes.
 
-   Troisième gain, invisible : `widths={[300, 600]}` redevient exact. En une
-   colonne la photo était rendue dans 335 px CSS, soit 1 005 px réels sur un
-   écran à trois fois la densité — la variante 600 px était étirée de 68 %,
-   donc molle. À 159 px de carte, elle tombe juste.
+   ⚠ `widths={[300, 600]}` redevient approximatif : en une colonne la photo
+   est rendue dans ~335 px CSS, soit ~1 005 px réels sur un écran à trois
+   fois la densité, et la variante 600 px est étirée. C'est le prix de la
+   grande photo ; ajouter une largeur intermédiaire au `CldImg` de
+   `ProductCard` la rendrait de nouveau exacte.
 
-   Le panneau vitré de la carte ne tient pas dans cette largeur : il se
-   resserre sous 560 px (voir `.pc-panneau` dans `ProductCard.jsx`). */
+   Le panneau vitré de la carte retrouve la place qui lui manquait : son
+   resserrement sous 560 px (voir `.pc-panneau` dans `ProductCard.jsx`)
+   reste en place, sans effet notable à cette largeur. */
 @media (max-width: 900px)  { .catalogue-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4) var(--s-3); } }
+@media (max-width: 560px)  { .catalogue-grille { grid-template-columns: 1fr; gap: var(--s-5); } }
 
 /* ── L'état vide ────────────────────────────────────────────────────────────
    Ni une erreur, ni un cul-de-sac : un constat et une porte. Les trois

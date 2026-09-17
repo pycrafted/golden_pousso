@@ -65,7 +65,11 @@ const ProductCard = ({
   product,
   index = 0,
   animate = true,
-  sizes = '(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw',
+  /* Suit les colonnes de `.catalogue-grille` : une pièce par ligne au
+     téléphone (sous 560 px, à la demande), deux jusqu'à 900, puis trois et
+     quatre. Une valeur qui annoncerait 50vw en une colonne ferait choisir au
+     navigateur une photo deux fois trop petite, donc molle. */
+  sizes = '(max-width: 560px) 92vw, (max-width: 900px) 50vw, (max-width: 1280px) 33vw, 25vw',
   onModifie,
 }) => {
   const [hovered, setHovered] = useState(false);

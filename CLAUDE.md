@@ -330,7 +330,10 @@ inutilisable au clavier.
 **Le cadre des pages de catalogue.** Toute surface qui liste des pièces reprend
 les classes `.catalogue-*` de `styles.css` — `page` (fond et hauteur), `entete`
 + `titre` (h1 en `--t-h2` centré, filet doré), `corps`, `grille` (4/3/2/1
-colonnes) et `vide` + `vide-titre` / `vide-texte` / `vide-action`. `/categorie/:slug`
+colonnes — ⚠ **une seule au téléphone, sous 560 px**, à la demande : la
+grille est restée un temps à deux colonnes jusqu'en bas, au nom du balayage
+comparatif ; la pièce prime désormais sur le balayage, et le `sizes` par
+défaut de `ProductCard` suit ces colonnes) et `vide` + `vide-titre` / `vide-texte` / `vide-action`. `/categorie/:slug`
 et `/favoris` s'en servent toutes deux : elles se dessinaient chacune à sa
 façon, et la même absence de pièces ne se lisait pas pareil selon la page où
 l'on tombait. Ne pas recopier ces règles dans un `<style>` de page — deux
