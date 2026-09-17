@@ -49,7 +49,8 @@ import { TABLEAUX_HERO, LARGEUR_TABLEAU } from '../constants/hero';
  * large n'en garderait que la colonne centrale — c'est-à-dire précisément la
  * partie laissée VIDE pour le texte, les deux silhouettes tombant hors cadre
  * des deux côtés. Les tableaux y sont donc masqués, et le hero pose à leur
- * place UNE pièce détourée, en pied (« .hero-silhouette », à la demande) :
+ * place UNE silhouette détourée — la femme en blanc du premier tableau, à la
+ * demande (« .hero-silhouette ») :
  * halo de laiton derrière le buste, voile d'indigo qui monte du bas, parole
  * posée en bas de page sur l'indigo franc.
  *
@@ -69,9 +70,14 @@ import { TABLEAUX_HERO, LARGEUR_TABLEAU } from '../constants/hero';
    fichier source auraient pesé sur la ligne de flottaison. */
 const LOGO = '/logo-embleme.png';
 
-/* La pièce du hero en petit écran : le détourage de la vitrine (BandePromo),
-   avec ses dimensions réelles. */
-const SILHOUETTE = { src: '/images/promo/piece-blanche.webp', largeur: 700, hauteur: 1448 };
+/* La silhouette du hero en petit écran : la femme en blanc du premier
+   tableau du défilé, DÉCOUPÉE de celui-ci (fond transparent) par
+   `outils/exporter_silhouette_hero.py`. Elle a d'abord été le mannequin doré
+   de la vitrine (`promo/piece-blanche.webp`), remplacé à la demande : une
+   personne, pas un mannequin. Le fond transparent n'est pas un détail — sans
+   lui, le rectangle d'indigo de la photo masquerait le halo posé derrière
+   elle et dessinerait une couture autour. */
+const SILHOUETTE = { src: '/images/hero/femme-blanche.webp', largeur: 545, hauteur: 1037 };
 
 /* Ce que le hero dit. Tout ce qu'il dit.
    ---------------------------------------------------------------------------

@@ -1025,13 +1025,22 @@ mouvement qui subsiste est le défilé des tableaux de fond, toutes les six
 secondes, coupé si le visiteur demande moins d'animations. Il finit sur
 `#161B2D`, sans fondu : voir « La jonction avec le hero », plus haut.
 
-**Au téléphone (≤ 768 px), le hero montre la dame en blanc**, à la demande :
+**Au téléphone (≤ 768 px), le hero montre la femme en blanc**, à la demande :
 les tableaux, trop larges pour un portrait, y sont masqués, et
-`.hero-silhouette` pose `promo/piece-blanche.webp` en pied, centrée, sur un
+`.hero-silhouette` pose `hero/femme-blanche.webp` en pied, centrée, sur un
 halo de laiton, fondue dans un voile d'indigo qui monte du bas ; emblème,
 titre et filet descendent en bas de page, sur l'indigo franc. C'est un
 `<picture>` dont la seule source est réservée au petit écran : l'ordinateur
-ne télécharge pas la photo.
+ne télécharge pas la photo. ⚠ **C'est une personne, pas un mannequin**, à la
+demande : ce fut d'abord le mannequin doré de la vitrine
+(`promo/piece-blanche.webp`). Le fichier est **découpé du premier tableau du
+défilé** (`hero-1.jpg`, où elle tient la gauche) par
+`outils/exporter_silhouette_hero.py`, qui rend le fond **transparent** — un
+rectangle opaque d'indigo masquerait le halo posé derrière elle et
+dessinerait une couture autour. Le script reconnaît le fond par
+**propagation depuis les bords**, jamais à la seule couleur : au pixel, la
+chevelure sombre (écart ~32 à l'indigo) se trouait, on la voyait au travers.
+Seuils dans le script ; relancer après tout changement de tableau.
 
 Ses tableaux s'affichent **entiers, à leurs proportions** (`object-fit:
 contain`), à la demande : en `cover`, dans une page de la pagination plus
