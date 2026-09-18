@@ -540,6 +540,28 @@ const Navbar = () => {
               grand écran dans `.nav-icons`, une fois ici pour le petit — et
               chaque exemplaire n'est visible que dans son domaine. */}
           <div className="nav-actions-mobile">
+            {/* Le cœur des favoris, à la demande : comme le panier, il n'était
+                que dans `.nav-icons`, masqué sous 1080 px — un client sur
+                téléphone n'avait aucun chemin vers /favoris. Même règle qu'en
+                grand écran : il n'apparaît qu'à partir d'un favori. */}
+            {nbFavoris > 0 && (
+              <button
+                onClick={() => navigate('/favoris')}
+                className="nav-tactile"
+                aria-label={`Mes favoris, ${nbFavoris} pièce${nbFavoris > 1 ? 's' : ''}`}
+              >
+                <i className="bx bx-heart" style={{ fontSize: '2.2rem' }}></i>
+                <span style={{
+                  position: 'absolute', top: '0.2rem', right: '0.2rem',
+                  background: C.gold, color: C.dark, borderRadius: '50%',
+                  width: '1.8rem', height: '1.8rem', fontSize: '0.95rem',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 700, lineHeight: 1, fontFamily: 'var(--font-body)',
+                }}>
+                  {nbFavoris > 9 ? '9+' : nbFavoris}
+                </span>
+              </button>
+            )}
             <button
               onClick={() => setCartOpen((o) => !o)}
               className={surAccueil ? 'nav-tactile nav-panier-mobile--accueil' : 'nav-tactile'}
