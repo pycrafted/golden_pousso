@@ -66,7 +66,14 @@ class Category(models.Model):
     #: le lien, il est donc verrouillé en admin.
     #:
     #: Un tuple et non un ensemble : son ordre EST l'ordre du menu.
-    SLUGS_STRUCTURELS = ('boubous', 'chaussures', 'sacs', 'bijoux', 'cosmetique')
+    #:
+    #: ⚠ Ces slugs sont ceux de la PRODUCTION. Ils ont longtemps été
+    #: « boubous », « sacs », « bijoux » et « cosmetique », que la base ne
+    #: portait plus : les rayons réels — renommés et re-sluggés en cours de
+    #: route — n'étaient donc plus protégés du tout, et la grille de l'accueil
+    #: pointait sur des adresses vides (migration 0038, qui aligne une base
+    #: restée sur les anciens slugs).
+    SLUGS_STRUCTURELS = ('boubou-africain', 'chaussures', 'sac', 'bijou', 'accessoire')
 
     objects = CategorieQuerySet.as_manager()
 

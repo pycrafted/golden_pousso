@@ -1061,8 +1061,19 @@ haut et le bas au lieu de laisser une bande vide sous les silhouettes.
 
 ### Les cinq rayons sont structurels
 
-`boubous`, `chaussures`, `sacs`, `bijoux`, `cosmetique` existent **toujours**,
-dans cet ordre. La grille de `UniversGrid` est bâtie sur
+`boubou-africain`, `chaussures`, `sac`, `bijou`, `accessoire` existent
+**toujours**, dans cet ordre. ⚠ Ces slugs ont été **réalignés sur la base**
+(migration `0038`) : le front, les photos de `public/images/rayons/`,
+`PIECES_RAYON`, `outils/exporter_rayons.py` et `Category.SLUGS_STRUCTURELS`
+portaient `boubous`, `sacs`, `bijoux` et `cosmetique`, que la production ne
+connaissait plus. **Quatre tuiles sur cinq menaient donc à une page vide** et
+affichaient leur nom de repli — d'où « Yéré jiguen » sur l'accueil alors que
+le rayon s'appelle « Boubou africain ». Rien ne le signalait : la grille étant
+statique, un slug mort ne se voit qu'en cliquant. La cinquième tuile, «
+Cosmétique », est devenue **Accessoire** (le rayon qui existe), en gardant sa
+photo — savon noir et parfum. La migration renomme une base restée sur les
+anciens slugs et ne fait rien là où ils sont déjà bons. **Après tout
+renommage de rayon, vérifier les cinq listes ensemble.** La grille de `UniversGrid` est bâtie sur
 `frontend/src/constants/rayons.js`, pas sur la réponse de `/categories/` :
 elle s'affiche complète au premier rendu.
 

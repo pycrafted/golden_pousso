@@ -60,17 +60,18 @@ export const RAYONS_DETOURES = true;
  * La valeur est TOUJOURS un tableau : une tuile peut montrer une pièce ou
  * deux, et un seul format évite d'avoir à tester le type à l'affichage.
  *
- * `boubous` occupe la grande tuile, deux fois plus haute et deux fois plus
+ * `boubou-africain` occupe la grande tuile, deux fois plus haute et deux fois plus
  * large que les autres : elle a la place de montrer une PAIRE — une tenue de
  * femme et une tenue d'homme, toutes deux en blanc brodé d'or, posées sur la
- * même ligne de sol. Le rayon s'appelle « Yéré jiguen » mais ne vend pas que
- * du féminin, et une tuile sur deux du site le laissait croire.
+ * même ligne de sol. Le rayon a porté le nom « Yéré jiguen », qui ne dit que
+ * le féminin alors qu'il habille les deux ; il s'appelle « Boubou africain »
+ * en base, et c'est ce nom que la tuile affiche.
  *
  * L'homme est à GAUCHE parce que sa tête est tournée vers la droite : placé à
  * droite, il regarderait hors de la tuile. La femme regarde l'objectif, elle
  * tient les deux côtés.
  *
- * `cosmetique` porte l'autre paire, dans une tuile simple cette fois : le
+ * `accessoire` porte l'autre paire, dans une tuile simple cette fois : le
  * flacon de parfum et le pot de savon noir. Le rayon vend deux choses qui
  * n'ont rien à voir l'une avec l'autre, et la nature morte qu'il montrait
  * jusqu'ici — une dizaine de pots empilés sur un fond doré — ne disait ni
@@ -81,11 +82,11 @@ export const RAYONS_DETOURES = true;
  * sens, le pot mangeait le côté par lequel on entre dans la tuile.
  */
 export const PIECES_RAYON = {
-  boubous: ['/images/catalogue/homme-blanc.webp', '/images/catalogue/boubou-blanc.webp'],
+  'boubou-africain': ['/images/catalogue/homme-blanc.webp', '/images/catalogue/boubou-blanc.webp'],
   chaussures: ['/images/catalogue/chaussures.webp'],
-  sacs: ['/images/catalogue/sacs.webp'],
-  bijoux: ['/images/catalogue/parure-longue.webp'],
-  cosmetique: ['/images/catalogue/parfum-abraj.webp', '/images/catalogue/savon-noir.webp'],
+  sac: ['/images/catalogue/sacs.webp'],
+  bijou: ['/images/catalogue/parure-longue.webp'],
+  accessoire: ['/images/catalogue/parfum-abraj.webp', '/images/catalogue/savon-noir.webp'],
 };
 
 /** Le fond des tuiles détourées. Le même indigo que la barre et le pied. */

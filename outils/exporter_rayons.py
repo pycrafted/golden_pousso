@@ -38,12 +38,12 @@ SORTIE = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'public', 'im
 RAYONS = [
     # slug,          fichier source,                centre, étendre (haut, bas) ou None
     # Source deja livree au ratio de la tuile : le centre ne rogne plus rien.
-    ('boubous',    'couple-boubou-homme.jpg',       0.500, None),
-    ('chaussures', 'chaussures-nature-morte.jpg',    0.500, None),
+    ('boubou-africain', 'couple-boubou-homme.jpg',       0.500, None),
+    ('chaussures',      'chaussures-nature-morte.jpg',    0.500, None),
     # Source déjà livrée au ratio de la tuile : plus besoin d'étendre le fond.
-    ('sacs',       'sac-orange-boutique.jpg',       0.500, None),
-    ('bijoux',     'bijoux-parure-or.jpg',          0.500, None),
-    ('cosmetique', 'cosmetique-nature-morte.jpg',   0.500, None),
+    ('sac',             'sac-orange-boutique.jpg',       0.500, None),
+    ('bijou',           'bijoux-parure-or.jpg',          0.500, None),
+    ('accessoire',      'cosmetique-nature-morte.jpg',   0.500, None),
 ]
 
 
