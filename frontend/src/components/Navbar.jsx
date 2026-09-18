@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useCartStore from '../store/cartStore';
 import { useInstallable } from '../hooks/useInstallation';
 import useSettingsStore, { formatPrice, CURRENCIES, LANGUAGES } from '../store/settingsStore';
@@ -203,6 +203,9 @@ const Navbar = () => {
   const [navOpen, setNavOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const installable = useInstallable();
+  /* Sur l'accueil, le panier du téléphone est retiré — voir
+     « .nav-panier-mobile--accueil ». */
+  const surAccueil = useLocation().pathname === '/';
   const [sticky, setSticky] = useState(false);
   const conteneur = useRef(null);
 
@@ -539,7 +542,7 @@ const Navbar = () => {
           <div className="nav-actions-mobile">
             <button
               onClick={() => setCartOpen((o) => !o)}
-              className="nav-tactile"
+              className={surAccueil ? 'nav-tactile nav-panier-mobile--accueil' : 'nav-tactile'}
               aria-label={totalItems > 0 ? `Panier, ${totalItems} article${totalItems > 1 ? 's' : ''}` : 'Panier, vide'}
             >
               <i className="bx bx-cart" style={{ fontSize: '2.2rem' }}></i>
@@ -1093,6 +1096,16 @@ const Navbar = () => {
              La grille était en « auto auto » du temps où le hamburger était
              en position absolue et ne comptait pas comme colonne. */
           .nav-inner { padding: 0 1.2rem 0 1.6rem !important; min-height: 5.6rem; grid-template-columns: 1fr auto !important; }
+        }
+        /* ⚠ PAS DE PANIER SUR L'ACCUEIL, AU TÉLÉPHONE, à la demande : la
+           page ne vend rien directement — ni prix, ni bouton d'achat —, et
+           l'icône y occupait la barre pour rien. Elle revient dès qu'on
+           entre dans la boutique, un rayon ou une fiche. Au-delà de 768 px,
+           rien ne change.
+           Masquée et non retirée : le tiroir est piloté par cet état, et un
+           panier rempli reste à un clic dès la page suivante. */
+        @media (max-width: 768px) {
+          .nav-panier-mobile--accueil { display: none !important; }
         }
         .desktop-nav::-webkit-scrollbar { display: none; }
         .desktop-nav { scrollbar-width: none; -ms-overflow-style: none; }
