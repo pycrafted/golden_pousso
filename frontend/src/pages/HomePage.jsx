@@ -46,11 +46,12 @@ import { useTelephone } from '../hooks/useMediaQuery';
 /* « NOS PRODUITS » (le jeu de cartes qui fermait la page) a été SUPPRIMÉE à
    la demande, avec `components/CategoryGrid.jsx`. L'historique git la garde.
 
-   ⚠ CE QUE LE TÉLÉPHONE NE MONTRE PAS, à la demande : « En vitrine ».
-   Déroulée à la verticale, elle coûte plusieurs écrans de défilement pour
-   cinq silhouettes l'une sous l'autre. Elle n'est pas MASQUÉE mais pas
-   rendue du tout : masqué en CSS, un composant est monté quand même. */
-const SANS_TELEPHONE = ['vitrine'];
+   ⚠ CE QUE LE TÉLÉPHONE NE MONTRE PAS, à la demande : « Aperçu de la
+   boutique », « Notre catalogue » et « En vitrine » — il ne reste que le
+   hero et le mot de la maison. Ces sections ne sont pas MASQUÉES mais pas
+   rendues du tout : masqué en CSS, un composant est monté quand même (et
+   l'aperçu lirait /videos/ pour rien). */
+const SANS_TELEPHONE = ['apercu', 'catalogue', 'vitrine'];
 
 const HomePage = () => {
   const telephone = useTelephone();
