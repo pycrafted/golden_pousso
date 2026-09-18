@@ -851,9 +851,8 @@ mentions légales suit, comme celui de la barre.
 | 3 | Notre catalogue | `home/UniversGrid.jsx` | indigo chrome `#161B2D` — ⚠ voir ci-dessous, rayons structurels |
 | 4 | En vitrine | `components/BandePromo.jsx` | indigo — cinq pièces détourées, entières, sous leur titre |
 | 5 | Aperçu de la boutique | `components/VideoCardsSection.jsx` | indigo chrome `#161B2D` — ⚠ voir ci-dessous |
-| 6 | Nos produits | `components/CategoryGrid.jsx` | indigo chrome `#161B2D` — jeu de cartes, ferme la page |
 
-**Nos produits** (6) **est un jeu de cartes**, à la demande — il était un
+⚠ **« Nos produits » a été supprimée**, à la demande (`CategoryGrid.jsx` retiré) : l'aperçu de la boutique ferme désormais la page. Ce qui suit décrit l'ancienne section, pour mémoire. **Nos produits** (6) **est un jeu de cartes**, à la demande — il était un
 rail qui défilait sans fin. La pièce du dessus est droite et entière ; les
 quatre suivantes dépassent derrière, en **éventail** (rotation et décalage
 par rang, pivot en bas, un peu assombries), les autres attendent cachées.

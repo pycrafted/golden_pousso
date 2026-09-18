@@ -2,7 +2,6 @@ import SEOHead from '../components/SEOHead';
 
 import Hero from '../components/Hero';
 import UniversGrid from '../components/home/UniversGrid';
-import CategoryGrid from '../components/CategoryGrid';
 import VideoCardsSection from '../components/VideoCardsSection';
 import BandePromo from '../components/BandePromo';
 import AtelierSection from '../components/home/AtelierSection';
@@ -46,15 +45,14 @@ import { useTelephone } from '../hooks/useMediaQuery';
    retirée, et la bande qui portait ses arguments ne porte plus que les
    coordonnées. Délai de livraison et moyens de paiement ne sont annoncés nulle
    part avant le tunnel d'achat. */
-/* ⚠ CE QUE LE TÉLÉPHONE NE MONTRE PAS, à la demande : « En vitrine » et
-   « Nos produits ». Déroulées à la verticale, ces deux sections coûtent
-   plusieurs écrans de défilement pour ce qu'elles montrent — cinq silhouettes
-   l'une sous l'autre, puis un jeu de cartes conçu pour la souris.
+/* « NOS PRODUITS » (le jeu de cartes qui fermait la page) a été SUPPRIMÉE à
+   la demande, avec `components/CategoryGrid.jsx`. L'historique git la garde.
 
-   Elles ne sont pas MASQUÉES mais pas rendues du tout : masqué en CSS, un
-   composant est monté quand même, et « Nos produits » lit tout le catalogue,
-   page d'API après page d'API, pour un jeu que personne ne verrait. */
-const SANS_TELEPHONE = ['vitrine', 'produits'];
+   ⚠ CE QUE LE TÉLÉPHONE NE MONTRE PAS, à la demande : « En vitrine ».
+   Déroulée à la verticale, elle coûte plusieurs écrans de défilement pour
+   cinq silhouettes l'une sous l'autre. Elle n'est pas MASQUÉE mais pas
+   rendue du tout : masqué en CSS, un composant est monté quand même. */
+const SANS_TELEPHONE = ['vitrine'];
 
 const HomePage = () => {
   const telephone = useTelephone();
@@ -81,9 +79,6 @@ const HomePage = () => {
     /* ── 5. Montrer : l'aperçu de la boutique, les pièces en mouvement ──
        Sans vidéo publiée, la section ne rend rien : sa page disparaît. */
     { cle: 'apercu', contenu: <VideoCardsSection /> },
-
-    /* ── 6. Montrer : les créations (« Nos produits ») — la dernière ── */
-    { cle: 'produits', contenu: <CategoryGrid /> },
   ];
 
   return (
