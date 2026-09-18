@@ -1175,6 +1175,15 @@ la maison.
 permutation « avec la section du dessus » doit donc se juger sur ce qui
 s'affiche, pas sur l'ordre du fichier.
 
+⚠ **Mais il se montre AVANT que l'API ait répondu** : titre et quatre tuiles
+en attente (`.em-tuile--attente`, même forme que les vraies, un aplat qui
+respire), puis les vidéos. Il n'existait qu'une fois `/videos/` répondu — or
+le backend Render gratuit s'endort, et son réveil prend jusqu'à une minute :
+la page s'arrêtait à « Notre catalogue », et au téléphone la section passait
+pour **absente**. Une requête qui échouait pendant le réveil n'était jamais
+relancée. Elle l'est désormais trois fois (après 4, 8 puis 12 s) ; après le
+troisième échec, ou sur une réponse vide, la section disparaît comme avant.
+
 Conséquences à connaître :
 - Leurs liens pointent vers les routes de la source (`/boutique`, `/p/<slug>`)
   et vers des slugs qui n'existent pas ici — ils mènent à la page 404.

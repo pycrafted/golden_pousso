@@ -75,6 +75,10 @@ const VideoCardsSection = () => {
      son intitulé si l'API ne répond pas. */
   const textes = useTexteSection('accueil-mouvement', { titre: 'Aperçu de la boutique' });
   const [bande, setBande] = useState([]);
+  /* Vrai tant que la PREMIÈRE lecture n'a pas abouti — ni réponse, ni
+     abandon. La section se montre dès le premier rendu, tuiles en attente,
+     au lieu d'attendre l'API pour exister : voir « L'attente » plus bas. */
+  const [attente, setAttente] = useState(true);
   const [son, setSon] = useState(null);
   const lecteurs = useRef([]);
   const estAdmin = useAuthStore((s) => s.isAuthenticated && Boolean(s.user?.is_staff));
@@ -82,13 +86,40 @@ const VideoCardsSection = () => {
   /* Relit la bande après chaque écriture depuis le stylo. */
   const [version, setVersion] = useState(0);
 
+  /* ── L'attente ──────────────────────────────────────────────────────────
+     La section n'existait qu'une fois « /videos/ » répondu. Or le backend
+     (Render, offre gratuite) s'endort, et son réveil prend jusqu'à une
+     minute : pendant ce temps la page s'arrêtait à « Notre catalogue », et au
+     téléphone — où l'on descend vite au bout d'une page verticale — la
+     section passait pour absente. Pire : une requête qui échouait pendant le
+     réveil n'était jamais relancée, et la section ne revenait qu'au
+     rechargement.
+
+     Elle se montre donc tout de suite, titre et tuiles en attente, et la
+     lecture est RELANCÉE en cas d'échec (trois essais, espacés de 4, 8 puis
+     12 s — le temps d'un réveil). Une réponse vide, elle, est une vraie
+     réponse : la section disparaît, comme avant. */
   useEffect(() => {
-    apiClient.get('/videos/')
-      // Une séquence sans fichier ne donnerait qu'une tuile blanche : mieux
-      // vaut ne pas la dessiner. L'API peut en renvoyer — une ligne créée sans
-      // vidéo était acceptée avant que le sérialiseur ne l'interdise.
-      .then(({ data }) => setBande((data.results ?? data).filter((v) => v.video_url)))
-      .catch(() => {});
+    let abandon = false;
+    let minuterie;
+    const lire = (essai) => {
+      apiClient.get('/videos/')
+        // Une séquence sans fichier ne donnerait qu'une tuile blanche : mieux
+        // vaut ne pas la dessiner. L'API peut en renvoyer — une ligne créée
+        // sans vidéo était acceptée avant que le sérialiseur ne l'interdise.
+        .then(({ data }) => {
+          if (abandon) return;
+          setBande((data.results ?? data).filter((v) => v.video_url));
+          setAttente(false);
+        })
+        .catch(() => {
+          if (abandon) return;
+          if (essai < 3) minuterie = setTimeout(() => lire(essai + 1), 4000 * (essai + 1));
+          else setAttente(false);
+        });
+    };
+    lire(0);
+    return () => { abandon = true; clearTimeout(minuterie); };
   }, [version]);
 
   /* Une seule bande son à la fois : ouvrir la deuxième referme la première. */
@@ -127,7 +158,7 @@ const VideoCardsSection = () => {
   // Rien tant que le propriétaire n'a pas publié de vidéo
   // (par le stylo de cette section). Sauf pour un admin : sans la
   // section, il n'aurait pas de stylo pour ajouter la première.
-  if (bande.length === 0 && !estAdmin) return null;
+  if (!attente && bande.length === 0 && !estAdmin) return null;
 
   return (
     <section className="em on-dark">
@@ -164,7 +195,7 @@ const VideoCardsSection = () => {
 
         {/* Section vide : seul un admin la voit, et le stylo est son unique
             porte d'entrée. */}
-        {bande.length === 0 && (
+        {!attente && bande.length === 0 && (
           <p className="em-vide">
             Aucune vidéo pour l’instant. Le stylo permet d’en ajouter jusqu’à
             quatre ; tant qu’il n’y en a pas, les visiteurs ne voient pas cette
@@ -173,7 +204,16 @@ const VideoCardsSection = () => {
         )}
 
         <Reveal variant="scale">
-          <div className="em-bande">
+          <div className="em-bande" aria-busy={attente}>
+            {/* Les tuiles en attente : la forme exacte des vraies — même
+                largeur, même 2/3, même rayon —, sans quoi l'arrivée des
+                vidéos ferait sauter la page. Quatre, le maximum de la
+                section (ShowcaseVideo.MAX). */}
+            {attente && bande.length === 0 && [0, 1, 2, 3].map((n) => (
+              <div key={`attente-${n}`} className="em-tuile em-tuile--attente" aria-hidden="true">
+                <div className="em-cadre" />
+              </div>
+            ))}
             {bande.map((item, i) => (
               <div key={item.id} className="em-tuile">
                 <div className="em-cadre">
@@ -231,6 +271,25 @@ const VideoCardsSection = () => {
       )}
 
       <style>{`
+        /* La tuile en attente : un aplat à peine plus clair que la page,
+           qui respire. Même rayon que la tuile (24 px) : un squelette porte
+           la forme de ce qu'il remplace.
+           ⚠ Double classe : « .em-tuile », déclarée PLUS BAS avec le même
+           poids, poserait sinon son fond — le « stone » rose pâle de la
+           source, une tuile claire en attente sur la page indigo. */
+        .em-tuile.em-tuile--attente { background: var(--surface-sunk, #202742); }
+        .em-tuile--attente .em-cadre {
+          animation: em-attente 1.6s ease-in-out infinite;
+          background: rgba(250, 246, 238, 0.04);
+        }
+        @keyframes em-attente {
+          0%, 100% { opacity: 0.55; }
+          50% { opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .em-tuile--attente .em-cadre { animation: none; }
+        }
+
         /* Écru à 62 % sur #161B2D : 6,79:1. */
         .em-vide {
           max-width: 46rem;
