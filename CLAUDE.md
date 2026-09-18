@@ -847,10 +847,10 @@ mentions légales suit, comme celui de la barre.
 | # | Section | Fichier | Fond |
 |---|---------|---------|------|
 | 1 | Hero | `components/Hero.jsx` | indigo |
-| 2 | Le mot de la maison | `home/AtelierSection.jsx` | indigo chrome `#161B2D` — panneau pleine largeur |
+| 2 | Aperçu de la boutique | `components/VideoCardsSection.jsx` | indigo chrome `#161B2D` — ⚠ voir ci-dessous |
 | 3 | Notre catalogue | `home/UniversGrid.jsx` | indigo chrome `#161B2D` — ⚠ voir ci-dessous, rayons structurels |
 | 4 | En vitrine | `components/BandePromo.jsx` | indigo — cinq pièces détourées, entières, sous leur titre |
-| 5 | Aperçu de la boutique | `components/VideoCardsSection.jsx` | indigo chrome `#161B2D` — ⚠ voir ci-dessous |
+| 5 | Le mot de la maison | `home/AtelierSection.jsx` | indigo chrome `#161B2D` — panneau pleine largeur |
 
 ⚠ **« Nos produits » a été supprimée**, à la demande (`CategoryGrid.jsx` retiré) : l'aperçu de la boutique ferme désormais la page. Ce qui suit décrit l'ancienne section, pour mémoire. **Nos produits** (6) **est un jeu de cartes**, à la demande — il était un
 rail qui défilait sans fin. La pièce du dessus est droite et entière ; les
@@ -872,7 +872,7 @@ que huit) : `/products/` pagine par 24 et ignore `page_size`, les pages sont
 donc lues à la suite (garde-fou de 20 pages). Seules les cartes utiles sont
 dans le DOM : le dessus, l'éventail et la dernière du paquet.
 
-**Le mot de la maison** (2) **ouvre la page**, juste après le hero : le
+⚠ **Ordre actuel, à la demande : Accueil, Aperçu de la boutique, Notre catalogue, En vitrine, Le mot de la maison** (qui ferme désormais la page ; le texte ci-dessous décrit des ordres antérieurs). **Le mot de la maison** (2) **ouvre la page**, juste après le hero : le
 visiteur sait chez qui il est avant de voir les pièces bouger. Il a suivi un
 temps l'aperçu de la boutique, et fermé la page avant cela.
 

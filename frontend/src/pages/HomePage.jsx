@@ -9,11 +9,9 @@ import Pagineur from '../components/home/Pagineur';
 import { useTelephone } from '../hooks/useMediaQuery';
 
 /* ── Page d'accueil ─────────────────────────────────────────────────────────
-   L'ordre suit une progression : on accueille, on DIT QUI L'ON EST, on
-   oriente par rayon, on expose (la vitrine, sous le catalogue, à la
-   demande), puis on montre la boutique et les créations, sur lesquelles la
-   page se referme. Le visiteur sait chez qui il est, puis ce que la maison
-   vend, avant de voir les pièces bouger.
+   L'ordre, à la demande : le seuil, l'aperçu de la boutique (les pièces en
+   mouvement), le catalogue par rayon, la vitrine, puis le mot de la maison,
+   qui ferme la page.
    LA PAGE SE PARCOURT SUR LES CÔTÉS, à la demande : chaque section occupe
    une page de la largeur de l'écran, et le document ne défile plus — voir
    components/home/Pagineur.jsx. Les pages portent l'indigo #161B2D, comme le
@@ -62,23 +60,23 @@ const HomePage = () => {
        « Accueil ». */
     { cle: 'seuil', titre: 'Accueil', contenu: <Hero /> },
 
-    /* ── 2. Raconter : qui parle, juste après le seuil ──
-       Le seul actif incopiable de la maison, et le seul endroit de la
-       page où elle s'exprime en son nom. */
-    { cle: 'maison', contenu: <AtelierSection /> },
+    /* ── 2. Montrer : l'aperçu de la boutique, juste après le seuil ──
+       À la demande. Sans vidéo publiée, la section ne rend rien : sa page
+       disparaît. */
+    { cle: 'apercu', contenu: <VideoCardsSection /> },
 
     /* ── 3. Orienter : la seule entrée par rayon de la page ── */
     { cle: 'catalogue', contenu: <UniversGrid /> },
 
     /* ── 4. Exposer : la vitrine (« En vitrine ») ──
-       Sous le catalogue, à la demande. Cinq pièces détourées sur
-       l'indigo, entières, sous leur titre : les deux tenues de femme aux
-       bords, trois tenues d'homme au centre. */
+       Cinq pièces détourées sur l'indigo, entières, sous leur titre : les
+       deux tenues de femme aux bords, trois tenues d'homme au centre. */
     { cle: 'vitrine', contenu: <BandePromo /> },
 
-    /* ── 5. Montrer : l'aperçu de la boutique, les pièces en mouvement ──
-       Sans vidéo publiée, la section ne rend rien : sa page disparaît. */
-    { cle: 'apercu', contenu: <VideoCardsSection /> },
+    /* ── 5. Raconter : le mot de la maison — il ferme la page ──
+       À la demande. Le seul endroit de la page où la maison s'exprime en
+       son nom. */
+    { cle: 'maison', contenu: <AtelierSection /> },
   ];
 
   return (
