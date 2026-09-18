@@ -522,44 +522,6 @@ const Pagineur = ({ pages }) => {
       )}
 
       <style>{`
-        /* ── SOUS 900 PX : UN DOCUMENT VERTICAL ORDINAIRE ─────────────────
-           Le carrousel est deroule : les six sections s'empilent et l'on
-           defile. Voir ECRAN_PAGINE en tete de fichier pour le pourquoi.
-           Au-dela de 900 px, aucune de ces regles ne s'applique. */
-        @media (max-width: 899px) {
-          .hp {
-            height: auto;
-            min-height: 0;
-            /* clip et non hidden : garde le filet de securite contre un
-               debordement horizontal sans faire de .hp un conteneur de
-               defilement, ce qui casserait le sticky des barres. */
-            overflow-x: clip;
-            overflow-y: visible;
-          }
-          .hp-piste {
-            display: block;
-            height: auto;
-            overflow: visible;
-            scroll-snap-type: none;
-          }
-          .hp-page {
-            display: block;
-            height: auto;
-            overflow: visible;
-            scroll-snap-align: none;
-            scrollbar-gutter: auto;
-          }
-          /* Le rythme vertical du site reprend ses droits : chaque section
-             porte son ecart en haut, la valeur de --section-y de la racine. */
-          .hp .hp-page > section {
-            --section-y: clamp(6.4rem, 6vw, 8rem);
-            margin-block: 0;
-            zoom: 1;
-          }
-          .hp-page > .hero { min-height: var(--hp-h); }
-          .hp .hp-page > .man .man-panneau { padding-top: var(--section-y); }
-        }
-
         /* ── Le cadre ─────────────────────────────────────────────────────
            L'écran entier moins les deux barres collantes, qui publient leur
            hauteur (--bande-h, --nav-h) : la page d'accueil tient exactement
@@ -787,6 +749,55 @@ const Pagineur = ({ pages }) => {
           .hp-fleche,
           .hp-fleche svg { transition: none; }
         }
+        /* ══ SOUS 900 PX : UN DOCUMENT VERTICAL ORDINAIRE ════════════════
+           ⚠ CE BLOC DOIT RESTER LE DERNIER DE LA FEUILLE. Il a vécu en TÊTE,
+           et n'a donc jamais rien fait : « .hp-piste { display: block } » y
+           était réécrit quelques lignes plus bas par « .hp-piste { display:
+           flex } », de même poids mais déclaré après. La requête média
+           s'appliquait bien (mesuré : « (max-width: 899px) » vraie à 400 px),
+           mais la piste restait horizontale — sur un téléphone, la page
+           d'accueil se parcourait donc de côté, ce qu'elle n'aurait jamais dû
+           faire. Une requête média ne pèse pas plus lourd qu'une règle
+           ordinaire : à poids égal, c'est la dernière écrite qui gagne.
+
+           Le carrousel est deroule : les six sections s'empilent et l'on
+           defile. Voir ECRAN_PAGINE en tete de fichier pour le pourquoi.
+           Au-dela de 900 px, aucune de ces regles ne s'applique. */
+        @media (max-width: 899px) {
+          .hp {
+            height: auto;
+            min-height: 0;
+            /* clip et non hidden : garde le filet de securite contre un
+               debordement horizontal sans faire de .hp un conteneur de
+               defilement, ce qui casserait le sticky des barres. */
+            overflow-x: clip;
+            overflow-y: visible;
+          }
+          .hp-piste {
+            display: block;
+            height: auto;
+            overflow: visible;
+            scroll-snap-type: none;
+          }
+          .hp-page {
+            display: block;
+            height: auto;
+            overflow: visible;
+            scroll-snap-align: none;
+            scrollbar-gutter: auto;
+          }
+          /* Le rythme vertical du site reprend ses droits : chaque section
+             porte son ecart en haut, la valeur de --section-y de la racine. */
+          .hp .hp-page > section {
+            --section-y: clamp(6.4rem, 6vw, 8rem);
+            margin-block: 0;
+            zoom: 1;
+          }
+          .hp-page > .hero { min-height: var(--hp-h); }
+          .hp .hp-page > .man .man-panneau { padding-top: var(--section-y); }
+        }
+
+
       `}</style>
     </div>
   );

@@ -694,7 +694,25 @@ retirer l'un ni l'autre ; vérifier que `document.documentElement.scrollWidth`
 les rayons, à la demande (liens écrits en dur dans `navLinks` pour les deux
 premiers, menu mobile compris).
 
-**Elle se parcourt sur les côtés, pas vers le bas** (à la demande) :
+⚠ **Au téléphone, elle se parcourt VERS LE BAS**, et deux sections n'y sont
+pas montrées. Sous 900 px, `Pagineur` déroule les pages en un document
+vertical ordinaire — c'était prévu de longue date, mais **cela n'a jamais
+fonctionné** : le bloc `@media (max-width: 899px)` était écrit en TÊTE de la
+feuille du composant, et ses règles (`.hp-piste { display: block }`) étaient
+réécrites quelques lignes plus bas par les règles générales
+(`.hp-piste { display: flex }`), de même poids mais déclarées après. La
+requête s'appliquait, la piste restait horizontale. Le bloc est désormais **le
+dernier de la feuille, et doit le rester**. Par ailleurs, « En vitrine » et
+« Nos produits » **ne sont pas rendues** au téléphone (≤ 768 px), à la
+demande : `HomePage` filtre ses pages (`SANS_TELEPHONE`, via le hook
+`hooks/useMediaQuery.js`). Pas masquées en CSS mais **pas montées** — masqué,
+un composant tourne quand même, et « Nos produits » lit tout le catalogue,
+page d'API après page d'API, pour un jeu de cartes que personne ne verrait.
+Le sommaire et le décompte « Section 3 sur 6 » suivent seuls : ils sont lus
+sur les pages rendues.
+
+**Sur un écran large, elle se parcourt sur les côtés, pas vers le bas** (à la
+demande) :
 `components/home/Pagineur.jsx` range chaque section dans une page de la
 largeur de l'écran, et le document ne défile plus — bande de coordonnées,
 barre et pages tiennent exactement dans la fenêtre (`--bande-h` + `--nav-h`).

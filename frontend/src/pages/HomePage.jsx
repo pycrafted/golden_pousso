@@ -7,6 +7,7 @@ import VideoCardsSection from '../components/VideoCardsSection';
 import BandePromo from '../components/BandePromo';
 import AtelierSection from '../components/home/AtelierSection';
 import Pagineur from '../components/home/Pagineur';
+import { useTelephone } from '../hooks/useMediaQuery';
 
 /* ── Page d'accueil ─────────────────────────────────────────────────────────
    L'ordre suit une progression : on accueille, on DIT QUI L'ON EST, on
@@ -45,39 +46,55 @@ import Pagineur from '../components/home/Pagineur';
    retirée, et la bande qui portait ses arguments ne porte plus que les
    coordonnées. Délai de livraison et moyens de paiement ne sont annoncés nulle
    part avant le tunnel d'achat. */
-const HomePage = () => (
-  <>
-    <SEOHead url="/" />
+/* ⚠ CE QUE LE TÉLÉPHONE NE MONTRE PAS, à la demande : « En vitrine » et
+   « Nos produits ». Déroulées à la verticale, ces deux sections coûtent
+   plusieurs écrans de défilement pour ce qu'elles montrent — cinq silhouettes
+   l'une sous l'autre, puis un jeu de cartes conçu pour la souris.
 
-    <Pagineur
-      pages={[
-        /* ── 1. Le seuil ── Sans <h2> : son entrée du sommaire s'appelle
-           « Accueil ». */
-        { cle: 'seuil', titre: 'Accueil', contenu: <Hero /> },
+   Elles ne sont pas MASQUÉES mais pas rendues du tout : masqué en CSS, un
+   composant est monté quand même, et « Nos produits » lit tout le catalogue,
+   page d'API après page d'API, pour un jeu que personne ne verrait. */
+const SANS_TELEPHONE = ['vitrine', 'produits'];
 
-        /* ── 2. Raconter : qui parle, juste après le seuil ──
-           Le seul actif incopiable de la maison, et le seul endroit de la
-           page où elle s'exprime en son nom. */
-        { cle: 'maison', contenu: <AtelierSection /> },
+const HomePage = () => {
+  const telephone = useTelephone();
 
-        /* ── 3. Orienter : la seule entrée par rayon de la page ── */
-        { cle: 'catalogue', contenu: <UniversGrid /> },
+  const pages = [
+    /* ── 1. Le seuil ── Sans <h2> : son entrée du sommaire s'appelle
+       « Accueil ». */
+    { cle: 'seuil', titre: 'Accueil', contenu: <Hero /> },
 
-        /* ── 4. Exposer : la vitrine (« En vitrine ») ──
-           Sous le catalogue, à la demande. Cinq pièces détourées sur
-           l'indigo, entières, sous leur titre : les deux tenues de femme aux
-           bords, trois tenues d'homme au centre. */
-        { cle: 'vitrine', contenu: <BandePromo /> },
+    /* ── 2. Raconter : qui parle, juste après le seuil ──
+       Le seul actif incopiable de la maison, et le seul endroit de la
+       page où elle s'exprime en son nom. */
+    { cle: 'maison', contenu: <AtelierSection /> },
 
-        /* ── 5. Montrer : l'aperçu de la boutique, les pièces en mouvement ──
-           Sans vidéo publiée, la section ne rend rien : sa page disparaît. */
-        { cle: 'apercu', contenu: <VideoCardsSection /> },
+    /* ── 3. Orienter : la seule entrée par rayon de la page ── */
+    { cle: 'catalogue', contenu: <UniversGrid /> },
 
-        /* ── 6. Montrer : les créations (« Nos produits ») — la dernière ── */
-        { cle: 'produits', contenu: <CategoryGrid /> },
-      ]}
-    />
-  </>
-);
+    /* ── 4. Exposer : la vitrine (« En vitrine ») ──
+       Sous le catalogue, à la demande. Cinq pièces détourées sur
+       l'indigo, entières, sous leur titre : les deux tenues de femme aux
+       bords, trois tenues d'homme au centre. */
+    { cle: 'vitrine', contenu: <BandePromo /> },
+
+    /* ── 5. Montrer : l'aperçu de la boutique, les pièces en mouvement ──
+       Sans vidéo publiée, la section ne rend rien : sa page disparaît. */
+    { cle: 'apercu', contenu: <VideoCardsSection /> },
+
+    /* ── 6. Montrer : les créations (« Nos produits ») — la dernière ── */
+    { cle: 'produits', contenu: <CategoryGrid /> },
+  ];
+
+  return (
+    <>
+      <SEOHead url="/" />
+
+      <Pagineur
+        pages={telephone ? pages.filter((p) => !SANS_TELEPHONE.includes(p.cle)) : pages}
+      />
+    </>
+  );
+};
 
 export default HomePage;
