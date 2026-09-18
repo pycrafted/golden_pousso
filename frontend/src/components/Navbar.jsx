@@ -945,7 +945,7 @@ const Navbar = () => {
 
           {/* Bottom section in mobile menu */}
           <div style={{ paddingTop: '3rem' }}>
-            <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '3rem', flexWrap: 'wrap' }}>
+            <div className="nav-mobile-actions" style={{ display: 'flex', gap: '1.5rem', marginBottom: '3rem', flexWrap: 'wrap' }}>
               <button
                 onClick={() => { setNavOpen(false); navigate('/mon-compte'); }}
                 style={{
@@ -1044,11 +1044,6 @@ const Navbar = () => {
                 </button>
               )}
             </div>
-
-
-            <p style={{ fontSize: '1.2rem', color: '#444', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'var(--font-body)' }}>
-              Made in Dakar · Savoir-faire Africain
-            </p>
           </div>
         </div>
       </>
@@ -1059,6 +1054,9 @@ const Navbar = () => {
            voisines (« Mes commandes »…), en classe plutôt qu'en style en
            ligne, et son survol en CSS plutôt qu'en gestionnaires JS. Écru sur
            l'encre du menu ; laiton clair au survol, 7,74:1. */
+        /* Les boutons du menu mobile sont des actions : en pilule, à la
+           demande, comme toutes les actions du site (--r-pill). */
+        .nav-mobile-actions > button { border-radius: var(--r-pill); }
         .nav-mobile-sortie,
         .nav-mobile-whatsapp {
           display: flex;
