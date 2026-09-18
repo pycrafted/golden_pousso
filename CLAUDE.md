@@ -694,11 +694,10 @@ retirer l'un ni l'autre ; vérifier que `document.documentElement.scrollWidth`
 les rayons, à la demande (liens écrits en dur dans `navLinks` pour les deux
 premiers, menu mobile compris).
 
-⚠ **Pas d'icône panier sur l'accueil au téléphone (≤ 768 px)**, à la demande :
-la page ne vend rien directement, l'icône y occupait la barre pour rien. Elle
-est **masquée** (`.nav-panier-mobile--accueil`, posée quand `pathname` vaut
-`/`), pas retirée : le tiroir reste piloté par le même état, et elle revient
-dès la boutique, un rayon ou une fiche. Au-delà de 768 px, rien ne change.
+⚠ **L'icône panier n'apparaît que si le panier contient au moins une pièce**,
+à la demande — en grand écran comme au téléphone, **accueil compris** (elle y
+était masquée au téléphone : `.nav-panier-mobile--accueil` a été retirée).
+Même règle que le cœur des favoris, présent lui aussi au téléphone.
 
 ⚠ **Au téléphone, elle se parcourt VERS LE BAS**, et deux sections n'y sont
 pas montrées. Sous 900 px, `Pagineur` déroule les pages en un document
