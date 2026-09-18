@@ -8,6 +8,7 @@ import SEOHead from '../components/SEOHead';
 import StockAlertForm from '../components/StockAlertForm';
 import apiClient from '../api/client';
 import { useEstVisible } from '../hooks/useInView';
+import { useTelephone } from '../hooks/useMediaQuery';
 import useCartStore from '../store/cartStore';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 
@@ -84,6 +85,7 @@ const ProduitPage = () => {
 
   const [product, setProduct] = useState(null);
   const [similar, setSimilar] = useState([]);
+  const telephone = useTelephone();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -635,7 +637,9 @@ const ProduitPage = () => {
           </div>
         )}
 
-        {similar.length > 0 && (
+        {/* « Dans le même esprit » n'est pas rendu au téléphone (≤ 768 px),
+            à la demande — comme « En vitrine » sur l'accueil. */}
+        {!telephone && similar.length > 0 && (
           <div className="fp-recos">
             <h2 className="fp-recos-titre">Dans le même esprit</h2>
             <div className="fp-recos-grille">
