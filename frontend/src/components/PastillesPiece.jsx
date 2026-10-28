@@ -1,14 +1,15 @@
-import { useState, useCallback, lazy, Suspense } from 'react';
+import { useState, useCallback, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
 import useFavorisStore from '../store/favorisStore';
+import lazyRecharge from '../utils/lazyRecharge';
 
 /* Modifier et supprimer, chargés au premier clic — que seul un compte
    `is_staff` peut faire : les visiteurs ne téléchargent pas le code
    d'administration. */
-const EditionPiece = lazy(() => import('../pages/gestion/EditionPiece'));
-const SuppressionPiece = lazy(() => import('../pages/gestion/SuppressionPiece'));
+const EditionPiece = lazyRecharge(() => import('../pages/gestion/EditionPiece'));
+const SuppressionPiece = lazyRecharge(() => import('../pages/gestion/SuppressionPiece'));
 
 /**
  * Les pastilles d'une pièce — empilées en haut à droite de sa photo.

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
@@ -7,12 +7,13 @@ import { PlpFilterBar } from '../components/PlpFilterBar';
 import Pagination from '../components/Pagination';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 import useAuthStore from '../store/authStore';
+import lazyRecharge from '../utils/lazyRecharge';
 
 /* Le formulaire d'ajout de pièce, chargé à la demande — le même que sur les
    pages de rayon et dans l'Espace Gestion → Produits. Code d'administration :
    il ne part qu'au premier clic sur le stylo, que seul un compte `is_staff`
    voit. */
-const ProductForm = lazy(() => import('./gestion/ProductForm'));
+const ProductForm = lazyRecharge(() => import('./gestion/ProductForm'));
 
 /**
  * Boutique — tout le catalogue, mêlé.

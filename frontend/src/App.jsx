@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 /* Les barres du site — montées une seule fois, au-dessus du site public ET de
@@ -7,6 +7,8 @@ import Chrome from './components/Chrome';
 /* Le repli de <Suspense> : l'emblème de la maison sur l'indigo du site.
    C'était un anneau gris à segment doré sur l'ancien brun #1A1208. */
 import Loader from './components/Loader';
+/* lazy() qui recharge la page si son fichier a disparu avec une mise en ligne. */
+import lazyRecharge from './utils/lazyRecharge';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -16,24 +18,24 @@ const ScrollToTop = () => {
   return null;
 };
 
-const HomePage = lazy(() => import('./pages/HomePage'));
-const FavorisPage = lazy(() => import('./pages/FavorisPage'));
-const CommandePage = lazy(() => import('./pages/CommandePage'));
-const SuiviCommandePage = lazy(() => import('./pages/SuiviCommandePage'));
-const CategoriePage = lazy(() => import('./pages/CategoriePage'));
-const BoutiquePage = lazy(() => import('./pages/BoutiquePage'));
-const MesCommandesPage = lazy(() => import('./pages/MesCommandesPage'));
-const ProfilPage = lazy(() => import('./pages/MonComptePage'));
-const ProduitPage = lazy(() => import('./pages/ProduitPage'));
-const MentionsLegalesPage = lazy(() => import('./pages/MentionsLegalesPage'));
-const Page404 = lazy(() => import('./pages/Page404'));
+const HomePage = lazyRecharge(() => import('./pages/HomePage'));
+const FavorisPage = lazyRecharge(() => import('./pages/FavorisPage'));
+const CommandePage = lazyRecharge(() => import('./pages/CommandePage'));
+const SuiviCommandePage = lazyRecharge(() => import('./pages/SuiviCommandePage'));
+const CategoriePage = lazyRecharge(() => import('./pages/CategoriePage'));
+const BoutiquePage = lazyRecharge(() => import('./pages/BoutiquePage'));
+const MesCommandesPage = lazyRecharge(() => import('./pages/MesCommandesPage'));
+const ProfilPage = lazyRecharge(() => import('./pages/MonComptePage'));
+const ProduitPage = lazyRecharge(() => import('./pages/ProduitPage'));
+const MentionsLegalesPage = lazyRecharge(() => import('./pages/MentionsLegalesPage'));
+const Page404 = lazyRecharge(() => import('./pages/Page404'));
 
 // Espace Gestion (back-office)
-const GestionLayout = lazy(() => import('./pages/gestion/GestionLayout'));
-const GestionCategoriesPage = lazy(() => import('./pages/gestion/CategoriesPage'));
-const GestionCommandesPage = lazy(() => import('./pages/gestion/CommandesPage'));
-const GestionClientsPage = lazy(() => import('./pages/gestion/ClientsPage'));
-const GestionCoordonneesPage = lazy(() => import('./pages/gestion/CoordonneesPage'));
+const GestionLayout = lazyRecharge(() => import('./pages/gestion/GestionLayout'));
+const GestionCategoriesPage = lazyRecharge(() => import('./pages/gestion/CategoriesPage'));
+const GestionCommandesPage = lazyRecharge(() => import('./pages/gestion/CommandesPage'));
+const GestionClientsPage = lazyRecharge(() => import('./pages/gestion/ClientsPage'));
+const GestionCoordonneesPage = lazyRecharge(() => import('./pages/gestion/CoordonneesPage'));
 
 
 function App() {

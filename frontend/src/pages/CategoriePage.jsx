@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import SEOHead from '../components/SEOHead';
 import apiClient from '../api/client';
@@ -7,12 +7,13 @@ import { PlpFilterBar } from '../components/PlpFilterBar';
 import Pagination from '../components/Pagination';
 import useSettingsStore, { formatPrice } from '../store/settingsStore';
 import useAuthStore from '../store/authStore';
+import lazyRecharge from '../utils/lazyRecharge';
 
 /* Le formulaire d'ajout de pièce, chargé à la demande. C'est du code
    d'administration — celui de l'Espace Gestion → Produits, partagé — que les
    visiteurs n'ont aucune raison de télécharger : il ne part qu'au premier
    clic sur le stylo, et seul un compte `is_staff` voit le stylo. */
-const ProductForm = lazy(() => import('./gestion/ProductForm'));
+const ProductForm = lazyRecharge(() => import('./gestion/ProductForm'));
 
 /* ⚠ PLUS DE TRI À L'ÉCRAN. Les trois options — par date, par prix
    croissant, par prix décroissant — ont été retirées à la demande. Les pièces

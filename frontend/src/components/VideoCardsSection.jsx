@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import apiClient from '../api/client';
 import useAuthStore from '../store/authStore';
 import usePrefersReducedMotion from '../hooks/usePrefersReducedMotion';
 import Reveal from './Reveal';
 import useTexteSection from '../hooks/useTexteSection';
+import lazyRecharge from '../utils/lazyRecharge';
 
 /**
  * « Aperçu de la boutique »
@@ -36,7 +37,7 @@ const DEPARTS = [0, 3, 5, 2, 6, 4];
 
 /* La gestion des quatre vidéos de l'Espace Gestion, chargée au premier clic
    sur le stylo — que seul un compte `is_staff` voit. */
-const GestionVideosAccueil = lazy(() => import('../pages/gestion/VideosPage').then((m) => ({ default: m.GestionVideosAccueil })));
+const GestionVideosAccueil = lazyRecharge(() => import('../pages/gestion/VideosPage').then((m) => ({ default: m.GestionVideosAccueil })));
 
 
 /** Haut-parleur, son coupé : la barre traverse le cône. */
