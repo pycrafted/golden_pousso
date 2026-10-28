@@ -40,26 +40,27 @@ import { RAYONS_DETOURES, PIECES_RAYON, FOND_RAYON, CADRAGE_PIECE } from '../../
  * outils/exporter_rayons.py. Aucun réglage de cadrage dans le CSS.
  *
  * ── La composition ──────────────────────────────────────────────────────────
- * Quatre colonnes, la première tuile occupe 2 × 2 :
+ * Quatre colonnes. Les deux rayons de tenues (homme, femme) occupent chacun
+ * 2 × 2, les quatre autres une case :
  *
- *   [ grande ][ grande ][ petite ][ petite ]
- *   [ grande ][ grande ][ petite ][ petite ]
+ *   [ homme ][ homme ][ femme ][ femme ]
+ *   [ homme ][ homme ][ femme ][ femme ]
+ *   [ petite ][ petite ][ petite ][ petite ]
  *
- * Les deux rangées se remplissent exactement avec cinq rayons. La règle qui
- * étalait la deuxième tuile quand il n'y en avait que quatre a disparu avec
- * la grille dynamique.
+ * Les trois rangées se remplissent exactement avec six rayons. Il n'y avait
+ * qu'une grande tuile, « Boubou africain », jusqu'à ce qu'il soit scindé en
+ * deux (migration 0039).
  *
- * En dessous de 1024 px la grille tombe à deux colonnes et la grande tuile
- * garde son 2 × 2, donc toute la largeur :
+ * En dessous de 1024 px la grille tombe à deux colonnes et chaque grande
+ * tuile garde son 2 × 2, donc toute la largeur :
  *
- *   [ grande  grande ]
- *   [ grande  grande ]
+ *   [ homme   homme  ]
+ *   [ femme   femme  ]
  *   [ petite ][ petite ]
  *   [ petite ][ petite ]
  *
- * Elle porte une paire de pièces détourées, qui a besoin de cette largeur ;
- * et les quatre autres se rangent en deux lignes pleines, là où cinq cases
- * simples laissaient la dernière seule à côté d'un trou.
+ * Les quatre petites se rangent en deux lignes pleines, sans case seule à
+ * côté d'un trou.
  */
 
 const UniversGrid = () => {
@@ -93,8 +94,9 @@ const UniversGrid = () => {
         <Reveal className="uv-grille" stagger={110}>
           {RAYONS.map((rayon, i) => {
             const nom = noms[rayon.slug] ?? rayon.nom;
-            /* La première tuile occupe 2 x 2, les quatre autres une case. */
-            const grande = i === 0;
+            /* Les deux rayons de tenues occupent 2 x 2, les quatre autres
+               une case. */
+            const grande = i < 2;
             // Un rayon sans piece garde sa photographie : la table n'a pas a
             // etre complete pour que la grille tienne.
             const pieces = RAYONS_DETOURES ? PIECES_RAYON[rayon.slug] : null;

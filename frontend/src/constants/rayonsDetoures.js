@@ -82,7 +82,10 @@ export const RAYONS_DETOURES = true;
  * sens, le pot mangeait le côté par lequel on entre dans la tuile.
  */
 export const PIECES_RAYON = {
-  'boubou-africain': ['/images/catalogue/homme-blanc.webp', '/images/catalogue/boubou-blanc.webp'],
+  // Les deux pièces de l'ancienne paire « Boubou africain », une par rayon
+  // depuis qu'il est scindé en tenues pour femme et tenues pour homme.
+  'tenues-femme': ['/images/catalogue/boubou-blanc.webp'],
+  'tenues-homme': ['/images/catalogue/homme-blanc.webp'],
   chaussures: ['/images/catalogue/chaussures.webp'],
   sac: ['/images/catalogue/sacs.webp'],
   bijou: ['/images/catalogue/parure-longue.webp'],

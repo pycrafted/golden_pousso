@@ -38,7 +38,10 @@ SORTIE = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'public', 'im
 RAYONS = [
     # slug,          fichier source,                centre, étendre (haut, bas) ou None
     # Source deja livree au ratio de la tuile : le centre ne rogne plus rien.
-    ('boubou-africain', 'couple-boubou-homme.jpg',       0.500, None),
+    # « Boubou africain » scindé en deux rayons (migration 0039) : la même
+    # photo de couple sert aux deux en attendant une photo par rayon.
+    ('tenues-femme',    'couple-boubou-homme.jpg',       0.500, None),
+    ('tenues-homme',    'couple-boubou-homme.jpg',       0.500, None),
     ('chaussures',      'chaussures-nature-morte.jpg',    0.500, None),
     # Source déjà livrée au ratio de la tuile : plus besoin d'étendre le fond.
     ('sac',             'sac-orange-boutique.jpg',       0.500, None),

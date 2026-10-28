@@ -1,5 +1,5 @@
 /**
- * Les cinq rayons de la maison.
+ * Les six rayons de la maison.
  * ---------------------------------------------------------------------------
  * Ce sont des rayons STRUCTURELS : ils existent toujours, dans cet ordre, et
  * le backend refuse de les supprimer (voir Category.SLUGS_STRUCTURELS). La
@@ -39,7 +39,9 @@
  * l'ajouter à RAYONS dans outils/exporter_rayons.py, relancer le script.
  */
 export const RAYONS = [
-  { slug: 'boubou-africain', nom: 'Boubou africain' },
+  // « Boubou africain » a été scindé en deux rayons (migration 0039).
+  { slug: 'tenues-homme',    nom: 'Tenues pour homme' },
+  { slug: 'tenues-femme',    nom: 'Tenues pour femme' },
   { slug: 'chaussures',      nom: 'Chaussure' },
   { slug: 'sac',             nom: 'Sac' },
   { slug: 'bijou',           nom: 'Bijou' },

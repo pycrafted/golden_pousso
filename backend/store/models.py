@@ -73,7 +73,10 @@ class Category(models.Model):
     #: route — n'étaient donc plus protégés du tout, et la grille de l'accueil
     #: pointait sur des adresses vides (migration 0038, qui aligne une base
     #: restée sur les anciens slugs).
-    SLUGS_STRUCTURELS = ('boubou-africain', 'chaussures', 'sac', 'bijou', 'accessoire')
+    #:
+    #: « Boubou africain » a été scindé en deux rayons, homme et femme
+    #: (migration 0039) : la maison en compte six.
+    SLUGS_STRUCTURELS = ('tenues-homme', 'tenues-femme', 'chaussures', 'sac', 'bijou', 'accessoire')
 
     objects = CategorieQuerySet.as_manager()
 
